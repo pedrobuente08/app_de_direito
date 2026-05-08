@@ -1,0 +1,10 @@
+# Extração de PDF
+pdfplumber>=0.11.0
+
+# Microserviço
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9
+
+# Testes
+pytest>=8.0.0

@@ -1,0 +1,16 @@
+{
+  "name": "conectar",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev -w api",
+    "dev:web": "npm run dev -w web",
+    "build": "npm run build -w api && npm run build -w web",
+    "db:generate": "npm run db:generate -w api",
+    "db:push": "npm run db:push -w api",
+    "db:seed": "npm run db:seed -w api",
+    "lint": "npm run lint -w api && npm run lint -w web"
+  }
+}

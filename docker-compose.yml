@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: conectar
+      POSTGRES_USER: conectar
+      POSTGRES_PASSWORD: conectar
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  skill:
+    build:
+      context: ./skill
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      SKILL_API_KEY: dev-key
+      LOG_LEVEL: debug
+    volumes:
+      - ./skill:/app
+
+volumes:
+  postgres_data:
