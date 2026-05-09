@@ -5,7 +5,8 @@
 #   Dockerfile: Dockerfile   (este arquivo)
 #   Context: apps/web
 #
-# Build arg: URL interna da API para o rewrite `/backend/*` (ex.: http://api:3001)
+# Build arg opcional: rewrite `/backend/*` no next.config (build time). Não definir default 127.0.0.1
+# no runner: o BFF usava isso no Coolify e falhava com ECONNREFUSED dentro do container.
 #
 # Build na raiz do repo: docker build -f apps/web/Dockerfile ./apps/web
 
@@ -15,7 +16,7 @@ WORKDIR /app
 RUN apt-get update -y && apt-get install -y --no-install-recommends ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-ARG API_INTERNAL_URL=http://127.0.0.1:3001
+ARG API_INTERNAL_URL
 ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 
 COPY package.json ./
@@ -30,7 +31,7 @@ RUN npm run build
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 
-ARG API_INTERNAL_URL=http://127.0.0.1:3001
+ARG API_INTERNAL_URL
 ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

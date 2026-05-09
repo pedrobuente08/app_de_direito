@@ -32,9 +32,18 @@ function httpOriginOnly(raw: string): string | null {
   }
 }
 
+function isLoopbackOrigin(origin: string): boolean {
+  try {
+    const h = new URL(origin).hostname;
+    return h === '127.0.0.1' || h === 'localhost' || h === '[::1]';
+  } catch {
+    return false;
+  }
+}
+
 /**
  * URL base do Nest vista **pelo servidor Next** (fetch no route handler).
- * Coolify: defina `SERVER_API_ORIGIN` ou `API_INTERNAL_URL` (não sofre inlining no build).
+ * Coolify: `SERVER_API_ORIGIN` ou `NEXT_PUBLIC_API_BASE` em runtime. Evita `API_INTERNAL_URL=127.0.0.1` herdado do Docker.
  */
 function internalApiOrigin(): string | null {
   const explicit = (
@@ -45,7 +54,11 @@ function internalApiOrigin(): string | null {
   ).trim();
   if (explicit) {
     const o = httpOriginOnly(explicit);
-    if (o) return o;
+    if (o) {
+      const allowLoop =
+        process.env.NODE_ENV === 'development' || process.env.BFF_ALLOW_LOOPBACK === '1';
+      if (!isLoopbackOrigin(o) || allowLoop) return o;
+    }
   }
 
   const pub = readNextPublicApiBaseRuntime();
@@ -54,7 +67,6 @@ function internalApiOrigin(): string | null {
     if (o) return o;
   }
 
-  // Só localhost em `next dev`; em Docker/staging NODE_ENV muitas vezes ≠ "production" e quebrava antes.
   if (process.env.NODE_ENV === 'development') return 'http://127.0.0.1:3001';
   return null;
 }
