@@ -4,7 +4,7 @@
 
 O Nixpacks na **raiz** do repo não detecta Next.js (o app está em `apps/web`). Use **Dockerfile** em vez de Nixpacks automático.
 
-**Opção A — recomendada no Coolify** (evita erro `package-lock.json` / `apps` not found quando o contexto não é a raiz do repo):
+**Coolify (recomendado)** — contexto só em `apps/web` (evita `package-lock.json` / `apps` not found na raiz):
 
 | Campo | Valor |
 |--------|--------|
@@ -12,13 +12,7 @@ O Nixpacks na **raiz** do repo não detecta Next.js (o app está em `apps/web`).
 | **Dockerfile** | `Dockerfile` |
 | **Context** | `apps/web` (ou deixe igual ao base directory) |
 
-**Opção B — contexto na raiz do monorepo** (precisa de `package-lock.json` e pasta `apps/` no contexto):
-
-| Campo | Valor |
-|--------|--------|
-| **Base Directory** | `.` (vazio / raiz do repo) |
-| **Dockerfile** | `apps/web/Dockerfile.monorepo` |
-| **Context** | `.` |
+Na CLI, a partir da raiz do repo: `docker build -f apps/web/Dockerfile ./apps/web` (equivalente).
 
 **Build argument:** `API_INTERNAL_URL` — URL que o servidor Next usa para encaminhar `/backend/*` à API (ex.: `http://api:3001` com o hostname **interno** do serviço da API no Coolify). Passe também em **runtime** se quiser alinhar com o build.
 

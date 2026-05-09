@@ -7,8 +7,7 @@
 #
 # Build arg: URL interna da API para o rewrite `/backend/*` (ex.: http://api:3001)
 #
-# Se preferir contexto na RAIZ do monorepo, use em vez deste arquivo:
-#   apps/web/Dockerfile.monorepo (ver repositório) — ou `docker build -f ...` com contexto `.`
+# Build na raiz do repo: docker build -f apps/web/Dockerfile ./apps/web
 
 FROM node:20-bookworm-slim AS builder
 WORKDIR /app
