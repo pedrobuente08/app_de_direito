@@ -9,33 +9,54 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * `NEXT_PUBLIC_*` é substituído no build; em Docker sem ARG fica `undefined` no servidor.
- * Acesso dinâmico lê o valor injetado em runtime (Coolify) no container.
+ * `NEXT_PUBLIC_*` pode ser substituído no build do servidor; tentamos chaves dinâmicas + Reflect.
  */
 function readNextPublicApiBaseRuntime(): string {
-  const k = 'NEXT_PUBLIC_' + 'API_BASE';
-  return String(process.env[k] ?? '').trim();
+  const env = process.env as Record<string, string | undefined>;
+  const splitKey = 'NEXT_PUBLIC_' + 'API_BASE';
+  const v =
+    Reflect.get(env, 'NEXT_PUBLIC_API_BASE') ??
+    env[splitKey] ??
+    '';
+  return String(v).trim();
+}
+
+/** Só scheme+host+port. `https://host/api` → `https://host` (o BFF acrescenta `/api/...`). */
+function httpOriginOnly(raw: string): string | null {
+  const s = raw.trim();
+  if (!s.startsWith('http://') && !s.startsWith('https://')) return null;
+  try {
+    return new URL(s).origin;
+  } catch {
+    return null;
+  }
 }
 
 /**
  * URL base do Nest vista **pelo servidor Next** (fetch no route handler).
- * Em produção: defina `API_INTERNAL_URL` (recomendado) ou garanta `NEXT_PUBLIC_API_BASE` https no **runtime**.
+ * Coolify: defina `SERVER_API_ORIGIN` ou `API_INTERNAL_URL` (não sofre inlining no build).
  */
 function internalApiOrigin(): string | null {
-  const explicit = (process.env.API_INTERNAL_URL || process.env.INTERNAL_API_URL || '').trim();
-  if (explicit) return explicit.replace(/\/$/, '');
+  const explicit = (
+    process.env.SERVER_API_ORIGIN ||
+    process.env.API_INTERNAL_URL ||
+    process.env.INTERNAL_API_URL ||
+    ''
+  ).trim();
+  if (explicit) {
+    const o = httpOriginOnly(explicit);
+    if (o) return o;
+  }
 
   const pub = readNextPublicApiBaseRuntime();
   if (pub.startsWith('http://') || pub.startsWith('https://')) {
-    try {
-      return new URL(pub).origin.replace(/\/$/, '');
-    } catch {
-      /* inválido */
-    }
+    const o = httpOriginOnly(pub);
+    if (o) return o;
   }
 
-  if (process.env.NODE_ENV === 'production') return null;
-  return 'http://127.0.0.1:3001';
+  // Só localhost em `next dev`; em Docker/staging NODE_ENV muitas vezes ≠ "production" e quebrava antes.
+  if (process.env.NODE_ENV === 'development') return 'http://127.0.0.1:3001';
+  return null;
 }
 
 async function proxy(req: NextRequest, pathSegments: string[]): Promise<NextResponse> {
@@ -45,8 +66,8 @@ async function proxy(req: NextRequest, pathSegments: string[]): Promise<NextResp
       {
         statusCode: 503,
         message:
-          'BFF sem destino: no serviço Next defina API_INTERNAL_URL (ex.: https://api.seudominio.com ou http://api:3001) ' +
-          'ou NEXT_PUBLIC_API_BASE com URL https no runtime do container (não só no build).',
+          'BFF sem destino: no serviço Next defina SERVER_API_ORIGIN ou API_INTERNAL_URL (ex.: https://api.seudominio.com — pode incluir /api no path) ' +
+          'ou NEXT_PUBLIC_API_BASE=https://... em runtime.',
       },
       { status: 503 },
     );
