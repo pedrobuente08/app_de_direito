@@ -15,8 +15,10 @@ const tracingRoot =
 const nextConfig = {
   /** Imagem Docker menor + deploy Coolify/VPS. */
   output: 'standalone',
-  /** Monorepo local: raiz do repo. Imagem só-web: pasta do app (`DOCKER_WEB_STANDALONE=1`). */
-  outputFileTracingRoot: tracingRoot,
+  /** Next 14.2: chave fica em `experimental` (evita aviso “Unrecognized key”). */
+  experimental: {
+    outputFileTracingRoot: tracingRoot,
+  },
 
   async rewrites() {
     return [
