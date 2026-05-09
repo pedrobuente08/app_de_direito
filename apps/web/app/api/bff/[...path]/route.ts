@@ -9,28 +9,51 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * URL base do Nest vista **pelo servidor Next** (fetch no route handler).
- * Preferir rede interna (Coolify); se não existir, reutiliza o origin de `NEXT_PUBLIC_API_BASE`.
+ * `NEXT_PUBLIC_*` é substituído no build; em Docker sem ARG fica `undefined` no servidor.
+ * Acesso dinâmico lê o valor injetado em runtime (Coolify) no container.
  */
-function internalApiOrigin(): string {
+function readNextPublicApiBaseRuntime(): string {
+  const k = 'NEXT_PUBLIC_' + 'API_BASE';
+  return String(process.env[k] ?? '').trim();
+}
+
+/**
+ * URL base do Nest vista **pelo servidor Next** (fetch no route handler).
+ * Em produção: defina `API_INTERNAL_URL` (recomendado) ou garanta `NEXT_PUBLIC_API_BASE` https no **runtime**.
+ */
+function internalApiOrigin(): string | null {
   const explicit = (process.env.API_INTERNAL_URL || process.env.INTERNAL_API_URL || '').trim();
   if (explicit) return explicit.replace(/\/$/, '');
 
-  const pub = process.env.NEXT_PUBLIC_API_BASE?.trim() || '';
+  const pub = readNextPublicApiBaseRuntime();
   if (pub.startsWith('http://') || pub.startsWith('https://')) {
     try {
       return new URL(pub).origin.replace(/\/$/, '');
     } catch {
-      /* segue para default local */
+      /* inválido */
     }
   }
 
+  if (process.env.NODE_ENV === 'production') return null;
   return 'http://127.0.0.1:3001';
 }
 
 async function proxy(req: NextRequest, pathSegments: string[]): Promise<NextResponse> {
+  const origin = internalApiOrigin();
+  if (!origin) {
+    return NextResponse.json(
+      {
+        statusCode: 503,
+        message:
+          'BFF sem destino: no serviço Next defina API_INTERNAL_URL (ex.: https://api.seudominio.com ou http://api:3001) ' +
+          'ou NEXT_PUBLIC_API_BASE com URL https no runtime do container (não só no build).',
+      },
+      { status: 503 },
+    );
+  }
+
   const pathPart = pathSegments.map(encodeURIComponent).join('/');
-  const target = `${internalApiOrigin()}/api/${pathPart}${req.nextUrl.search}`;
+  const target = `${origin}/api/${pathPart}${req.nextUrl.search}`;
 
   const h = new Headers();
   const forwardNames = [
