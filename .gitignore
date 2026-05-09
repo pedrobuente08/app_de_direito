@@ -7,3 +7,5 @@ dist/
 *.log
 coverage/
 .drizzle/
+__pycache__/
+*.py[cod]

@@ -1,0 +1,13 @@
+# Build Docker do front (contexto = raiz do monorepo)
+node_modules
+**/node_modules
+**/.next
+.git
+.env
+.env.*
+**/.env
+**/.env.*
+skill/.venv
+**/__pycache__
+*.pyc
+.DS_Store
