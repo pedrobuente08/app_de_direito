@@ -24,21 +24,35 @@ import type {
 } from '@/lib/types'
 
 /**
- * Base das chamadas à API Nest (`/api/*`).
- * Use `/backend` no mesmo domínio do Next (rewrite em `next.config.mjs`) ou URL absoluta **com** sufixo `/api` se a API for outro host (ex.: `https://api.exemplo.com/api`).
- * `??` não cobre string vazia — variável vazia no Coolify gerava `POST /auth/login` no Next → "Cannot POST /auth/login".
+ * Base das chamadas à API Nest (`/api/*` no upstream).
+ *
+ * - `/backend` ou vazio: rewrite no `next.config.mjs` (mesmo domínio do Next).
+ * - URL absoluta **de outro host** no browser: usa `/api/bff` (Route Handler repassa ao Nest e
+ *   devolve `Set-Cookie` no domínio do front — necessário para login/middleware com API em outro subdomínio).
  */
 function resolveApiBase(): string {
   const raw = process.env.NEXT_PUBLIC_API_BASE?.trim()
-  if (raw) return raw.replace(/\/$/, '')
+  const normalized = raw ? raw.replace(/\/$/, '') : ''
+
+  if (typeof window !== 'undefined' && normalized) {
+    if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+      try {
+        if (new URL(normalized).origin !== window.location.origin) {
+          return '/api/bff'
+        }
+      } catch {
+        /* URL inválida */
+      }
+    }
+  }
+
+  if (normalized) return normalized
   return '/backend'
 }
 
-const base = resolveApiBase()
-
 export function apiUrl(path: string): string {
   const p = path.startsWith('/') ? path : `/${path}`
-  return `${base}${p}`
+  return `${resolveApiBase()}${p}`
 }
 
 export type LoginResponse = {

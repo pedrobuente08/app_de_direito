@@ -1,12 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { loginRequest } from '@/lib/api';
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const senhaAlterada = searchParams.get('senhaAlterada') === '1';
   const [email, setEmail] = useState('admin@seed.conectar.local');
@@ -21,8 +20,8 @@ export function LoginForm() {
     try {
       await loginRequest(email, senha);
       const dest = searchParams.get('from') ?? '/intimacoes';
-      router.replace(dest);
-      router.refresh();
+      // Navegação completa: garante que cookies da sessão (Set-Cookie) sejam enviados na próxima rota (middleware).
+      window.location.assign(dest.startsWith('/') ? dest : `/${dest}`);
     } catch (err) {
       setErro(err instanceof Error ? err.message : 'Erro ao entrar.');
     } finally {

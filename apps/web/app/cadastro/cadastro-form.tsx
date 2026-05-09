@@ -1,12 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { cadastroEscritorioRequest } from '@/lib/api';
 
 export function CadastroEscritorioForm() {
-  const router = useRouter();
   const [nomeEscritorio, setNomeEscritorio] = useState('');
   const [cnpj, setCnpj] = useState('');
   const [nomeAdmin, setNomeAdmin] = useState('');
@@ -36,8 +34,7 @@ export function CadastroEscritorioForm() {
         email: email.trim(),
         senha,
       });
-      router.replace('/intimacoes');
-      router.refresh();
+      window.location.assign('/intimacoes');
     } catch (err) {
       setErro(err instanceof Error ? err.message : 'Erro ao cadastrar.');
     } finally {
