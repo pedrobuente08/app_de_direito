@@ -6,19 +6,23 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const apiOrigin = process.env.API_INTERNAL_URL ?? 'http://127.0.0.1:3001';
 
-/** Build Docker com contexto só em `apps/web` (Coolify “Base Directory” = web). */
-const tracingRoot =
-  process.env.DOCKER_WEB_STANDALONE === '1'
-    ? __dirname
-    : path.join(__dirname, '../..');
+/**
+ * Monorepo (`npm run build -w web`): rastrear a partir da raiz do repo.
+ * Build só em `apps/web` (Docker): **não** definir `outputFileTracingRoot` — se apontar só para
+ * `apps/web`, o bundle standalone pode sair sem `node_modules` (server quebra no container).
+ */
+const isDockerWebOnly = process.env.DOCKER_WEB_STANDALONE === '1';
 
 const nextConfig = {
   /** Imagem Docker menor + deploy Coolify/VPS. */
   output: 'standalone',
-  /** Next 14.2: chave fica em `experimental` (evita aviso “Unrecognized key”). */
-  experimental: {
-    outputFileTracingRoot: tracingRoot,
-  },
+  ...(!isDockerWebOnly
+    ? {
+        experimental: {
+          outputFileTracingRoot: path.join(__dirname, '../..'),
+        },
+      }
+    : {}),
 
   async rewrites() {
     return [
