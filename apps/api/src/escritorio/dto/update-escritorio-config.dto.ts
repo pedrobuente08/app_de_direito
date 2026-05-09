@@ -1,4 +1,28 @@
-import { IsArray, IsObject, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsObject,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+
+export class DropdownsProcessoDto {
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  situacao?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  sentenca?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  fase_atual?: string[];
+}
 
 /**
  * Campos opcionais do `escritorio.config` (merge parcial em `PATCH /config`).
@@ -25,6 +49,11 @@ export class UpdateEscritorioConfigDto {
   @IsOptional()
   @IsString()
   situacao_inicial?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DropdownsProcessoDto)
+  dropdowns_processo?: DropdownsProcessoDto;
 
   @IsOptional()
   @IsString()

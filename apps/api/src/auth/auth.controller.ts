@@ -1,8 +1,10 @@
-import { Body, Controller, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { ThrottlePresets } from '../common/throttle-presets';
 import { Public } from '../common/metadata';
+import type { AuthUser } from '../common/decorators/current-user.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AuthService } from './auth.service';
 import { CadastroEscritorioDto } from './dto/cadastro-escritorio.dto';
 import { LoginDto } from './dto/login.dto';
@@ -13,6 +15,12 @@ import { COOKIE_REFRESH } from '../common/constants';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
+
+  /** Usuário autenticado (JWT). Útil para UI: perfil, modo leitura, etc. */
+  @Get('me')
+  me(@CurrentUser() user: AuthUser) {
+    return user;
+  }
 
   @Public()
   @Throttle(ThrottlePresets.authLogin)

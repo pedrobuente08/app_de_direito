@@ -1,7 +1,13 @@
 'use client'
 
+import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
-import { atualizarProcedente, getProcedentes } from '@/lib/api'
+import {
+  atualizarProcedente,
+  getAuthMe,
+  getProcedentes,
+  sincronizarProcedentesEmFalta,
+} from '@/lib/api'
 import { ToastContainer, useToast } from '@/lib/toast'
 import type { Procedente } from '@/lib/types'
 
@@ -52,7 +58,15 @@ export default function ProcedentesPage() {
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ familiaSituacao: '', situacao: '', responsavel: '', obsCurta: '', valorRecebido: '', dataRecebimento: '' })
   const [saving, setSaving] = useState(false)
+  const [readOnly, setReadOnly] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const toast = useToast()
+
+  useEffect(() => {
+    getAuthMe()
+      .then((me) => setReadOnly(me.perfil === 'leitura'))
+      .catch(() => setReadOnly(false))
+  }, [])
 
   async function load() {
     setLoading(true)
@@ -71,6 +85,23 @@ export default function ProcedentesPage() {
   function startEdit(p: Procedente) {
     setEditandoId(p.processoId)
     setEditForm(formFromProcedente(p))
+  }
+
+  async function handleSincronizarFalta() {
+    setSyncing(true)
+    try {
+      const { criadas } = await sincronizarProcedentesEmFalta()
+      if (criadas === 0) {
+        toast.success('Nenhuma linha em falta — funil já está alinhado.')
+      } else {
+        toast.success(`${criadas} linha(s) do funil criada(s).`)
+      }
+      load()
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setSyncing(false)
+    }
   }
 
   async function handleSalvar(e: React.FormEvent, processoId: string) {
@@ -97,8 +128,30 @@ export default function ProcedentesPage() {
 
   return (
     <div className="animate-fade-in-up">
-      <div className="mb-5 flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Procedentes</h1>
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Procedentes</h1>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--color-text-secondary)]">
+            Novos itens entram quando o processo tem sentença{' '}
+            <strong className="font-medium text-[var(--color-text-primary)]">Procedente</strong>,{' '}
+            <strong className="font-medium text-[var(--color-text-primary)]">Parcial</strong> ou{' '}
+            <strong className="font-medium text-[var(--color-text-primary)]">Acordo</strong> — altere em{' '}
+            <Link href="/intimacoes" className="text-[var(--color-brand)] hover:underline">
+              Intimações
+            </Link>
+            . Use o botão ao lado só se já existir sentença assim e faltar a linha do funil (importação ou migração).
+          </p>
+        </div>
+        {!readOnly && (
+          <button
+            type="button"
+            disabled={syncing || loading}
+            onClick={handleSincronizarFalta}
+            className="shrink-0 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] disabled:opacity-50"
+          >
+            {syncing ? 'Sincronizando…' : 'Gerar linhas em falta'}
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -109,7 +162,13 @@ export default function ProcedentesPage() {
         </div>
       ) : procedentes.length === 0 ? (
         <div className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-6 py-12 text-center text-sm text-[var(--color-text-secondary)]">
-          Nenhum processo procedente.
+          <p>Nenhum processo com sentença procedente / parcial / acordo.</p>
+          <p className="mt-2">
+            <Link href="/intimacoes" className="font-medium text-[var(--color-brand)] hover:underline">
+              Abrir Intimações
+            </Link>{' '}
+            para ajustar a coluna Sentença.
+          </p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)]">
@@ -147,10 +206,19 @@ export default function ProcedentesPage() {
                       {p.dataRecebimento && <p>{p.dataRecebimento.slice(8, 10)}/{p.dataRecebimento.slice(5, 7)}/{p.dataRecebimento.slice(0, 4)}</p>}
                     </td>
                     <td className="px-4 py-2.5 text-right">
-                      <button onClick={() => editandoId === p.processoId ? setEditandoId(null) : startEdit(p)}
-                        className="text-xs text-[var(--color-brand)] hover:underline">
-                        {editandoId === p.processoId ? 'Fechar' : 'Editar'}
-                      </button>
+                      {!readOnly ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            editandoId === p.processoId ? setEditandoId(null) : startEdit(p)
+                          }
+                          className="text-xs text-[var(--color-brand)] hover:underline"
+                        >
+                          {editandoId === p.processoId ? 'Fechar' : 'Editar'}
+                        </button>
+                      ) : (
+                        <span className="text-xs text-[var(--color-text-tertiary)]">—</span>
+                      )}
                     </td>
                   </tr>
 

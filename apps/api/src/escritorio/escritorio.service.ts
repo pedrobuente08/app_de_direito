@@ -70,6 +70,14 @@ export class EscritorioService {
       ...(dto.situacao_inicial !== undefined
         ? { situacao_inicial: dto.situacao_inicial }
         : {}),
+      ...(dto.dropdowns_processo !== undefined
+        ? {
+            dropdowns_processo: {
+              ...(prev.dropdowns_processo ?? {}),
+              ...dto.dropdowns_processo,
+            },
+          }
+        : {}),
     };
 
     if (

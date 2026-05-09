@@ -8,6 +8,7 @@ import { loginRequest } from '@/lib/api';
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const senhaAlterada = searchParams.get('senhaAlterada') === '1';
   const [email, setEmail] = useState('admin@seed.conectar.local');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState<string | null>(null);
@@ -37,6 +38,15 @@ export function LoginForm() {
       <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
         Entre com o e-mail do escritório.
       </p>
+
+      {senhaAlterada ? (
+        <p
+          role="status"
+          className="mt-4 rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm text-[var(--color-text-secondary)]"
+        >
+          Senha alterada com sucesso. Entre com a nova senha.
+        </p>
+      ) : null}
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <div>

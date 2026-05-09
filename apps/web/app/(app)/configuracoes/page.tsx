@@ -367,6 +367,9 @@ export default function ConfiguracoesPage() {
   const [materiasRaw, setMateriasRaw] = useState('')
   const [faseInicial, setFaseInicial] = useState('')
   const [situacaoInicial, setSituacaoInicial] = useState('')
+  const [ddSituacao, setDdSituacao] = useState('')
+  const [ddSentenca, setDdSentenca] = useState('')
+  const [ddFase, setDdFase] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -381,6 +384,9 @@ export default function ConfiguracoesPage() {
         setMateriasRaw((cfg.materias_validas ?? []).join('\n'))
         setFaseInicial(cfg.fase_inicial ?? '')
         setSituacaoInicial(cfg.situacao_inicial ?? '')
+        setDdSituacao((cfg.dropdowns_processo?.situacao ?? []).join('\n'))
+        setDdSentenca((cfg.dropdowns_processo?.sentenca ?? []).join('\n'))
+        setDdFase((cfg.dropdowns_processo?.fase_atual ?? []).join('\n'))
       } catch (e) {
         setError((e as Error).message)
       } finally {
@@ -403,6 +409,20 @@ export default function ConfiguracoesPage() {
           .filter(Boolean),
         fase_inicial: faseInicial,
         situacao_inicial: situacaoInicial,
+        dropdowns_processo: {
+          situacao: ddSituacao
+            .split('\n')
+            .map((s) => s.trim())
+            .filter(Boolean),
+          sentenca: ddSentenca
+            .split('\n')
+            .map((s) => s.trim())
+            .filter(Boolean),
+          fase_atual: ddFase
+            .split('\n')
+            .map((s) => s.trim())
+            .filter(Boolean),
+        },
       })
       toast.success('Configurações salvas.')
     } catch (e) {
@@ -476,6 +496,52 @@ export default function ConfiguracoesPage() {
             placeholder={'NEGATIVAÇÃO\nCONTA CANCELADA\nEMBASA'}
             className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
           />
+        </section>
+
+        <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
+          <div className="mb-3">
+            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+              Dropdowns — Intimações
+            </h2>
+            <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+              Uma opção por linha. Se houver ao menos uma entrada, a coluna correspondente na grade passa a usar lista em vez de texto livre.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+              Situação
+              <textarea
+                rows={6}
+                value={ddSituacao}
+                onChange={(e) => setDdSituacao(e.target.value)}
+                placeholder={'ATIVO\nARQUIVADO'}
+                className="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+              Sentença (extras na lista)
+              <textarea
+                rows={6}
+                value={ddSentenca}
+                onChange={(e) => setDdSentenca(e.target.value)}
+                placeholder={'EX.: EXTINTO_SEM_JULGAMENTO_MERITO'}
+                className="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
+              />
+              <span className="text-[10px] leading-snug text-[var(--color-text-tertiary)]">
+                A grade Intimações já traz opções padrão (Procedente, Improcedente, Parcial, Acordo…). Use este campo só para mais valores ou siglas do seu escritório.
+              </span>
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+              Fase atual
+              <textarea
+                rows={6}
+                value={ddFase}
+                onChange={(e) => setDdFase(e.target.value)}
+                placeholder={'AUDIÊNCIA AGENDADA\nREVELIA DECRETADA'}
+                className="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
+              />
+            </label>
+          </div>
         </section>
 
         <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">

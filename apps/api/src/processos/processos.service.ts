@@ -310,6 +310,19 @@ export class ProcessosService {
 
     const atualizado = await this.obterPorId(escritorioId, id);
     await this.syncProcedenteSeNecessario(escritorioId, atualizado);
+
+    if (
+      dto.dataAudiencia !== undefined ||
+      dto.horaAudiencia !== undefined ||
+      dto.tipoAudiencia !== undefined
+    ) {
+      await this.audiencias.sincronizarDaExtracaoPdf(escritorioId, id, {
+        dataAudiencia: atualizado.dataAudiencia,
+        horaAudiencia: atualizado.horaAudiencia,
+        tipoAudiencia: atualizado.tipoAudiencia,
+      });
+    }
+
     return atualizado;
   }
 

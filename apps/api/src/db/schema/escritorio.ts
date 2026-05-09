@@ -16,12 +16,21 @@ export type ComunicaDigestConfig = {
   dias?: number;
 };
 
+/** Listas opcionais para dropdowns na grid de processos (Intimações). */
+export type DropdownsProcessoConfig = {
+  situacao?: string[];
+  sentenca?: string[];
+  fase_atual?: string[];
+};
+
 export type EscritorioConfig = {
   mapa_comarcas?: Record<string, string>;
   login_map?: Record<string, string>;
   materias_validas?: string[];
   fase_inicial?: string;
   situacao_inicial?: string;
+  /** Opções de edição rápida na web (uma lista por campo). */
+  dropdowns_processo?: DropdownsProcessoConfig;
   comunica_regras?: Record<string, unknown>;
   /** Token opcional para validar `POST /comunicacoes/webhook`. */
   comunica_webhook_token?: string;

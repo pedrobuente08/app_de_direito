@@ -9,10 +9,12 @@ import type {
   EscritorioConfig,
   ExtracaoPendente,
   ExtracaoPendenteDetalhe,
+  AuthMe,
   ImportResult,
   OabEscuta,
   Pendencia,
   Procedente,
+  PatchProcessoPayload,
   Processo,
   ProcessoCampos,
   ProcessosListResponse,
@@ -93,6 +95,32 @@ export async function logoutRequest(): Promise<void> {
   await apiFetch<void>('/auth/logout', { method: 'POST' })
 }
 
+export async function getAuthMe(): Promise<AuthMe> {
+  return apiFetch<AuthMe>('/auth/me')
+}
+
+/** Solicita e-mail com link para `/redefinir-senha?token=…` (resposta genérica por segurança). */
+export async function recuperarSenhaRequest(
+  email: string,
+): Promise<{ ok: boolean; message?: string }> {
+  return apiFetch<{ ok: boolean; message?: string }>('/auth/recuperar-senha', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim() }),
+  })
+}
+
+export async function redefinirSenhaRequest(
+  token: string,
+  novaSenha: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch<{ ok: boolean }>('/auth/redefinir-senha', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: token.trim(), novaSenha }),
+  })
+}
+
 // ─── Processos ───────────────────────────────────────────────────────────────
 
 function processosQueryString(
@@ -118,6 +146,17 @@ export async function getProcessos(
   return apiFetch<ProcessosListResponse>(
     `/processos${processosQueryString(query)}`,
   )
+}
+
+export async function patchProcesso(
+  id: string,
+  payload: PatchProcessoPayload,
+): Promise<Processo> {
+  return apiFetch<Processo>(`/processos/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
 }
 
 export async function uploadPdf(file: File): Promise<UploadPdfResult> {
@@ -270,19 +309,18 @@ export async function adicionarAliasReu(reuId: string, alias: string): Promise<R
 // ─── Escritório ───────────────────────────────────────────────────────────────
 
 export async function getEscritorioConfig(): Promise<EscritorioConfig> {
-  const perfil = await apiFetch<{ config: EscritorioConfig }>('/config')
+  const perfil = await apiFetch<{ config?: EscritorioConfig | null }>('/config')
   return (perfil.config ?? {}) as EscritorioConfig
 }
 
 export async function salvarEscritorioConfig(
   payload: Partial<EscritorioConfig>,
 ): Promise<EscritorioConfig> {
-  const perfil = await apiFetch<{ config: EscritorioConfig }>('/config', {
+  return apiFetch<EscritorioConfig>('/config', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-  return (perfil.config ?? {}) as EscritorioConfig
 }
 
 // ─── Pendências ───────────────────────────────────────────────────────────────
@@ -368,6 +406,15 @@ export async function atualizarProcedente(
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+  })
+}
+
+/** Processos com sentença procedente/parcial/acordo mas sem linha no funil — cria as linhas. */
+export async function sincronizarProcedentesEmFalta(): Promise<{ criadas: number }> {
+  return apiFetch<{ criadas: number }>('/procedentes/sincronizar-em-falta', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
   })
 }
 

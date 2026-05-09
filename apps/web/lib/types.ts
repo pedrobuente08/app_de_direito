@@ -1,24 +1,67 @@
+/** Linha de processo (INTIMAÇÕES) — alinhado ao JSON da API (camelCase). */
 export type Processo = {
   id: string
   numero: string
-  clienteNome: string
-  clienteCpf?: string
-  reuTexto: string
-  vara: string
-  comarca?: string
-  sistema?: string
-  dataDistribuicao?: string
-  dataAudiencia?: string
-  horaAudiencia?: string
-  tipoAudiencia?: string
-  materia?: string
-  login?: string
-  fase?: string
-  situacao?: string
-  sentenca?: string
+  escritorioId?: string
+  clienteNome?: string | null
+  clienteCpf?: string | null
+  reuId?: string | null
+  reuTexto?: string | null
+  vara?: string | null
+  materia?: string | null
+  sistema?: string | null
+  login?: string | null
+  dataDistribuicao?: string | null
+  dataAudiencia?: string | null
+  horaAudiencia?: string | null
+  tipoAudiencia?: string | null
+  situacao?: string | null
+  faseAtual?: string | null
+  dataSentenca?: string | null
+  sentenca?: string | null
+  valorSentenca?: string | null
+  recurso?: string | null
+  turma?: string | null
+  acordao?: string | null
+  situacaoFinal?: string | null
+  telefone?: string | null
+  statusAudiencia?: string | null
+  ultimaMovimentacaoDt?: string | null
+  ultimaMovimentacaoTipo?: string | null
   requerConferencia: boolean
   createdAt: string
+  updatedAt?: string
 }
+
+/** Corpo de PATCH /processos/:id (campos opcionais). */
+export type PatchProcessoPayload = Partial<{
+  login: string | null
+  clienteNome: string | null
+  clienteCpf: string | null
+  reuId: string | null
+  reuTexto: string | null
+  materia: string | null
+  sistema: string | null
+  vara: string | null
+  dataDistribuicao: string | null
+  dataAudiencia: string | null
+  horaAudiencia: string | null
+  tipoAudiencia: string | null
+  situacao: string | null
+  faseAtual: string | null
+  dataSentenca: string | null
+  sentenca: string | null
+  valorSentenca: string | null
+  recurso: string | null
+  turma: string | null
+  acordao: string | null
+  situacaoFinal: string | null
+  telefone: string | null
+  statusAudiencia: string | null
+  ultimaMovimentacaoDt: string | null
+  ultimaMovimentacaoTipo: string | null
+  requerConferencia: boolean
+}>
 
 export type ProcessoCampos = {
   numero: string
@@ -84,12 +127,27 @@ export type Reu = {
   createdAt: string
 }
 
+/** Opções de dropdown na grid Intimações (Configurações → salvar). */
+export type DropdownsProcessoConfig = {
+  situacao?: string[]
+  sentenca?: string[]
+  fase_atual?: string[]
+}
+
 export type EscritorioConfig = {
-  mapa_comarcas: Record<string, string>
-  login_map: Record<string, string>
-  materias_validas: string[]
-  fase_inicial: string
-  situacao_inicial: string
+  mapa_comarcas?: Record<string, string>
+  login_map?: Record<string, string>
+  materias_validas?: string[]
+  fase_inicial?: string
+  situacao_inicial?: string
+  dropdowns_processo?: DropdownsProcessoConfig
+}
+
+export type AuthMe = {
+  userId: string
+  escritorioId: string
+  perfil: string
+  email: string
 }
 
 export type ProcessosListMeta = {

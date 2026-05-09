@@ -1,14 +1,33 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
-import { getProcessos, uploadPdf } from '@/lib/api'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { getAuthMe, getEscritorioConfig, getProcessos, uploadPdf } from '@/lib/api'
 import { ToastContainer, useToast } from '@/lib/toast'
-import type { Processo, UploadPdfResult } from '@/lib/types'
+import type {
+  DropdownsProcessoConfig,
+  Processo,
+  ProcessosListMeta,
+  UploadPdfResult,
+} from '@/lib/types'
+import { ProcessosGrid } from './_components/processos-grid'
 import { ReuNormalizacao } from './_components/reu-normalizacao'
+
+const PAGE_SIZE = 50
+
+const SORT_OPTIONS = [
+  { value: 'createdAt', label: 'Cadastro' },
+  { value: 'updatedAt', label: 'Atualização' },
+  { value: 'numero', label: 'Número' },
+  { value: 'vara', label: 'Vara' },
+  { value: 'materia', label: 'Matéria' },
+  { value: 'sistema', label: 'Sistema' },
+  { value: 'clienteNome', label: 'Cliente' },
+] as const
 
 export default function IntimacoesPage() {
   const [processos, setProcessos] = useState<Processo[]>([])
+  const [meta, setMeta] = useState<ProcessosListMeta | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -16,22 +35,76 @@ export default function IntimacoesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
 
-  async function load() {
+  const [draftNumero, setDraftNumero] = useState('')
+  const [draftCliente, setDraftCliente] = useState('')
+  const [draftVara, setDraftVara] = useState('')
+  const [appliedNumero, setAppliedNumero] = useState('')
+  const [appliedCliente, setAppliedCliente] = useState('')
+  const [appliedVara, setAppliedVara] = useState('')
+  const [sortField, setSortField] = useState<(typeof SORT_OPTIONS)[number]['value']>('createdAt')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [page, setPage] = useState(1)
+
+  const [readOnly, setReadOnly] = useState(false)
+  const [dropdowns, setDropdowns] = useState<DropdownsProcessoConfig | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadSession() {
+      try {
+        const [me, cfg] = await Promise.all([getAuthMe(), getEscritorioConfig()])
+        if (cancelled) return
+        setReadOnly(me.perfil === 'leitura')
+        setDropdowns(cfg.dropdowns_processo ?? null)
+      } catch {
+        if (!cancelled) {
+          setReadOnly(false)
+          setDropdowns(null)
+        }
+      }
+    }
+    loadSession()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const { data } = await getProcessos()
+      const { data, meta: m } = await getProcessos({
+        limit: PAGE_SIZE,
+        page,
+        sort: sortField,
+        order: sortOrder,
+        ...(appliedNumero.trim() && { numero: appliedNumero.trim() }),
+        ...(appliedCliente.trim() && { clienteNome: appliedCliente.trim() }),
+        ...(appliedVara.trim() && { vara: appliedVara.trim() }),
+      })
       setProcessos(data)
+      setMeta(m)
     } catch (e) {
       setError((e as Error).message)
     } finally {
       setLoading(false)
     }
-  }
+  }, [appliedNumero, appliedCliente, appliedVara, sortField, sortOrder, page])
 
   useEffect(() => {
     load()
+  }, [load])
+
+  const onRowUpdated = useCallback((row: Processo) => {
+    setProcessos((prev) => prev.map((p) => (p.id === row.id ? row : p)))
   }, [])
+
+  function aplicarFiltros() {
+    setAppliedNumero(draftNumero)
+    setAppliedCliente(draftCliente)
+    setAppliedVara(draftVara)
+    setPage(1)
+  }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -60,49 +133,145 @@ export default function IntimacoesPage() {
     }
   }
 
+  const totalPages = meta?.totalPages ?? 1
+
   return (
     <div className="animate-fade-in-up">
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Intimações</h1>
         <div className="flex items-center gap-3">
+          {readOnly && (
+            <span className="text-xs text-[var(--color-text-secondary)]">Somente leitura</span>
+          )}
           {uploading && (
             <span className="text-sm text-[var(--color-text-secondary)]">Processando…</span>
           )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf"
-            className="hidden"
-            onChange={handleFile}
-            disabled={uploading}
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-50"
-          >
-            Enviar PDF
-          </button>
+          {!readOnly && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                className="hidden"
+                onChange={handleFile}
+                disabled={uploading}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-50"
+              >
+                Enviar PDF
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      <ReuNormalizacao processos={processos} onNormalized={load} />
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
+        <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+          Nº processo
+          <input
+            value={draftNumero}
+            onChange={(e) => setDraftNumero(e.target.value)}
+            placeholder="Contém…"
+            className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+          />
+        </label>
+        <label className="flex min-w-[140px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+          Cliente
+          <input
+            value={draftCliente}
+            onChange={(e) => setDraftCliente(e.target.value)}
+            placeholder="Nome…"
+            className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+          />
+        </label>
+        <label className="flex min-w-[120px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+          Vara
+          <input
+            value={draftVara}
+            onChange={(e) => setDraftVara(e.target.value)}
+            placeholder="Contém…"
+            className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+          Ordenar por
+          <select
+            value={sortField}
+            onChange={(e) => {
+              setSortField(e.target.value as (typeof SORT_OPTIONS)[number]['value'])
+              setPage(1)
+            }}
+            className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+          Direção
+          <select
+            value={sortOrder}
+            onChange={(e) => {
+              setSortOrder(e.target.value as 'asc' | 'desc')
+              setPage(1)
+            }}
+            className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+          >
+            <option value="desc">Decrescente</option>
+            <option value="asc">Crescente</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          onClick={aplicarFiltros}
+          disabled={loading}
+          className="rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-50"
+        >
+          Aplicar filtros
+        </button>
+        <button
+          type="button"
+          onClick={() => load()}
+          disabled={loading}
+          className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] disabled:opacity-50"
+        >
+          Atualizar lista
+        </button>
+      </div>
+
+      {!readOnly && <ReuNormalizacao processos={processos} onNormalized={load} />}
 
       {uploadResult &&
         'ok' in uploadResult &&
         !uploadResult.ok && (
-        <div className="mb-4 flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--urgencia-atencao-border)] bg-[var(--urgencia-atencao-bg)] px-4 py-3 text-sm">
-          <span className="text-[var(--urgencia-atencao-text)]">
-            Extração com baixa confiança — revisão manual necessária.
-          </span>
-          <Link
-            href={`/revisoes/${uploadResult.extracaoPendenteId}`}
-            className="ml-auto shrink-0 font-medium text-[var(--color-brand)] hover:underline"
-          >
-            Revisar agora →
-          </Link>
-        </div>
-      )}
+          <div className="mb-4 flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--urgencia-atencao-border)] bg-[var(--urgencia-atencao-bg)] px-4 py-3 text-sm">
+            <span className="text-[var(--urgencia-atencao-text)]">
+              Extração com baixa confiança — revisão manual necessária.
+            </span>
+            <Link
+              href={`/revisoes/${uploadResult.extracaoPendenteId}`}
+              className="ml-auto shrink-0 font-medium text-[var(--color-brand)] hover:underline"
+            >
+              Revisar agora →
+            </Link>
+          </div>
+        )}
+
+      {meta ? (
+        <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
+          {meta.total} processo{meta.total !== 1 ? 's' : ''} no escritório
+          {meta.totalPages > 1
+            ? ` · página ${meta.page} de ${meta.totalPages} (${PAGE_SIZE} por página)`
+            : ''}
+        </p>
+      ) : null}
 
       {loading ? (
         <div className="space-y-2">
@@ -113,64 +282,53 @@ export default function IntimacoesPage() {
       ) : error ? (
         <div className="rounded-[var(--radius-md)] border border-[var(--urgencia-vencida-border)] bg-[var(--urgencia-vencida-bg)] px-4 py-3 text-sm text-[var(--urgencia-vencida-text)]">
           {error}{' '}
-          <button onClick={load} className="underline">
+          <button type="button" onClick={load} className="underline">
             Tentar novamente
           </button>
         </div>
       ) : processos.length === 0 ? (
         <div className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-6 py-12 text-center text-sm text-[var(--color-text-secondary)]">
-          Nenhum processo cadastrado. Envie um PDF para começar.
+          Nenhum processo nesta página. Envie um PDF ou ajuste filtros/página.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)]">
-          <table className="w-full text-sm">
-            <thead className="bg-[var(--color-bg-muted)]">
-              <tr>
-                {['Número', 'Cliente', 'Réu', 'Vara', 'Matéria', 'Dt. Audiência', 'Status'].map(
-                  (col) => (
-                    <th
-                      key={col}
-                      className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]"
-                    >
-                      {col}
-                    </th>
-                  ),
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--color-border-default)]">
-              {processos.map((p) => (
-                <tr key={p.id} className="hover:bg-[var(--color-bg-hover)]">
-                  <td className="whitespace-nowrap px-4 py-2.5 font-mono text-xs text-[var(--color-text-primary)]">
-                    {p.numero}
-                  </td>
-                  <td className="px-4 py-2.5 text-[var(--color-text-primary)]">{p.clienteNome}</td>
-                  <td className="px-4 py-2.5 text-[var(--color-text-secondary)]">{p.reuTexto}</td>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-[var(--color-text-secondary)]">
-                    {p.vara}
-                  </td>
-                  <td className="px-4 py-2.5 text-[var(--color-text-secondary)]">
-                    {p.materia ?? '—'}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-[var(--color-text-secondary)]">
-                    {p.dataAudiencia ?? '—'}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    {p.requerConferencia ? (
-                      <span className="rounded-full bg-[var(--urgencia-atencao-bg)] px-2 py-0.5 text-xs text-[var(--urgencia-atencao-text)]">
-                        Conferir
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-[var(--urgencia-normal-bg)] px-2 py-0.5 text-xs text-[var(--urgencia-normal-text)]">
-                        {p.situacao ?? 'Ativo'}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {!readOnly ? (
+            <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
+              Edite direto na tabela; alterações são gravadas ao sair do campo (lista salva ao escolher o valor).
+            </p>
+          ) : null}
+          <ProcessosGrid
+            data={processos}
+            onRowUpdated={onRowUpdated}
+            toast={toast}
+            readOnly={readOnly}
+            dropdowns={dropdowns}
+          />
+
+          {totalPages > 1 ? (
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="rounded border border-[var(--color-border-default)] px-3 py-1.5 text-sm disabled:opacity-40"
+              >
+                Anterior
+              </button>
+              <span className="text-sm text-[var(--color-text-secondary)]">
+                {page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={page >= totalPages || loading}
+                onClick={() => setPage((p) => p + 1)}
+                className="rounded border border-[var(--color-border-default)] px-3 py-1.5 text-sm disabled:opacity-40"
+              >
+                Próxima
+              </button>
+            </div>
+          ) : null}
+        </>
       )}
 
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />

@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -15,6 +23,14 @@ export class ProcedentesController {
   @Throttle(ThrottlePresets.procedentesList)
   listar(@CurrentUser() user: AuthUser) {
     return this.procedentes.listar(user.escritorioId);
+  }
+
+  /** Cria linhas em `processo_procedente` para processos já com sentença procedente/parcial/acordo. */
+  @Post('sincronizar-em-falta')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.procedentesWrite)
+  sincronizarEmFalta(@CurrentUser() user: AuthUser) {
+    return this.procedentes.sincronizarLinhasEmFalta(user.escritorioId);
   }
 
   @Get(':processoId')

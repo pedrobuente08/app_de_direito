@@ -109,6 +109,10 @@ class TestParseNomeArquivo:
         from extract_core import _parse_nome_arquivo
         return _parse_nome_arquivo(Path(nome_arquivo), CONFIG_TESTE.login_map)
 
+    def _run_com_whitelist(self, nome_arquivo: str, validas: set[str]) -> tuple[str, str]:
+        from extract_core import _parse_nome_arquivo
+        return _parse_nome_arquivo(Path(nome_arquivo), CONFIG_TESTE.login_map, validas)
+
     def test_formato_padrao_com_traco(self):
         materia, login = self._run("FULANO DE TAL - NEGATIVAÇÃO - TAINARA.pdf")
         assert materia == "NEGATIVAÇÃO"
@@ -136,6 +140,28 @@ class TestParseNomeArquivo:
     def test_variante_login_com_acento(self):
         materia, login = self._run("FULANO - NEGATIVAÇÃO - ANDRE GABRIEL.pdf")
         assert login == "ANDRÉ PITA"
+
+    def test_tag_interno_no_meio_sem_match_na_whitelist_materia_vazia(self):
+        nome = "JOSENIAS FERREIRA CORREIA-EXCLUIDO 2022-ANDRE GABRIEL.pdf"
+        validas = {"NEGATIVAÇÃO", "CONTA CANCELADA", "SERASA", "PESSOAL"}
+        materia, login = self._run_com_whitelist(nome, validas)
+        assert materia == ""
+        assert login == "ANDRÉ PITA"
+
+    def test_whitelist_aceita_materia_valida(self):
+        nome = "CLIENTE - NEGATIVAÇÃO - ANDRE GABRIEL.pdf"
+        materia, login = self._run_com_whitelist(nome, {"NEGATIVAÇÃO", "SERASA"})
+        assert materia == "NEGATIVAÇÃO"
+        assert login == "ANDRÉ PITA"
+
+    def test_whitelist_materia_com_traco_interno(self):
+        nome = "FULANO - CREFISA-BOLSA F. - TAINARA.pdf"
+        materia, login = self._run_com_whitelist(
+            nome,
+            {"NEGATIVAÇÃO", "CREFISA-BOLSA F."},
+        )
+        assert materia == "CREFISA-BOLSA F."
+        assert login == "TAINARA"
 
 
 class TestPjeAudienciaTexto:

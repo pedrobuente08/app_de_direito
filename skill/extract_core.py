@@ -403,11 +403,24 @@ def _pje_extrair_data_distribuicao(texto: str) -> str:
 # ---------------------------------------------------------------------------
 # Nome do arquivo → matéria + login
 # ---------------------------------------------------------------------------
-def _parse_nome_arquivo(pdf_path: Path, login_map: dict[str, str]) -> tuple[str, str]:
+def _normaliza_conjunto_materias(validas: set[str]) -> set[str]:
+    return {str(m).strip().upper() for m in validas if str(m).strip()}
+
+
+def _parse_nome_arquivo(
+    pdf_path: Path,
+    login_map: dict[str, str],
+    materias_validas: Optional[set[str]] = None,
+) -> tuple[str, str]:
     """
     Padrão: nome_cliente - MATERIA - LOGIN.pdf
     Separadores aceitos: hífen ou underscore, com ou sem espaços.
     Retorna ("", "") se o nome não tiver pelo menos 3 partes.
+
+    Quando `materias_validas` não está vazio (config do escritório): só grava matéria
+    se algum trecho do meio do nome coincidir com uma dessas teses (evita tags tipo
+    «EXCLUIDO 2022», «2024», etc.). Caso nenhum coincida, matéria fica vazia para
+    preenchimento manual em Intimações.
     """
     stem = pdf_path.stem
     partes = re.split(r"\s*[-_]\s*", stem)
@@ -416,13 +429,36 @@ def _parse_nome_arquivo(pdf_path: Path, login_map: dict[str, str]) -> tuple[str,
         return "", ""
 
     login_raw = " ".join(partes[-1].upper().split())
-    if len(partes) == 3:
-        materia_raw = partes[1].upper()
-    else:
-        materia_raw = "-".join(partes[1:-1]).upper()
-
     login = login_map.get(login_raw, "")
-    return materia_raw, login
+
+    if len(partes) == 3:
+        naive_materia = partes[1].upper()
+        segmentos_meio = [partes[1]]
+    else:
+        naive_materia = "-".join(partes[1:-1]).upper()
+        segmentos_meio = partes[1:-1]
+
+    valid_norm = (
+        _normaliza_conjunto_materias(materias_validas)
+        if materias_validas
+        else set()
+    )
+    if not valid_norm:
+        return naive_materia, login
+
+    candidatos: list[str] = []
+    if naive_materia:
+        candidatos.append(naive_materia)
+    for seg in segmentos_meio:
+        u = seg.upper().strip()
+        if u and u not in candidatos:
+            candidatos.append(u)
+
+    for c in candidatos:
+        if c in valid_norm:
+            return c, login
+
+    return "", login
 
 
 # ---------------------------------------------------------------------------
@@ -464,8 +500,10 @@ def _detectar_alerta(texto: str, processo: dict, materia: str, config: Config) -
         return "pdf_possivelmente_escaneado"
     if processo.get("sistema") == "DESCONHECIDO":
         return "formato_nao_reconhecido"
-    if materia and config.materias_validas and materia not in config.materias_validas:
-        return "materia_fora_da_lista"
+    if materia and config.materias_validas:
+        vn = _normaliza_conjunto_materias(config.materias_validas)
+        if vn and materia.upper().strip() not in vn:
+            return "materia_fora_da_lista"
     return None
 
 
@@ -492,7 +530,11 @@ def _processar_texto(texto: str, pdf_path: Path, config: Config) -> dict:
         tipo_aud = _projudi_extrair_tipo_audiencia(texto) if data_aud else ""
 
     cpf_cliente = _extrair_cpf_cliente(texto)
-    materia, login = _parse_nome_arquivo(pdf_path, config.login_map)
+    materia, login = _parse_nome_arquivo(
+        pdf_path,
+        config.login_map,
+        config.materias_validas if config.materias_validas else None,
+    )
 
     processo = {
         "numero":           numero,
