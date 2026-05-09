@@ -138,6 +138,43 @@ class TestParseNomeArquivo:
         assert login == "ANDRÉ PITA"
 
 
+class TestPjeAudienciaTexto:
+    """Layout real PJe TJBA: data DD/MM/YYYY e hora HH:MM no mesmo bloco, sem «às»."""
+
+    def test_designada_para_o_dia_com_hora_espaco(self):
+        from extract_core import _pje_extrair_audiencia, _projudi_extrair_tipo_audiencia
+
+        trecho = (
+            "Audiência\nAudiência (Conciliação) designada para o dia 08/06/2026 08:00\n"
+            "Endereço: RUA X"
+        )
+        d, h = _pje_extrair_audiencia(trecho)
+        assert d == "08/06/2026"
+        assert h == "08:00"
+        assert _projudi_extrair_tipo_audiencia(trecho) == "UNA"
+
+    def test_designada_so_data(self):
+        from extract_core import _pje_extrair_audiencia
+
+        trecho = "designada para o dia 15/03/2025\nDistribuído"
+        d, h = _pje_extrair_audiencia(trecho)
+        assert d == "15/03/2025"
+        assert h == ""
+
+
+class TestPjeCpfCliente:
+    """PJe: CPF do autor na linha «Partes: NOME (999.999.999-99)»."""
+
+    def test_partes_linha_com_cpf(self):
+        from extract_core import _extrair_cpf_cliente
+
+        trecho = (
+            "Partes: JOSENIAS FERREIRA CORREIA (998.287.745-34)\n"
+            "BANCO C6 CONSIGNADO S.A. (61.348.538/0001-86)\n"
+        )
+        assert _extrair_cpf_cliente(trecho) == "998.287.745-34"
+
+
 # ---------------------------------------------------------------------------
 # Testes de integração — precisam dos PDFs em tests/pdfs/
 # ---------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
+import { join } from 'path';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 // Sentry (futuro): import { APP_FILTER } from '@nestjs/core';
 // import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
@@ -45,7 +46,10 @@ const adminImports = process.env.PLATFORM_JWT_SECRET?.trim()
 @Module({
   imports: [
     // Sentry (futuro): SentryModule.forRoot(),
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: join(__dirname, '..', '.env'),
+    }),
     DrizzleModule,
     MailModule,
     StorageModule,

@@ -1,5 +1,6 @@
 // Sentry: descomente quando configurar `instrument.ts` + `app.module.ts`
 // import './instrument';
+import './load-env';
 import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';

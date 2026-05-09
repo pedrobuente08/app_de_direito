@@ -19,6 +19,7 @@ import { processo } from '../db/schema/processo';
 import { processoProcedente } from '../db/schema/processo-procedente';
 import { reu } from '../db/schema/reu';
 import { reuAlias } from '../db/schema/reu-alias';
+import { AudienciasService } from '../audiencias/audiencias.service';
 import { EscritorioService } from '../escritorio/escritorio.service';
 import { StorageService } from '../storage/storage.service';
 import type { SkillExtractResult } from '../skill/skill.service';
@@ -68,6 +69,7 @@ export class ProcessosService {
     private readonly drizzle: DrizzleService,
     private readonly skill: SkillService,
     private readonly escritorio: EscritorioService,
+    private readonly audiencias: AudienciasService,
     private readonly storage: StorageService,
     @Optional()
     @Inject(getQueueToken('pdf-extract'))
@@ -396,6 +398,13 @@ export class ProcessosService {
     if (!out) {
       throw new BadRequestException('Falha ao recuperar processo após upsert');
     }
+
+    await this.audiencias.sincronizarDaExtracaoPdf(escritorioId, out.id, {
+      dataAudiencia: out.dataAudiencia,
+      horaAudiencia: out.horaAudiencia,
+      tipoAudiencia: out.tipoAudiencia,
+    });
+
     return out;
   }
 

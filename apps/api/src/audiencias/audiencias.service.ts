@@ -19,6 +19,49 @@ import type { UpdateAudienciaDto } from './dto/update-audiencia.dto';
 
 const LIXEIRA = new Set(['CANCELADA', 'ADIADA', 'REDESIGNADA']);
 
+/** Normaliza `date` do Postgres / Drizzle para YYYY-MM-DD. */
+function formatDateYmdForAudSync(v: unknown): string | null {
+  if (v == null) {
+    return null;
+  }
+  if (typeof v === 'string') {
+    const t = v.trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
+      return t.slice(0, 10);
+    }
+    const br = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(t);
+    if (br) {
+      return `${br[3]}-${br[2]}-${br[1]}`;
+    }
+    return null;
+  }
+  if (v instanceof Date && !Number.isNaN(v.getTime())) {
+    const y = v.getFullYear();
+    const m = String(v.getMonth() + 1).padStart(2, '0');
+    const d = String(v.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  return null;
+}
+
+/** Normaliza `time` / string para HH:mm aceito pelo DTO. */
+function formatTimeHhMmForAudSync(v: unknown): string | null {
+  if (v == null) {
+    return null;
+  }
+  if (typeof v === 'string') {
+    const t = v.trim();
+    const m = t.match(/^([01]\d|2[0-3]):[0-5]\d/);
+    return m ? m[0] : null;
+  }
+  if (v instanceof Date && !Number.isNaN(v.getTime())) {
+    const h = String(v.getUTCHours()).padStart(2, '0');
+    const min = String(v.getUTCMinutes()).padStart(2, '0');
+    return `${h}:${min}`;
+  }
+  return null;
+}
+
 @Injectable()
 export class AudienciasService {
   constructor(private readonly drizzle: DrizzleService) {}
@@ -77,6 +120,87 @@ export class AudienciasService {
       throw new ConflictException(
         'Audiência duplicada para processo + data neste escritório.',
       );
+    }
+  }
+
+  /**
+   * Após extração do PDF (upsert do processo): garante linha em `audiencia`
+   * para a data extraída (única por escritório + processo + data).
+   * Atualiza tipo/hora se já existir; não altera status (ex.: REALIZADA).
+   */
+  async sincronizarDaExtracaoPdf(
+    escritorioId: string,
+    processoId: string,
+    row: {
+      dataAudiencia: unknown;
+      horaAudiencia: unknown;
+      tipoAudiencia: string | null;
+    },
+  ): Promise<void> {
+    const dataYmd = formatDateYmdForAudSync(row.dataAudiencia);
+    if (!dataYmd) {
+      return;
+    }
+    await this.assertProcesso(escritorioId, processoId);
+    const horaHhMm = formatTimeHhMmForAudSync(row.horaAudiencia);
+    const tipo = row.tipoAudiencia?.trim() || null;
+
+    const [existing] = await this.drizzle.db
+      .select()
+      .from(audiencia)
+      .where(
+        and(
+          eq(audiencia.escritorioId, escritorioId),
+          eq(audiencia.processoId, processoId),
+          eq(audiencia.data, dataYmd),
+        ),
+      )
+      .limit(1);
+
+    if (existing) {
+      await this.drizzle.db
+        .update(audiencia)
+        .set({
+          tipo,
+          hora: horaHhMm ?? null,
+        })
+        .where(eq(audiencia.id, existing.id));
+      return;
+    }
+
+    try {
+      await this.criar(escritorioId, {
+        processoId,
+        data: dataYmd,
+        hora: horaHhMm,
+        tipo,
+        status: 'AGENDADA',
+      });
+    } catch (e) {
+      if (e instanceof ConflictException) {
+        const [again] = await this.drizzle.db
+          .select()
+          .from(audiencia)
+          .where(
+            and(
+              eq(audiencia.escritorioId, escritorioId),
+              eq(audiencia.processoId, processoId),
+              eq(audiencia.data, dataYmd),
+            ),
+          )
+          .limit(1);
+        if (again) {
+          await this.drizzle.db
+            .update(audiencia)
+            .set({
+              tipo,
+              hora: horaHhMm ?? null,
+            })
+            .where(eq(audiencia.id, again.id));
+          return;
+        }
+      }
+      throw e;
     }
   }
 

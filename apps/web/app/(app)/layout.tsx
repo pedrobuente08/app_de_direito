@@ -41,7 +41,6 @@ const navGroups = [
     items: [
       { href: '/configuracoes', label: 'Configurações' },
       { href: '/importacao', label: 'Importação' },
-      { href: '/audit-log', label: 'Audit Log' },
     ],
   },
 ]

@@ -10,7 +10,7 @@ Uso:
     uvicorn server:app --host 0.0.0.0 --port 5001 --workers 1
 
 Variáveis de ambiente:
-    SKILL_API_KEY   Chave que o NestJS envia no header X-Skill-Key (obrigatório)
+    SKILL_API_KEY   Opcional. Se definida, o NestJS deve enviar o mesmo valor no header X-Skill-Key.
     LOG_LEVEL       debug | info | warning (default: info)
 """
 

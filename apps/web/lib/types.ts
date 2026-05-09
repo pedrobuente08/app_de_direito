@@ -194,18 +194,6 @@ export type ImportResult = {
   erros: { linha: number; mensagem: string }[]
 }
 
-export type AuditLog = {
-  id: string
-  escritorioId?: string | null
-  usuarioId?: string | null
-  entidade: string
-  entidadeId: string
-  acao: string
-  diff?: Record<string, unknown> | null
-  ip?: string | null
-  createdAt: string
-}
-
 export type SugestaoReu = {
   reuTexto: string
   quantidadeProcessos: number

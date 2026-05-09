@@ -172,13 +172,25 @@ def _extrair_codigo_comarca(no_proc: str) -> str:
 
 
 def _extrair_cpf_cliente(texto: str) -> str:
-    """Extrai CPF do promovente quando disponível no PDF."""
+    """Extrai CPF do promovente quando disponível no PDF (Projudi ou PJe)."""
     blocos = re.findall(
         r"Nome\s+Identidade\s+CPF/CNPJ\s*\n"
         r"[A-ZÀ-Úa-zà-ú0-9\s\.\-\'/&]+?\s+(\d{3}\.\d{3}\.\d{3}-\d{2})",
         texto,
     )
-    return blocos[0].strip() if blocos else ""
+    if blocos:
+        return blocos[0].strip()
+
+    # PJe TJBA / Federal: «Partes: NOME DO AUTOR (999.999.999-99)» (primeiro CPF, não CNPJ)
+    m = re.search(
+        r"Partes:\s*.+?\((\d{3}\.\d{3}\.\d{3}-\d{2})\)",
+        texto,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if m:
+        return m.group(1).strip()
+
+    return ""
 
 
 # ---------------------------------------------------------------------------
@@ -273,7 +285,12 @@ def _projudi_extrair_audiencia(texto: str) -> tuple[str, str]:
 
 
 def _projudi_extrair_tipo_audiencia(texto: str) -> str:
-    if re.search(r"Audi[eê]ncia\s+de\s+Concilia[çc][aã]o", texto, re.IGNORECASE):
+    # Projudi: "Audiência de Conciliação"; PJe: "Audiência (Conciliação) designada..."
+    if re.search(
+        r"Audi[eê]ncia\s*(?:de\s+)?\(?\s*Concilia[çc][aã]o\s*\)?",
+        texto,
+        re.IGNORECASE,
+    ):
         return "UNA"
     return "AIJ"
 
@@ -310,6 +327,48 @@ def _pje_extrair_partes(texto: str) -> tuple[str, str]:
     if mR and not reu:
         reu = mR.group(1).strip()
     return cliente, reu
+
+
+def _pje_extrair_audiencia(texto: str) -> tuple[str, str]:
+    """
+    PJe TJBA / Federal — comprovante costuma trazer, por exemplo:
+    «Audiência (Conciliação) designada para o dia 08/06/2026 08:00»
+    (data e hora separadas por espaço, sem «às»).
+    """
+    plano = re.sub(r"\s+", " ", texto)
+
+    m = re.search(
+        r"designad[ao]\s+para\s+o\s+dia\s+"
+        r"(\d{2})/(\d{2})/(\d{4})\s+(?:(?:às|as)\s+)?(\d{1,2}):(\d{2})\b",
+        plano,
+        re.IGNORECASE,
+    )
+    if m:
+        return (
+            f"{m.group(1)}/{m.group(2)}/{m.group(3)}",
+            f"{int(m.group(4)):02d}:{m.group(5)}",
+        )
+
+    m2 = re.search(
+        r"designad[ao]\s+para\s+o\s+dia\s+(\d{2})/(\d{2})/(\d{4})\b",
+        plano,
+        re.IGNORECASE,
+    )
+    if m2:
+        return f"{m2.group(1)}/{m2.group(2)}/{m2.group(3)}", ""
+
+    m3 = re.search(
+        r"Audi[eê]ncia[^\d]{0,120}?(\d{2})/(\d{2})/(\d{4})\s+(?:às|as)\s*(\d{1,2}):(\d{2})\b",
+        plano,
+        re.IGNORECASE,
+    )
+    if m3:
+        return (
+            f"{m3.group(1)}/{m3.group(2)}/{m3.group(3)}",
+            f"{int(m3.group(4)):02d}:{m3.group(5)}",
+        )
+
+    return "", ""
 
 
 def _pje_extrair_vara(texto: str, no_proc: str, mapa_comarcas: dict[str, str]) -> str:
@@ -421,7 +480,8 @@ def _processar_texto(texto: str, pdf_path: Path, config: Config) -> dict:
         cliente, reu = _pje_extrair_partes(texto)
         vara = _pje_extrair_vara(texto, numero, config.mapa_comarcas)
         data_dist = _pje_extrair_data_distribuicao(texto)
-        data_aud, hora_aud, tipo_aud = "", "", ""
+        data_aud, hora_aud = _pje_extrair_audiencia(texto)
+        tipo_aud = _projudi_extrair_tipo_audiencia(texto) if data_aud else ""
     else:
         numero = _extrair_no_processo(texto)
         cliente, reu = _projudi_extrair_partes(texto)

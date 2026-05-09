@@ -1,5 +1,4 @@
 import type {
-  AuditLog,
   Audiencia,
   Comarca,
   Comunicacao,
@@ -425,19 +424,4 @@ export async function importarProcessosCsv(csv: string): Promise<ImportResult> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ csv }),
   })
-}
-
-// ─── Audit log ────────────────────────────────────────────────────────────────
-
-export async function getAuditLog(query?: {
-  page?: number
-  limit?: number
-  entidade?: string
-}): Promise<{ data: AuditLog[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
-  const params = new URLSearchParams()
-  if (query?.page) params.set('page', String(query.page))
-  if (query?.limit) params.set('limit', String(query.limit))
-  if (query?.entidade) params.set('entidade', query.entidade)
-  const qs = params.toString()
-  return apiFetch(`/audit-log${qs ? `?${qs}` : ''}`)
 }
