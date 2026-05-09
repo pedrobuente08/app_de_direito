@@ -23,10 +23,18 @@ import type {
   Usuario,
 } from '@/lib/types'
 
-const base =
-  typeof window !== 'undefined'
-    ? (process.env.NEXT_PUBLIC_API_BASE ?? '/backend')
-    : (process.env.NEXT_PUBLIC_API_BASE ?? '/backend')
+/**
+ * Base das chamadas à API Nest (`/api/*`).
+ * Use `/backend` no mesmo domínio do Next (rewrite em `next.config.mjs`) ou URL absoluta **com** sufixo `/api` se a API for outro host (ex.: `https://api.exemplo.com/api`).
+ * `??` não cobre string vazia — variável vazia no Coolify gerava `POST /auth/login` no Next → "Cannot POST /auth/login".
+ */
+function resolveApiBase(): string {
+  const raw = process.env.NEXT_PUBLIC_API_BASE?.trim()
+  if (raw) return raw.replace(/\/$/, '')
+  return '/backend'
+}
+
+const base = resolveApiBase()
 
 export function apiUrl(path: string): string {
   const p = path.startsWith('/') ? path : `/${path}`

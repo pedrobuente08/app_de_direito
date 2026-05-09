@@ -1,0 +1,17 @@
+# Skill Python (FastAPI) — contexto de build = RAIZ do monorepo (`app_de_direito/`).
+#
+# Coolify (serviço "skill"): Build Pack = Dockerfile
+#   Dockerfile: Dockerfile.skill
+#   Context: .  (raiz do repositório)
+#
+# Alternativa: contexto ./skill + Dockerfile skill/Dockerfile (ver documentação).
+
+FROM python:3.12-slim
+
+WORKDIR /app
+COPY skill/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY skill/ .
+
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "5001", "--workers", "1"]

@@ -14,7 +14,22 @@ O Nixpacks na **raiz** do repo não detecta Next.js (o app está em `apps/web`).
 Variáveis de **runtime** no serviço do front (Coolify → Environment):
 
 - `PORT` — normalmente `3000` (já é o default da imagem).
-- `NEXT_PUBLIC_API_BASE` — em geral `/backend` se o browser falar com o mesmo host do Next.
+- `NEXT_PUBLIC_API_BASE` — use `/backend` no mesmo host do Next **ou** omita (o código volta para `/backend`). **Nunca** defina como string vazia no Coolify.
+
+### Coolify / Docker — skill (`skill/`)
+
+Se o deploy falhar com **`open Dockerfile: no such file or directory`**, o Coolify está procurando **`Dockerfile` na raiz**; o arquivo antigo da skill fica em **`skill/Dockerfile`** (contexto só da pasta `skill/`).
+
+Use o Dockerfile na **raiz do monorepo**:
+
+| Campo | Valor |
+|--------|--------|
+| **Dockerfile** | `Dockerfile.skill` |
+| **Context / diretório de build** | `.` (raiz do repo `app_de_direito/`) |
+
+Porta do container: **5001** (mapeie no Coolify se expuser HTTP). Variáveis opcionais: `SKILL_API_KEY`, `LOG_LEVEL` (ver secção 3 abaixo).
+
+**Alternativa:** em vez de `Dockerfile.skill`, defina **Base Directory** = `skill` e **Dockerfile** = `Dockerfile` (aí usa o `skill/Dockerfile` original com contexto `skill/`).
 
 ---
 
@@ -83,7 +98,7 @@ Após definir `DATABASE_URL`, rode as migrações/push do Drizzle no ambiente de
 
 | Variável | Obrigatório (demo) | Descrição |
 |----------|-------------------|-----------|
-| `NEXT_PUBLIC_API_BASE` | **Sim** | Onde o **browser** chama a API. Ex.: `/backend` se o Next fizer **rewrite** para o mesmo host da API; ou URL absoluta `https://api.exemplo.com` se API for outro domínio (CORS na API precisa liberar o front). |
+| `NEXT_PUBLIC_API_BASE` | **Sim** | Onde o **browser** chama a API. **`/backend`** se o Next fizer rewrite no mesmo domínio (recomendado no Coolify). **Não deixe vazio** — string vazia fazia `POST /auth/login` no Next (“Cannot POST /auth/login”). Se a API for **outro host**, use URL absoluta **com** o prefixo `/api` do Nest, ex.: `https://api.exemplo.com/api` (o código concatena `/auth/login` etc.). |
 | `API_INTERNAL_URL` | Se usar rewrite `/backend` | URL que o **servidor Next** usa no build/runtime para proxy (ex.: `http://api:3001` no Docker). No Coolify, costuma ser o hostname interno do serviço da API + porta. |
 
 ### Exemplo — front e API no mesmo domínio (rewrite)
@@ -95,12 +110,13 @@ API_INTERNAL_URL=http://api:3001
 
 (`next.config.mjs` reescreve `/backend/*` → essa origem.)
 
-### Exemplo — API em subdomínio público
+### Exemplo — API em subdomínio público (sem rewrite `/backend`)
 
 ```env
-NEXT_PUBLIC_API_BASE=https://api.exemplo.com
-# API_INTERNAL_URL pode ficar igual ou só importa para SSR; ajuste se tiver fetch server-side.
+NEXT_PUBLIC_API_BASE=https://api.exemplo.com/api
 ```
+
+(CORS na API: inclua a origem exata do front em `CORS_ORIGINS`.)
 
 ---
 
