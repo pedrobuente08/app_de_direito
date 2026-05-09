@@ -24,7 +24,6 @@ RUN npm install
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV DOCKER_WEB_STANDALONE=1
 
 RUN npm run build
 
@@ -39,9 +38,13 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 COPY --from=builder /app/.next/standalone ./
+# Layout “monorepo” no standalone: apps/web/.next/static — layout “flat”: .next/static na raiz
 COPY --from=builder /app/.next/static ./apps/web/.next/static
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./apps/web/public
+COPY --from=builder /app/public ./public
 
 EXPOSE 3000
 
-CMD ["node", "apps/web/server.js"]
+# Prefer apps/web/server.js (build correto); fallback server.js na raiz (build legado/cache)
+CMD ["sh", "-c", "if [ -f apps/web/server.js ]; then exec node apps/web/server.js; elif [ -f server.js ]; then exec node server.js; else echo 'ERRO: server.js não encontrado'; ls -la; exit 1; fi"]

@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -7,19 +8,20 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const apiOrigin = process.env.API_INTERNAL_URL ?? 'http://127.0.0.1:3001';
 
 /**
- * Monorepo (`npm run build -w web`): rastrear a partir da raiz do repo.
- * Build só em `apps/web` (Docker): **não** definir `outputFileTracingRoot` — se apontar só para
- * `apps/web`, o bundle standalone pode sair sem `node_modules` (server quebra no container).
+ * Só define `outputFileTracingRoot` quando a raiz do monorepo existe (build local `npm run build -w web`).
+ * No Docker (contexto só `apps/workdir` = `/app`), `../../package-lock.json` não existe — evita
+ * apontar o trace para `/` e gerar standalone sem `apps/web/server.js`.
  */
-const isDockerWebOnly = process.env.DOCKER_WEB_STANDALONE === '1';
+const monorepoRoot = path.join(__dirname, '..', '..');
+const isMonorepoCheckout = fs.existsSync(path.join(monorepoRoot, 'package-lock.json'));
 
 const nextConfig = {
   /** Imagem Docker menor + deploy Coolify/VPS. */
   output: 'standalone',
-  ...(!isDockerWebOnly
+  ...(isMonorepoCheckout
     ? {
         experimental: {
-          outputFileTracingRoot: path.join(__dirname, '../..'),
+          outputFileTracingRoot: monorepoRoot,
         },
       }
     : {}),
