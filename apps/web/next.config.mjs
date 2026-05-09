@@ -6,11 +6,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const apiOrigin = process.env.API_INTERNAL_URL ?? 'http://127.0.0.1:3001';
 
+/** Build Docker com contexto só em `apps/web` (Coolify “Base Directory” = web). */
+const tracingRoot =
+  process.env.DOCKER_WEB_STANDALONE === '1'
+    ? __dirname
+    : path.join(__dirname, '../..');
+
 const nextConfig = {
   /** Imagem Docker menor + deploy Coolify/VPS. */
   output: 'standalone',
-  /** Monorepo: rastrear dependências a partir da raiz do repo (`app_de_direito/`). */
-  outputFileTracingRoot: path.join(__dirname, '../..'),
+  /** Monorepo local: raiz do repo. Imagem só-web: pasta do app (`DOCKER_WEB_STANDALONE=1`). */
+  outputFileTracingRoot: tracingRoot,
 
   async rewrites() {
     return [

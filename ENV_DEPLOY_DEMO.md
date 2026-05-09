@@ -2,14 +2,25 @@
 
 ## Coolify / Docker — frontend (“no frontend” no Nixpacks)
 
-O Nixpacks na **raiz** do repo não detecta Next.js (o app está em `apps/web`). Use **Dockerfile** em vez de Nixpacks automático:
+O Nixpacks na **raiz** do repo não detecta Next.js (o app está em `apps/web`). Use **Dockerfile** em vez de Nixpacks automático.
+
+**Opção A — recomendada no Coolify** (evita erro `package-lock.json` / `apps` not found quando o contexto não é a raiz do repo):
 
 | Campo | Valor |
 |--------|--------|
-| **Dockerfile** | `apps/web/Dockerfile` |
-| **Context / diretório de build** | `.` (raiz do monorepo `app_de_direito/`, **não** `apps/web`) |
+| **Base Directory** (ou “Build Folder”) | `apps/web` |
+| **Dockerfile** | `Dockerfile` |
+| **Context** | `apps/web` (ou deixe igual ao base directory) |
 
-**Build argument:** `API_INTERNAL_URL` — URL que o servidor Next usa para encaminhar `/backend/*` à API (ex.: `http://api:3001` com o hostname **interno** do serviço da API no Coolify). Deve ser o mesmo em **build** e no ambiente em que o container roda.
+**Opção B — contexto na raiz do monorepo** (precisa de `package-lock.json` e pasta `apps/` no contexto):
+
+| Campo | Valor |
+|--------|--------|
+| **Base Directory** | `.` (vazio / raiz do repo) |
+| **Dockerfile** | `apps/web/Dockerfile.monorepo` |
+| **Context** | `.` |
+
+**Build argument:** `API_INTERNAL_URL` — URL que o servidor Next usa para encaminhar `/backend/*` à API (ex.: `http://api:3001` com o hostname **interno** do serviço da API no Coolify). Passe também em **runtime** se quiser alinhar com o build.
 
 Variáveis de **runtime** no serviço do front (Coolify → Environment):
 
