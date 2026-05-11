@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { LogoutButton } from './logout-button'
 
 const navGroups = [
@@ -48,6 +49,33 @@ const navGroups = [
 export default function AppShellLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
 
+  const activeGroupLabel =
+    navGroups.find((g) =>
+      g.items.some((item) => pathname === item.href || pathname.startsWith(item.href + '/')),
+    )?.label ?? null
+
+  const [openGroups, setOpenGroups] = useState<Set<string>>(
+    () => new Set(activeGroupLabel ? [activeGroupLabel] : []),
+  )
+
+  useEffect(() => {
+    if (activeGroupLabel) {
+      setOpenGroups((prev) => new Set(Array.from(prev).concat(activeGroupLabel)))
+    }
+  }, [activeGroupLabel])
+
+  function toggleGroup(label: string) {
+    setOpenGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(label)) {
+        next.delete(label)
+      } else {
+        next.add(label)
+      }
+      return next
+    })
+  }
+
   return (
     <div className="flex min-h-screen">
       <aside
@@ -59,30 +87,51 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto p-2">
-          {navGroups.map((group) => (
-            <div key={group.label} className="mb-3">
-              <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
-                {group.label}
-              </p>
-              {group.items.map((item) => {
-                const active =
-                  pathname === item.href || pathname.startsWith(item.href + '/')
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`block rounded-[var(--radius-sm)] px-3 py-2 text-sm transition-colors ${
-                      active
-                        ? 'bg-[var(--color-brand-subtle)] font-medium text-[var(--color-brand-text)]'
-                        : 'text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                )
-              })}
-            </div>
-          ))}
+          {navGroups.map((group) => {
+            const isOpen = openGroups.has(group.label)
+            const hasActive = group.items.some(
+              (item) => pathname === item.href || pathname.startsWith(item.href + '/'),
+            )
+
+            return (
+              <div key={group.label} className="mb-1">
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.label)}
+                  className={`flex w-full items-center justify-between rounded-[var(--radius-sm)] px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide transition-colors hover:bg-[var(--color-bg-hover)] ${
+                    hasActive
+                      ? 'text-[var(--color-brand-text)]'
+                      : 'text-[var(--color-text-tertiary)]'
+                  }`}
+                >
+                  {group.label}
+                  <span className="text-[10px] opacity-60">{isOpen ? '▾' : '▸'}</span>
+                </button>
+
+                {isOpen && (
+                  <div className="mt-0.5 pl-2">
+                    {group.items.map((item) => {
+                      const active =
+                        pathname === item.href || pathname.startsWith(item.href + '/')
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`block rounded-[var(--radius-sm)] px-3 py-1.5 text-sm transition-colors ${
+                            active
+                              ? 'bg-[var(--color-brand-subtle)] font-medium text-[var(--color-brand-text)]'
+                              : 'text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'
+                          }`}
+                        >
+                          {item.label}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </nav>
 
         <div className="border-t border-[var(--color-border-default)] p-3">

@@ -11,6 +11,7 @@ import type {
   UploadPdfResult,
 } from '@/lib/types'
 import { ProcessosGrid } from './_components/processos-grid'
+import { ProcessoModal } from './_components/processo-modal'
 import { ReuNormalizacao } from './_components/reu-normalizacao'
 
 const PAGE_SIZE = 50
@@ -47,6 +48,7 @@ export default function IntimacoesPage() {
 
   const [readOnly, setReadOnly] = useState(false)
   const [dropdowns, setDropdowns] = useState<DropdownsProcessoConfig | null>(null)
+  const [selectedProcesso, setSelectedProcesso] = useState<Processo | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -64,9 +66,7 @@ export default function IntimacoesPage() {
       }
     }
     loadSession()
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [])
 
   const load = useCallback(async () => {
@@ -91,9 +91,7 @@ export default function IntimacoesPage() {
     }
   }, [appliedNumero, appliedCliente, appliedVara, sortField, sortOrder, page])
 
-  useEffect(() => {
-    load()
-  }, [load])
+  useEffect(() => { load() }, [load])
 
   const onRowUpdated = useCallback((row: Processo) => {
     setProcessos((prev) => prev.map((p) => (p.id === row.id ? row : p)))
@@ -115,9 +113,7 @@ export default function IntimacoesPage() {
       const result = await uploadPdf(file)
       setUploadResult(result)
       if ('assincrono' in result && result.assincrono) {
-        toast.success(
-          `PDF na fila de processamento (job ${result.jobId}). Atualize em instantes.`,
-        )
+        toast.success(`PDF na fila de processamento (job ${result.jobId}). Atualize em instantes.`)
         load()
       } else if ('ok' in result && result.ok) {
         toast.success('Processo importado com sucesso.')
@@ -208,9 +204,7 @@ export default function IntimacoesPage() {
             className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
           >
             {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
         </label>
@@ -292,18 +286,10 @@ export default function IntimacoesPage() {
         </div>
       ) : (
         <>
-          {!readOnly ? (
-            <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
-              Edite direto na tabela; alterações são gravadas ao sair do campo (lista salva ao escolher o valor).
-            </p>
-          ) : null}
-          <ProcessosGrid
-            data={processos}
-            onRowUpdated={onRowUpdated}
-            toast={toast}
-            readOnly={readOnly}
-            dropdowns={dropdowns}
-          />
+          <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
+            Clique em um processo para ver detalhes{readOnly ? '.' : ' e editar.'}
+          </p>
+          <ProcessosGrid data={processos} onRowClick={setSelectedProcesso} />
 
           {totalPages > 1 ? (
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
@@ -329,6 +315,17 @@ export default function IntimacoesPage() {
             </div>
           ) : null}
         </>
+      )}
+
+      {selectedProcesso && (
+        <ProcessoModal
+          processo={selectedProcesso}
+          onClose={() => setSelectedProcesso(null)}
+          onUpdated={onRowUpdated}
+          toast={toast}
+          readOnly={readOnly}
+          dropdowns={dropdowns}
+        />
       )}
 
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />

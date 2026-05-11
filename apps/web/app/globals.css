@@ -100,6 +100,8 @@
 
     --sidebar-width: 240px;
     --header-height: 52px;
+    /* Igual ao `p-6` do `<main>` no layout — alinhar modais ao título da página */
+    --app-main-padding: 1.5rem;
 
     --radius-sm: 3px;
     --radius-md: 6px;
