@@ -2,6 +2,7 @@
 -- Idempotente: ADD COLUMN IF NOT EXISTS (Postgres 11+; Supabase usa PG recente).
 --
 -- Usar depois de `001_processo_status_processo.sql` se ainda faltarem colunas.
+-- Para erros em sentenca, improcedente, audiencia.escritorio_adversario_id, rode também `003_schema_plano_tabelas.sql`.
 -- SQL Editor do Supabase: colar e Run.
 
 ALTER TABLE processo ADD COLUMN IF NOT EXISTS fase_atual varchar(50);
