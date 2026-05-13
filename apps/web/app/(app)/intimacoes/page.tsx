@@ -36,15 +36,29 @@ export default function IntimacoesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
 
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false)
+
   const [draftNumero, setDraftNumero] = useState('')
   const [draftCliente, setDraftCliente] = useState('')
   const [draftVara, setDraftVara] = useState('')
+  const [draftFilterUltimaSentenca, setDraftFilterUltimaSentenca] = useState<
+    '' | 'BOA' | 'RUIM' | 'SEM'
+  >('')
+  const [draftSortField, setDraftSortField] = useState<
+    (typeof SORT_OPTIONS)[number]['value']
+  >('createdAt')
+  const [draftSortOrder, setDraftSortOrder] = useState<'asc' | 'desc'>('desc')
+
   const [appliedNumero, setAppliedNumero] = useState('')
   const [appliedCliente, setAppliedCliente] = useState('')
   const [appliedVara, setAppliedVara] = useState('')
-  const [filterUltimaSentenca, setFilterUltimaSentenca] = useState<'' | 'BOA' | 'RUIM' | 'SEM'>('')
-  const [sortField, setSortField] = useState<(typeof SORT_OPTIONS)[number]['value']>('createdAt')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [appliedFilterUltimaSentenca, setAppliedFilterUltimaSentenca] = useState<
+    '' | 'BOA' | 'RUIM' | 'SEM'
+  >('')
+  const [appliedSortField, setAppliedSortField] = useState<
+    (typeof SORT_OPTIONS)[number]['value']
+  >('createdAt')
+  const [appliedSortOrder, setAppliedSortOrder] = useState<'asc' | 'desc'>('desc')
   const [page, setPage] = useState(1)
 
   const [readOnly, setReadOnly] = useState(false)
@@ -77,12 +91,14 @@ export default function IntimacoesPage() {
       const { data, meta: m } = await getProcessos({
         limit: PAGE_SIZE,
         page,
-        sort: sortField,
-        order: sortOrder,
+        sort: appliedSortField,
+        order: appliedSortOrder,
         ...(appliedNumero.trim() && { numero: appliedNumero.trim() }),
         ...(appliedCliente.trim() && { clienteNome: appliedCliente.trim() }),
         ...(appliedVara.trim() && { vara: appliedVara.trim() }),
-        ...(filterUltimaSentenca && { filterUltimaSentenca }),
+        ...(appliedFilterUltimaSentenca && {
+          filterUltimaSentenca: appliedFilterUltimaSentenca,
+        }),
       })
       setProcessos(data)
       setMeta(m)
@@ -91,7 +107,15 @@ export default function IntimacoesPage() {
     } finally {
       setLoading(false)
     }
-  }, [appliedNumero, appliedCliente, appliedVara, filterUltimaSentenca, sortField, sortOrder, page])
+  }, [
+    appliedNumero,
+    appliedCliente,
+    appliedVara,
+    appliedFilterUltimaSentenca,
+    appliedSortField,
+    appliedSortOrder,
+    page,
+  ])
 
   useEffect(() => { load() }, [load])
 
@@ -103,7 +127,21 @@ export default function IntimacoesPage() {
     setAppliedNumero(draftNumero)
     setAppliedCliente(draftCliente)
     setAppliedVara(draftVara)
+    setAppliedFilterUltimaSentenca(draftFilterUltimaSentenca)
+    setAppliedSortField(draftSortField)
+    setAppliedSortOrder(draftSortOrder)
     setPage(1)
+    setFiltrosAbertos(false)
+  }
+
+  function abrirPainelFiltros() {
+    setDraftNumero(appliedNumero)
+    setDraftCliente(appliedCliente)
+    setDraftVara(appliedVara)
+    setDraftFilterUltimaSentenca(appliedFilterUltimaSentenca)
+    setDraftSortField(appliedSortField)
+    setDraftSortOrder(appliedSortOrder)
+    setFiltrosAbertos(true)
   }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -137,13 +175,28 @@ export default function IntimacoesPage() {
     <div className="animate-fade-in-up">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Intimações</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           {readOnly && (
             <span className="text-xs text-[var(--color-text-secondary)]">Somente leitura</span>
           )}
           {uploading && (
             <span className="text-sm text-[var(--color-text-secondary)]">Processando…</span>
           )}
+          <button
+            type="button"
+            onClick={() => (filtrosAbertos ? setFiltrosAbertos(false) : abrirPainelFiltros())}
+            className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
+          >
+            {filtrosAbertos ? 'Fechar filtros' : 'Filtros'}
+          </button>
+          <button
+            type="button"
+            onClick={() => load()}
+            disabled={loading}
+            className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] disabled:opacity-50"
+          >
+            Atualizar lista
+          </button>
           {!readOnly && (
             <>
               <input
@@ -167,96 +220,87 @@ export default function IntimacoesPage() {
         </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
-        <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-          Nº processo
-          <input
-            value={draftNumero}
-            onChange={(e) => setDraftNumero(e.target.value)}
-            placeholder="Contém…"
-            className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
-          />
-        </label>
-        <label className="flex min-w-[140px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-          Cliente
-          <input
-            value={draftCliente}
-            onChange={(e) => setDraftCliente(e.target.value)}
-            placeholder="Nome…"
-            className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
-          />
-        </label>
-        <label className="flex min-w-[120px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-          Vara
-          <input
-            value={draftVara}
-            onChange={(e) => setDraftVara(e.target.value)}
-            placeholder="Contém…"
-            className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
-          />
-        </label>
-        <label className="flex min-w-[160px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-          Última sentença
-          <select
-            value={filterUltimaSentenca}
-            onChange={(e) => {
-              setFilterUltimaSentenca(e.target.value as '' | 'BOA' | 'RUIM' | 'SEM')
-              setPage(1)
-            }}
-            className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+      {filtrosAbertos && (
+        <div className="mb-4 flex flex-wrap items-end gap-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
+          <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+            Nº processo
+            <input
+              value={draftNumero}
+              onChange={(e) => setDraftNumero(e.target.value)}
+              placeholder="Contém…"
+              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+            />
+          </label>
+          <label className="flex min-w-[140px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+            Cliente
+            <input
+              value={draftCliente}
+              onChange={(e) => setDraftCliente(e.target.value)}
+              placeholder="Nome…"
+              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+            />
+          </label>
+          <label className="flex min-w-[120px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+            Vara
+            <input
+              value={draftVara}
+              onChange={(e) => setDraftVara(e.target.value)}
+              placeholder="Contém…"
+              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+            />
+          </label>
+          <label className="flex min-w-[160px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+            Última sentença
+            <select
+              value={draftFilterUltimaSentenca}
+              onChange={(e) =>
+                setDraftFilterUltimaSentenca(e.target.value as '' | 'BOA' | 'RUIM' | 'SEM')
+              }
+              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+            >
+              <option value="">Todos</option>
+              <option value="BOA">Bom (autor)</option>
+              <option value="RUIM">Ruim (réu)</option>
+              <option value="SEM">Sem sentença</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+            Ordenar por
+            <select
+              value={draftSortField}
+              onChange={(e) =>
+                setDraftSortField(e.target.value as (typeof SORT_OPTIONS)[number]['value'])
+              }
+              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+            Direção
+            <select
+              value={draftSortOrder}
+              onChange={(e) => setDraftSortOrder(e.target.value as 'asc' | 'desc')}
+              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+            >
+              <option value="desc">Decrescente</option>
+              <option value="asc">Crescente</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={aplicarFiltros}
+            disabled={loading}
+            className="rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-50"
           >
-            <option value="">Todos</option>
-            <option value="BOA">Bom (autor)</option>
-            <option value="RUIM">Ruim (réu)</option>
-            <option value="SEM">Sem sentença</option>
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-          Ordenar por
-          <select
-            value={sortField}
-            onChange={(e) => {
-              setSortField(e.target.value as (typeof SORT_OPTIONS)[number]['value'])
-              setPage(1)
-            }}
-            className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-          Direção
-          <select
-            value={sortOrder}
-            onChange={(e) => {
-              setSortOrder(e.target.value as 'asc' | 'desc')
-              setPage(1)
-            }}
-            className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
-          >
-            <option value="desc">Decrescente</option>
-            <option value="asc">Crescente</option>
-          </select>
-        </label>
-        <button
-          type="button"
-          onClick={aplicarFiltros}
-          disabled={loading}
-          className="rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-50"
-        >
-          Aplicar filtros
-        </button>
-        <button
-          type="button"
-          onClick={() => load()}
-          disabled={loading}
-          className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] disabled:opacity-50"
-        >
-          Atualizar lista
-        </button>
-      </div>
+            Aplicar filtros
+          </button>
+        </div>
+      )}
 
       {!readOnly && <ReuNormalizacao processos={processos} onNormalized={load} />}
 

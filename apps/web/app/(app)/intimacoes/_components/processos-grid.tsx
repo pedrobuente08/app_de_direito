@@ -9,16 +9,6 @@ import {
 import { useMemo } from 'react'
 import type { Processo } from '@/lib/types'
 
-function dateDisplay(v: string | null | undefined): string {
-  if (!v) return '—'
-  const s = String(v).trim()
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
-    const [y, m, d] = s.slice(0, 10).split('-')
-    return `${d}/${m}/${y}`
-  }
-  return s || '—'
-}
-
 type Props = {
   data: Processo[]
   onRowClick: (processo: Processo) => void
@@ -92,12 +82,12 @@ export function ProcessosGrid({ data, onRowClick }: Props) {
       ),
     },
     {
-      id: 'dataDistribuicao',
-      header: 'Distribuição',
-      size: 110,
+      id: 'faseAtual',
+      header: 'Situação',
+      size: 130,
       cell: ({ row }) => (
-        <span className="text-xs text-[var(--color-text-primary)]">
-          {dateDisplay(row.original.dataDistribuicao)}
+        <span className="block truncate text-sm text-[var(--color-text-primary)]">
+          {row.original.faseAtual?.trim() || '—'}
         </span>
       ),
     },
