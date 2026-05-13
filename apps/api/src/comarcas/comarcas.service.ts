@@ -6,12 +6,16 @@ import {
 import { and, eq } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import { comarca } from '../db/schema/comarca';
+import { EscritorioService } from '../escritorio/escritorio.service';
 import type { CreateComarcaDto } from './dto/create-comarca.dto';
 import type { UpdateComarcaDto } from './dto/update-comarca.dto';
 
 @Injectable()
 export class ComarcasService {
-  constructor(private readonly drizzle: DrizzleService) {}
+  constructor(
+    private readonly drizzle: DrizzleService,
+    private readonly escritorio: EscritorioService,
+  ) {}
 
   async listar(escritorioId: string) {
     return this.drizzle.db
@@ -32,8 +36,15 @@ export class ComarcasService {
         })
         .returning();
 
+      if (!row) {
+        throw new ConflictException('Falha ao criar comarca');
+      }
+      this.escritorio.invalidarCacheSkill(escritorioId);
       return row;
-    } catch {
+    } catch (e) {
+      if (e instanceof ConflictException) {
+        throw e;
+      }
       throw new ConflictException(
         'Não foi possível criar — código duplicado neste escritório?',
       );
@@ -73,6 +84,7 @@ export class ComarcasService {
       throw new ConflictException('Atualização conflitante (código único?)');
     }
 
+    this.escritorio.invalidarCacheSkill(escritorioId);
     return this.obter(escritorioId, id);
   }
 
@@ -83,6 +95,7 @@ export class ComarcasService {
       .where(
         and(eq(comarca.escritorioId, escritorioId), eq(comarca.id, id)),
       );
+    this.escritorio.invalidarCacheSkill(escritorioId);
     return { ok: true };
   }
 

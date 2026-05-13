@@ -15,8 +15,8 @@ const PERFIL_LABEL: Record<Perfil, string> = {
   leitura: 'Leitura',
 }
 
-type Form = { nome: string; email: string; perfil: Perfil; senha: string }
-const FORM_VAZIO: Form = { nome: '', email: '', perfil: 'adm', senha: '' }
+type Form = { nome: string; email: string; perfil: Perfil; senha: string; loginAliases: string }
+const FORM_VAZIO: Form = { nome: '', email: '', perfil: 'adm', senha: '', loginAliases: '' }
 
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
@@ -52,7 +52,13 @@ export default function UsuariosPage() {
 
   function openEdit(u: Usuario) {
     setEditingId(u.id)
-    setForm({ nome: u.nome, email: u.email, perfil: u.perfil, senha: '' })
+    setForm({
+      nome: u.nome ?? '',
+      email: u.email,
+      perfil: u.perfil,
+      senha: '',
+      loginAliases: (u.loginAliases ?? []).join(', '),
+    })
     setShowForm(true)
   }
 
@@ -65,15 +71,29 @@ export default function UsuariosPage() {
     setForm((prev) => ({ ...prev, [k]: v }))
   }
 
+  function aliasesCsvToArray(raw: string): string[] {
+    return raw
+      .split(',')
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean)
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     try {
       if (editingId) {
-        const payload: Partial<{ nome: string; email: string; perfil: string; senha: string }> = {
+        const payload: Partial<{
+          nome: string
+          email: string
+          perfil: string
+          senha: string
+          loginAliases: string[]
+        }> = {
           nome: form.nome,
           email: form.email,
           perfil: form.perfil,
+          loginAliases: aliasesCsvToArray(form.loginAliases),
         }
         if (form.senha) payload.senha = form.senha
         await editarUsuario(editingId, payload)
@@ -84,6 +104,7 @@ export default function UsuariosPage() {
           email: form.email,
           perfil: form.perfil,
           senha: form.senha,
+          loginAliases: aliasesCsvToArray(form.loginAliases),
         })
         toast.success('Usuário criado.')
       }
@@ -169,6 +190,20 @@ export default function UsuariosPage() {
               />
             </div>
           </div>
+          <div className="mt-3">
+            <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">
+              Aliases no nome do PDF (para a skill)
+            </label>
+            <input
+              value={form.loginAliases}
+              onChange={(e) => setField('loginAliases', e.target.value)}
+              placeholder="ANDRE, ANDRÉ PITA"
+              className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
+            />
+            <p className="mt-1 text-[10px] text-[var(--color-text-tertiary)]">
+              Separados por vírgula — trechos do nome do arquivo que identificam este advogado.
+            </p>
+          </div>
           <div className="mt-3 flex gap-2">
             <button
               type="submit"
@@ -206,7 +241,7 @@ export default function UsuariosPage() {
           <table className="w-full text-sm">
             <thead className="bg-[var(--color-bg-muted)]">
               <tr>
-                {['Nome', 'E-mail', 'Perfil', 'Status', ''].map((col) => (
+                {['Nome', 'E-mail', 'Aliases PDF', 'Perfil', 'Status', ''].map((col) => (
                   <th
                     key={col}
                     className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]"
@@ -223,6 +258,9 @@ export default function UsuariosPage() {
                     {u.nome}
                   </td>
                   <td className="px-4 py-2.5 text-[var(--color-text-secondary)]">{u.email}</td>
+                  <td className="max-w-[160px] truncate px-4 py-2.5 font-mono text-xs text-[var(--color-text-tertiary)]" title={(u.loginAliases ?? []).join(', ')}>
+                    {(u.loginAliases ?? []).length ? `${(u.loginAliases ?? []).length} alias` : '—'}
+                  </td>
                   <td className="px-4 py-2.5">
                     <span className="rounded-full bg-[var(--color-brand-subtle)] px-2 py-0.5 text-xs text-[var(--color-brand-text)]">
                       {PERFIL_LABEL[u.perfil] ?? u.perfil}

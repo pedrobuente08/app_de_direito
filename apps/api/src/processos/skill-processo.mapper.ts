@@ -8,6 +8,10 @@ export function parseBrDate(v: unknown): string | null {
   if (!s) {
     return null;
   }
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (iso) {
+    return s;
+  }
   const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(s);
   if (!m) {
     return null;

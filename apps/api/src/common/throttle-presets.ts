@@ -33,6 +33,11 @@ export const ThrottlePresets = {
   /** CPU + I/O na skill. */
   processoUploadPdf: { default: { limit: 12, ttl: M1 } },
 
+  /** CPU + I/O na skill (lote, até 5 paralelos no service). */
+  processoPreviewPdfBatch: { default: { limit: 8, ttl: M1 } },
+
+  processoConfirmarBatch: { default: { limit: 15, ttl: M1 } },
+
   processoPdfJobStatus: { default: { limit: 120, ttl: M1 } },
 
   processoPostManual: { default: { limit: 40, ttl: M1 } },

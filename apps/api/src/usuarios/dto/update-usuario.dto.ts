@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsIn,
   IsOptional,
@@ -12,6 +13,11 @@ export class UpdateUsuarioDto {
   @IsString()
   @MaxLength(200)
   nome?: string | null;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  loginAliases?: string[];
 
   @IsOptional()
   @IsIn(['admin', 'adm', 'advogado', 'leitura'])

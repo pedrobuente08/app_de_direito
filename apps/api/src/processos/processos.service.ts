@@ -8,8 +8,11 @@ import {
   NotFoundException,
   Optional,
   ServiceUnavailableException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import type { Queue } from 'bullmq';
+import { randomUUID } from 'node:crypto';
+import type { Express } from 'express';
 import { and, asc, count, desc, eq, ilike, sql } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import { audiencia } from '../db/schema/audiencia';
@@ -28,10 +31,16 @@ import { StorageService } from '../storage/storage.service';
 import type { SkillExtractResult } from '../skill/skill.service';
 import { SkillService } from '../skill/skill.service';
 import type { AplicarExtracaoDto } from './dto/aplicar-extracao.dto';
+import type { ConfirmarBatchItemDto } from './dto/confirmar-batch.dto';
 import type { CreateProcessoDto } from './dto/create-processo.dto';
 import type { ListProcessosQueryDto } from './dto/list-processos.query.dto';
 import type { UpdateProcessoDto } from './dto/update-processo.dto';
 import { parseCsvSimple } from '../importacao/csv-parse';
+import {
+  classificarResultadoSkill,
+  type PdfPreviewItem,
+  type PdfSemaforoCor,
+} from './pdf-batch-classifier';
 import {
   emptyToNull,
   normalizeTime,
@@ -704,6 +713,208 @@ export class ProcessosService {
     }
 
     return { importados, erros, totalLinhas: linhas.length };
+  }
+
+  private async obterProcessoIdPorDigitos(
+    escritorioId: string,
+    numero: string,
+  ): Promise<string | null> {
+    const digits = numero.replace(/\D/g, '');
+    if (!digits) {
+      return null;
+    }
+    const [row] = await this.drizzle.db
+      .select({ id: processo.id })
+      .from(processo)
+      .where(
+        and(
+          eq(processo.escritorioId, escritorioId),
+          sql`regexp_replace(${processo.numero}, '[^0-9]', '', 'g') = ${digits}`,
+        ),
+      )
+      .limit(1);
+    return row?.id ?? null;
+  }
+
+  async previewPdfBatch(
+    escritorioId: string,
+    files: Express.Multer.File[],
+  ): Promise<PdfPreviewItem[]> {
+    const config = await this.escritorio.getSkillConfigJson(escritorioId);
+    const out: PdfPreviewItem[] = [];
+    for (let i = 0; i < files.length; i += 5) {
+      const chunk = files.slice(i, i + 5);
+      const part = await Promise.all(
+        chunk.map((f) => this.previewUmPdf(escritorioId, f, config)),
+      );
+      out.push(...part);
+    }
+    return out;
+  }
+
+  async confirmarBatch(
+    escritorioId: string,
+    items: ConfirmarBatchItemDto[],
+  ): Promise<{
+    inseridos: number;
+    jaExistiam: number;
+    erros: { itemId: string; mensagem: string }[];
+  }> {
+    const cfg = await this.escritorio.getSkillConfigJson(escritorioId);
+    let inseridos = 0;
+    let jaExistiam = 0;
+    const erros: { itemId: string; mensagem: string }[] = [];
+
+    for (const item of items) {
+      const num = item.numero.trim();
+      if (!num) {
+        erros.push({ itemId: item.itemId, mensagem: 'Número vazio.' });
+        continue;
+      }
+      const dupId = await this.obterProcessoIdPorDigitos(escritorioId, num);
+      if (dupId) {
+        jaExistiam += 1;
+        continue;
+      }
+      try {
+        const skillLike = this.confirmarItemParaSkill(item, cfg);
+        const procRow = await this.upsertFromSkill(escritorioId, skillLike, {
+          requerConferencia: false,
+        });
+        await this.syncProcedenteSeNecessario(escritorioId, procRow);
+        inseridos += 1;
+      } catch (e) {
+        erros.push({
+          itemId: item.itemId,
+          mensagem: (e as Error).message,
+        });
+      }
+    }
+
+    return { inseridos, jaExistiam, erros };
+  }
+
+  private confirmarItemParaSkill(
+    item: ConfirmarBatchItemDto,
+    cfg: Record<string, unknown>,
+  ): Record<string, unknown> {
+    return {
+      numero: item.numero.trim(),
+      cliente_nome: item.clienteNome ?? null,
+      cliente_cpf: item.clienteCpf ?? null,
+      reu_texto: item.reuTexto ?? null,
+      vara: item.vara ?? null,
+      materia: item.materia ?? null,
+      sistema: item.sistema.trim(),
+      login: item.login ?? null,
+      data_distribuicao: item.dataDistribuicao?.trim() || null,
+      data_audiencia: item.dataAudiencia?.trim() || null,
+      hora_audiencia: item.horaAudiencia?.trim() || null,
+      status_processo_inicial:
+        cfg.status_processo_inicial ?? cfg.situacao_inicial,
+      fase_inicial: cfg.fase_inicial,
+    };
+  }
+
+  private previewPdfItemFromSkill(
+    arquivo: string,
+    itemId: string,
+    resultado: SkillExtractResult,
+    cls: { cor: PdfSemaforoCor; alertas: string[] },
+    duplicata: boolean,
+    processoExistenteId: string | undefined,
+  ): PdfPreviewItem {
+    const proc = resultado.processo;
+    const conf = Number(resultado.confidence) || 0;
+    return {
+      arquivo,
+      itemId,
+      numero: proc ? emptyToNull(proc.numero) : null,
+      clienteNome: proc ? emptyToNull(proc.cliente_nome) : null,
+      clienteCpf: proc ? emptyToNull(proc.cliente_cpf) : null,
+      reuTexto: proc ? emptyToNull(proc.reu_texto) : null,
+      vara: proc ? emptyToNull(proc.vara) : null,
+      materia: proc ? emptyToNull(proc.materia) : null,
+      sistema: proc ? emptyToNull(proc.sistema) : null,
+      login: proc ? emptyToNull(proc.login) : null,
+      dataDistribuicao: proc ? parseBrDate(proc.data_distribuicao) : null,
+      dataAudiencia: proc ? parseBrDate(proc.data_audiencia) : null,
+      horaAudiencia: proc ? normalizeTime(proc.hora_audiencia) : null,
+      cor: cls.cor,
+      alertas: cls.alertas,
+      confidence: conf,
+      duplicata,
+      ...(processoExistenteId ? { processoExistenteId } : {}),
+    };
+  }
+
+  private async previewUmPdf(
+    escritorioId: string,
+    file: Express.Multer.File,
+    config: Record<string, unknown>,
+  ): Promise<PdfPreviewItem> {
+    const nome =
+      file.originalname
+        ?.replace(/^.*[/\\]/g, '')
+        .replace(/\0/g, '')
+        .trim()
+        .slice(0, 200) || 'documento.pdf';
+    const itemId = randomUUID();
+    try {
+      const resultado = await this.skill.extract(file.buffer, nome, config);
+      const numeroRaw = resultado.processo
+        ? String(resultado.processo.numero ?? '').trim()
+        : '';
+      let processoExistenteId: string | undefined;
+      let duplicata = false;
+      if (numeroRaw) {
+        const dupId = await this.obterProcessoIdPorDigitos(
+          escritorioId,
+          numeroRaw,
+        );
+        if (dupId) {
+          duplicata = true;
+          processoExistenteId = dupId;
+        }
+      }
+      const cls = classificarResultadoSkill(resultado, duplicata);
+      return this.previewPdfItemFromSkill(
+        nome,
+        itemId,
+        resultado,
+        cls,
+        duplicata,
+        processoExistenteId,
+      );
+    } catch (err) {
+      const msg =
+        err instanceof BadRequestException ||
+        err instanceof UnauthorizedException ||
+        err instanceof ServiceUnavailableException
+          ? (err as Error).message
+          : err instanceof Error
+            ? err.message
+            : String(err);
+      return {
+        arquivo: nome,
+        itemId,
+        numero: null,
+        clienteNome: null,
+        clienteCpf: null,
+        reuTexto: null,
+        vara: null,
+        materia: null,
+        sistema: null,
+        login: null,
+        dataDistribuicao: null,
+        dataAudiencia: null,
+        horaAudiencia: null,
+        cor: 'VERMELHO',
+        alertas: [msg],
+        confidence: 0,
+        duplicata: false,
+      };
+    }
   }
 
   /**

@@ -112,25 +112,11 @@ async function main() {
     return;
   }
 
-  const mapa_comarcas: Record<string, string> = {};
-  for (const c of COMARCAS) {
-    mapa_comarcas[c.codigo] = c.abreviado;
-  }
-
-  const login_map: Record<string, string> = {};
-  for (const row of CAPTADORES) {
-    for (const alias of row.aliases) {
-      login_map[alias.toUpperCase()] = row.nome;
-    }
-  }
-
   const config: EscritorioConfig = {
     materias_validas: ESCRITORIO.materias_validas,
     fase_inicial: 'AUDIÊNCIA AGENDADA',
     situacao_inicial: 'ATIVO',
     status_processo_inicial: 'ATIVO',
-    mapa_comarcas,
-    login_map,
   };
 
   const [e] = await db
@@ -167,6 +153,7 @@ async function main() {
     nome: 'Administrador',
     perfil: 'admin',
     ativo: true,
+    loginAliases: [],
   });
 
   for (const row of CAPTADORES) {
@@ -186,6 +173,13 @@ async function main() {
       nome: row.nome,
       perfil: row.perfil ?? 'adm',
       ativo: true,
+      loginAliases: [
+        ...new Set(
+          row.aliases
+            .map((a) => a.trim().toUpperCase())
+            .filter(Boolean),
+        ),
+      ],
     });
   }
 

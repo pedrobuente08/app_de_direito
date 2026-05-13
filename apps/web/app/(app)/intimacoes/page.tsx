@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getAuthMe, getEscritorioConfig, getProcessos, uploadPdf } from '@/lib/api'
 import { ToastContainer, useToast } from '@/lib/toast'
@@ -8,7 +7,6 @@ import type {
   DropdownsProcessoConfig,
   Processo,
   ProcessosListMeta,
-  UploadPdfResult,
 } from '@/lib/types'
 import { ProcessosGrid } from './_components/processos-grid'
 import { ProcessoModal } from './_components/processo-modal'
@@ -32,7 +30,6 @@ export default function IntimacoesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
-  const [uploadResult, setUploadResult] = useState<UploadPdfResult | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
 
@@ -148,10 +145,8 @@ export default function IntimacoesPage() {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
-    setUploadResult(null)
     try {
       const result = await uploadPdf(file)
-      setUploadResult(result)
       if ('assincrono' in result && result.assincrono) {
         toast.success(`PDF na fila de processamento (job ${result.jobId}). Atualize em instantes.`)
         load()
@@ -303,22 +298,6 @@ export default function IntimacoesPage() {
       )}
 
       {!readOnly && <ReuNormalizacao processos={processos} onNormalized={load} />}
-
-      {uploadResult &&
-        'ok' in uploadResult &&
-        !uploadResult.ok && (
-          <div className="mb-4 flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--urgencia-atencao-border)] bg-[var(--urgencia-atencao-bg)] px-4 py-3 text-sm">
-            <span className="text-[var(--urgencia-atencao-text)]">
-              Extração com baixa confiança — revisão manual necessária.
-            </span>
-            <Link
-              href={`/revisoes/${uploadResult.extracaoPendenteId}`}
-              className="ml-auto shrink-0 font-medium text-[var(--color-brand)] hover:underline"
-            >
-              Revisar agora →
-            </Link>
-          </div>
-        )}
 
       {meta ? (
         <p className="mb-2 text-xs text-[var(--color-text-secondary)]">

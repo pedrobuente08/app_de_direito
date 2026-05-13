@@ -27,8 +27,6 @@ export type DropdownsProcessoConfig = {
 };
 
 export type EscritorioConfig = {
-  mapa_comarcas?: Record<string, string>;
-  login_map?: Record<string, string>;
   materias_validas?: string[];
   fase_inicial?: string;
   situacao_inicial?: string;

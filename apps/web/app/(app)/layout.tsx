@@ -40,6 +40,7 @@ const navGroups = [
     items: [
       { href: '/usuarios', label: 'Usuários' },
       { href: '/comarcas', label: 'Comarcas' },
+      { href: '/reus', label: 'Réus' },
     ],
   },
   {

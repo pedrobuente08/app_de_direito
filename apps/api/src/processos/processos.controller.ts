@@ -10,15 +10,17 @@ import {
   Post,
   Query,
   UploadedFile,
+  UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import type { Express } from 'express';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ThrottlePresets } from '../common/throttle-presets';
 import { Roles } from '../common/metadata';
+import { ConfirmarBatchDto } from './dto/confirmar-batch.dto';
 import { CreateProcessoDto } from './dto/create-processo.dto';
 import { ListProcessosQueryDto } from './dto/list-processos.query.dto';
 import { UpdateProcessoDto } from './dto/update-processo.dto';
@@ -28,6 +30,26 @@ function sanitizePdfFilename(name: string): string {
   const base = name.replace(/^.*[/\\]/g, '').replace(/\0/g, '');
   const trimmed = base.trim().slice(0, 200);
   return trimmed || 'documento.pdf';
+}
+
+function pdfMulterFileFilter(
+  _req: unknown,
+  file: Express.Multer.File,
+  cb: (error: Error | null, acceptFile: boolean) => void,
+) {
+  const ok =
+    file.mimetype === 'application/pdf' ||
+    file.mimetype === 'application/octet-stream';
+  if (!ok) {
+    cb(
+      new BadRequestException(
+        'Tipo de arquivo inválido. Envie um PDF.',
+      ) as Error,
+      false,
+    );
+    return;
+  }
+  cb(null, true);
 }
 
 @Controller('processos')
@@ -56,21 +78,7 @@ export class ProcessosController {
   @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: 15 * 1024 * 1024 },
-      fileFilter: (_req, file, cb) => {
-        const ok =
-          file.mimetype === 'application/pdf' ||
-          file.mimetype === 'application/octet-stream';
-        if (!ok) {
-          cb(
-            new BadRequestException(
-              'Tipo de arquivo inválido. Envie um PDF.',
-            ) as Error,
-            false,
-          );
-          return;
-        }
-        cb(null, true);
-      },
+      fileFilter: pdfMulterFileFilter,
     }),
   )
   async uploadPdf(
@@ -97,21 +105,7 @@ export class ProcessosController {
   @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: 15 * 1024 * 1024 },
-      fileFilter: (_req, file, cb) => {
-        const ok =
-          file.mimetype === 'application/pdf' ||
-          file.mimetype === 'application/octet-stream';
-        if (!ok) {
-          cb(
-            new BadRequestException(
-              'Tipo de arquivo inválido. Envie um PDF.',
-            ) as Error,
-            false,
-          );
-          return;
-        }
-        cb(null, true);
-      },
+      fileFilter: pdfMulterFileFilter,
     }),
   )
   async extractPdf(
@@ -127,6 +121,38 @@ export class ProcessosController {
       file.buffer,
       nome,
     );
+  }
+
+  @Post('preview-pdf-batch')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.processoPreviewPdfBatch)
+  @UseInterceptors(
+    FilesInterceptor('files', 30, {
+      limits: { fileSize: 15 * 1024 * 1024 },
+      fileFilter: pdfMulterFileFilter,
+    }),
+  )
+  async previewPdfBatch(
+    @CurrentUser() user: AuthUser,
+    @UploadedFiles() files: Express.Multer.File[] | undefined,
+  ) {
+    const list = files ?? [];
+    if (!list.length) {
+      throw new BadRequestException(
+        'Envie ao menos um PDF no campo files (multipart).',
+      );
+    }
+    return this.processos.previewPdfBatch(user.escritorioId, list);
+  }
+
+  @Post('confirmar-batch')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.processoConfirmarBatch)
+  confirmarBatch(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ConfirmarBatchDto,
+  ) {
+    return this.processos.confirmarBatch(user.escritorioId, dto.items);
   }
 
   @Get('pdf-jobs/:jobId')

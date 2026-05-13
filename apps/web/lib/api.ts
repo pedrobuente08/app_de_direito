@@ -2,6 +2,8 @@ import type {
   Audiencia,
   Comarca,
   Comunicacao,
+  ConfirmarBatchItem,
+  ConfirmarBatchResult,
   DashAudiencias,
   DashPendenciaStatus,
   DashTeseReuVara,
@@ -15,6 +17,7 @@ import type {
   Pendencia,
   Procedente,
   PatchProcessoPayload,
+  PdfPreviewItem,
   Processo,
   ProcessoCampos,
   ProcessosListResponse,
@@ -196,6 +199,33 @@ export async function uploadPdf(file: File): Promise<UploadPdfResult> {
   return res.json() as Promise<UploadPdfResult>
 }
 
+export async function previewPdfBatch(files: File[]): Promise<PdfPreviewItem[]> {
+  const form = new FormData()
+  for (const f of files) {
+    form.append('files', f)
+  }
+  const res = await fetch(apiUrl('/processos/preview-pdf-batch'), {
+    method: 'POST',
+    credentials: 'include',
+    body: form,
+  })
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>
+    throw new Error(parseApiErrorMessage(body))
+  }
+  return res.json() as Promise<PdfPreviewItem[]>
+}
+
+export async function confirmarBatchPdf(
+  items: ConfirmarBatchItem[],
+): Promise<ConfirmarBatchResult> {
+  return apiFetch<ConfirmarBatchResult>('/processos/confirmar-batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  })
+}
+
 // ─── Extração pendente ────────────────────────────────────────────────────────
 
 export async function getExtracoesPendentes(): Promise<ExtracaoPendente[]> {
@@ -228,6 +258,7 @@ export async function criarUsuario(payload: {
   email: string
   perfil: string
   senha: string
+  loginAliases?: string[]
 }): Promise<Usuario> {
   return apiFetch<Usuario>('/usuarios', {
     method: 'POST',
@@ -238,7 +269,13 @@ export async function criarUsuario(payload: {
 
 export async function editarUsuario(
   id: string,
-  payload: Partial<{ nome: string; email: string; perfil: string; senha: string }>,
+  payload: Partial<{
+    nome: string
+    email: string
+    perfil: string
+    senha: string
+    loginAliases: string[]
+  }>,
 ): Promise<Usuario> {
   return apiFetch<Usuario>(`/usuarios/${id}`, {
     method: 'PATCH',

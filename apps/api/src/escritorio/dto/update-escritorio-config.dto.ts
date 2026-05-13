@@ -35,14 +35,6 @@ export class DropdownsProcessoDto {
  */
 export class UpdateEscritorioConfigDto {
   @IsOptional()
-  @IsObject()
-  mapa_comarcas?: Record<string, string>;
-
-  @IsOptional()
-  @IsObject()
-  login_map?: Record<string, string>;
-
-  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   materias_validas?: string[];

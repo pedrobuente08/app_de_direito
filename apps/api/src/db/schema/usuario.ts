@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   pgTable,
@@ -18,6 +19,11 @@ export const usuario = pgTable('usuario', {
   email: varchar('email', { length: 200 }).notNull().unique(),
   senhaHash: varchar('senha_hash', { length: 255 }).notNull(),
   nome: varchar('nome', { length: 200 }),
+  /** Aliases usados no nome do PDF → mesmo advogado que `nome` (skill `login_map`). */
+  loginAliases: text('login_aliases')
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
   perfil: varchar('perfil', { length: 20 }).notNull().$type<Perfil>(),
   oabs: text('oabs').array(),
   ativo: boolean('ativo').default(true).notNull(),

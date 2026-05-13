@@ -1,14 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
+import { comarca } from '../db/schema/comarca';
 import type { EscritorioConfig } from '../db/schema/escritorio';
 import { escritorio } from '../db/schema/escritorio';
+import { usuario } from '../db/schema/usuario';
 import type { UpdateEscritorioConfigDto } from './dto/update-escritorio-config.dto';
 
 @Injectable()
 export class EscritorioService {
   constructor(private readonly drizzle: DrizzleService) {}
 
+  /**
+   * Monta o JSON enviado à skill: comarcas e logins vêm das tabelas;
+   * demais chaves continuam em `escritorio.config`.
+   */
   async getSkillConfigJson(escritorioId: string): Promise<Record<string, unknown>> {
     const [row] = await this.drizzle.db
       .select({ config: escritorio.config })
@@ -21,15 +27,61 @@ export class EscritorioService {
     }
 
     const c = (row.config ?? {}) as EscritorioConfig;
+
+    const comarcas = await this.drizzle.db
+      .select({
+        codigo: comarca.codigo,
+        abreviado: comarca.abreviado,
+      })
+      .from(comarca)
+      .where(eq(comarca.escritorioId, escritorioId));
+
+    const mapa_comarcas: Record<string, string> = {};
+    for (const cm of comarcas) {
+      const cod = cm.codigo?.trim();
+      if (!cod) {
+        continue;
+      }
+      mapa_comarcas[cod] = (cm.abreviado ?? '').trim();
+    }
+
+    const usuariosRows = await this.drizzle.db
+      .select({
+        nome: usuario.nome,
+        loginAliases: usuario.loginAliases,
+      })
+      .from(usuario)
+      .where(eq(usuario.escritorioId, escritorioId));
+
+    const login_map: Record<string, string> = {};
+    for (const u of usuariosRows) {
+      const canonical = u.nome?.trim();
+      if (!canonical) {
+        continue;
+      }
+      login_map[canonical.toUpperCase()] = canonical;
+      for (const raw of u.loginAliases ?? []) {
+        const a = raw?.trim().toUpperCase();
+        if (a) {
+          login_map[a] = canonical;
+        }
+      }
+    }
+
     return {
-      mapa_comarcas: c.mapa_comarcas ?? {},
-      login_map: c.login_map ?? {},
+      mapa_comarcas,
+      login_map,
       materias_validas: c.materias_validas ?? [],
       fase_inicial: c.fase_inicial ?? 'AUDIÊNCIA AGENDADA',
       situacao_inicial: c.situacao_inicial ?? 'ATIVO',
       status_processo_inicial:
         c.status_processo_inicial ?? c.situacao_inicial ?? 'ATIVO',
     };
+  }
+
+  /** Reservado para invalidar cache Redis da config da skill, quando existir. */
+  invalidarCacheSkill(_escritorioId: string): void {
+    void _escritorioId;
   }
 
   async obterPerfilTenant(escritorioId: string) {
@@ -57,14 +109,12 @@ export class EscritorioService {
     dto: UpdateEscritorioConfigDto,
   ): Promise<EscritorioConfig> {
     const current = await this.obterPerfilTenant(escritorioId);
-    const prev = (current.config ?? {}) as EscritorioConfig;
+    const rawPrev = (current.config ?? {}) as Record<string, unknown>;
+    const { mapa_comarcas: _mc, login_map: _lm, ...prevRest } = rawPrev;
+    const prev = prevRest as EscritorioConfig;
 
     const merged: EscritorioConfig = {
       ...prev,
-      ...(dto.mapa_comarcas !== undefined
-        ? { mapa_comarcas: dto.mapa_comarcas }
-        : {}),
-      ...(dto.login_map !== undefined ? { login_map: dto.login_map } : {}),
       ...(dto.materias_validas !== undefined
         ? { materias_validas: dto.materias_validas }
         : {}),

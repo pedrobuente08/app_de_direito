@@ -7,12 +7,32 @@ import * as bcrypt from 'bcrypt';
 import { and, eq } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import { usuario } from '../db/schema/usuario';
+import { EscritorioService } from '../escritorio/escritorio.service';
 import type { CreateUsuarioDto } from './dto/create-usuario.dto';
 import type { UpdateUsuarioDto } from './dto/update-usuario.dto';
 
+function normalizarLoginAliases(raw?: string[] | null): string[] {
+  if (!raw?.length) {
+    return [];
+  }
+  const visto = new Set<string>();
+  const out: string[] = [];
+  for (const x of raw) {
+    const u = x?.trim().toUpperCase();
+    if (u && !visto.has(u)) {
+      visto.add(u);
+      out.push(u);
+    }
+  }
+  return out;
+}
+
 @Injectable()
 export class UsuariosService {
-  constructor(private readonly drizzle: DrizzleService) {}
+  constructor(
+    private readonly drizzle: DrizzleService,
+    private readonly escritorio: EscritorioService,
+  ) {}
 
   async listar(escritorioId: string) {
     return this.drizzle.db
@@ -23,6 +43,7 @@ export class UsuariosService {
         perfil: usuario.perfil,
         ativo: usuario.ativo,
         createdAt: usuario.createdAt,
+        loginAliases: usuario.loginAliases,
       })
       .from(usuario)
       .where(eq(usuario.escritorioId, escritorioId));
@@ -52,6 +73,7 @@ export class UsuariosService {
         nome: dto.nome?.trim() ?? null,
         perfil: dto.perfil,
         ativo: true,
+        loginAliases: normalizarLoginAliases(dto.loginAliases),
       })
       .returning({
         id: usuario.id,
@@ -60,11 +82,13 @@ export class UsuariosService {
         perfil: usuario.perfil,
         ativo: usuario.ativo,
         createdAt: usuario.createdAt,
+        loginAliases: usuario.loginAliases,
       });
 
     if (!row) {
       throw new ConflictException('Falha ao criar usuário');
     }
+    this.escritorio.invalidarCacheSkill(escritorioId);
     return row;
   }
 
@@ -110,6 +134,9 @@ export class UsuariosService {
     if (dto.senha !== undefined) {
       patch.senhaHash = await bcrypt.hash(dto.senha, 10);
     }
+    if (dto.loginAliases !== undefined) {
+      patch.loginAliases = normalizarLoginAliases(dto.loginAliases);
+    }
 
     if (!Object.keys(patch).length) {
       return this.omitSenha(existing);
@@ -119,6 +146,8 @@ export class UsuariosService {
       .update(usuario)
       .set(patch)
       .where(eq(usuario.id, id));
+
+    this.escritorio.invalidarCacheSkill(escritorioId);
 
     const [out] = await this.drizzle.db
       .select()

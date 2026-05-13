@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsEmail,
   IsIn,
   IsOptional,
@@ -19,6 +20,11 @@ export class CreateUsuarioDto {
   @IsString()
   @MaxLength(200)
   nome?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  loginAliases?: string[];
 
   @IsIn(['admin', 'adm', 'advogado', 'leitura'])
   perfil!: 'admin' | 'adm' | 'advogado' | 'leitura';

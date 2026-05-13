@@ -101,11 +101,12 @@ export type ExtracaoPendenteDetalhe = ExtracaoPendente & {
 
 export type Usuario = {
   id: string
-  nome: string
+  nome: string | null
   email: string
   perfil: 'admin' | 'adm' | 'advogado' | 'leitura'
   ativo: boolean
   createdAt: string
+  loginAliases: string[]
 }
 
 export type Comarca = {
@@ -131,13 +132,55 @@ export type DropdownsProcessoConfig = {
 }
 
 export type EscritorioConfig = {
-  mapa_comarcas?: Record<string, string>
-  login_map?: Record<string, string>
   materias_validas?: string[]
   fase_inicial?: string
   situacao_inicial?: string
   status_processo_inicial?: string
   dropdowns_processo?: DropdownsProcessoConfig
+}
+
+export type PdfSemaforoCor = 'VERDE' | 'AMARELO' | 'VERMELHO'
+
+export type PdfPreviewItem = {
+  arquivo: string
+  itemId: string
+  numero: string | null
+  clienteNome: string | null
+  clienteCpf: string | null
+  reuTexto: string | null
+  vara: string | null
+  materia: string | null
+  sistema: string | null
+  login: string | null
+  dataDistribuicao: string | null
+  dataAudiencia: string | null
+  horaAudiencia: string | null
+  cor: PdfSemaforoCor
+  alertas: string[]
+  confidence: number
+  duplicata: boolean
+  processoExistenteId?: string
+}
+
+export type ConfirmarBatchItem = {
+  itemId: string
+  numero: string
+  clienteNome?: string | null
+  clienteCpf?: string | null
+  reuTexto?: string | null
+  vara?: string | null
+  materia?: string | null
+  sistema: string
+  login?: string | null
+  dataDistribuicao?: string | null
+  dataAudiencia?: string | null
+  horaAudiencia?: string | null
+}
+
+export type ConfirmarBatchResult = {
+  inseridos: number
+  jaExistiam: number
+  erros: { itemId: string; mensagem: string }[]
 }
 
 export type AuthMe = {
