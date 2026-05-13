@@ -27,6 +27,7 @@ import { MailModule } from './mail/mail.module';
 import { PendenciasModule } from './pendencias/pendencias.module';
 import { ProcessosModule } from './processos/processos.module';
 import { ProcedentesModule } from './procedentes/procedentes.module';
+import { RecursosModule } from './recursos/recursos.module';
 import { ReusModule } from './reus/reus.module';
 import { SentencasModule } from './sentencas/sentencas.module';
 import { StorageModule } from './storage/storage.module';
@@ -83,6 +84,7 @@ const adminImports = process.env.PLATFORM_JWT_SECRET?.trim()
     SentencasModule,
     ImprocedentesModule,
     EscritoriosAdversariosModule,
+    RecursosModule,
   ],
   controllers: [HealthController],
   providers: [

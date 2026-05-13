@@ -444,6 +444,31 @@ export async function sincronizarProcedentesEmFalta(): Promise<{ criadas: number
   })
 }
 
+export type CenarioSegundoGrau = 'A' | 'B' | 'C' | 'D'
+
+export type RegistrarSegundoGrauPayload = {
+  processoId: string
+  cenario: CenarioSegundoGrau
+  data: string
+  valor?: string | null
+  observacoes?: string | null
+  turma?: string | null
+}
+
+/** E4 — decisão de 2º grau (cenários A–D do PLANO_AJUSTES). */
+export async function registrarSegundoGrau(
+  payload: RegistrarSegundoGrauPayload,
+): Promise<{ cenario: string; sentencas: unknown[] }> {
+  return apiFetch<{ cenario: string; sentencas: unknown[] }>(
+    '/recursos/segundo-grau',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+}
+
 // ─── Dashboards ───────────────────────────────────────────────────────────────
 
 export async function getDashVaras(): Promise<DashVara[]> {

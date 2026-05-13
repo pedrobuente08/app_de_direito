@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { and, desc, eq, gte } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
+import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import {
   audiencia,
   audienciaHistorico,
@@ -65,7 +66,10 @@ function formatTimeHhMmForAudSync(v: unknown): string | null {
 
 @Injectable()
 export class AudienciasService {
-  constructor(private readonly drizzle: DrizzleService) {}
+  constructor(
+    private readonly drizzle: DrizzleService,
+    private readonly faseDerivacao: FaseDerivacaoService,
+  ) {}
 
   async listar(escritorioId: string, limit = 500) {
     return this.drizzle.db
@@ -129,6 +133,7 @@ export class AudienciasService {
       if (!row) {
         throw new ConflictException('Falha ao criar audiência');
       }
+      await this.faseDerivacao.aplicarAposMutacao(escritorioId, dto.processoId);
       return row;
     } catch (e) {
       if (e instanceof ConflictException || e instanceof BadRequestException) {
@@ -271,7 +276,9 @@ export class AudienciasService {
       .where(
         and(eq(audiencia.escritorioId, escritorioId), eq(audiencia.id, id)),
       );
-    return this.obter(escritorioId, id);
+    const out = await this.obter(escritorioId, id);
+    await this.faseDerivacao.aplicarAposMutacao(escritorioId, out.processoId);
+    return out;
   }
 
   async finalizar(
@@ -355,6 +362,10 @@ export class AudienciasService {
         .where(eq(audienciaHistorico.audienciaIdOrigem, current.id))
         .orderBy(desc(audienciaHistorico.archivedAt))
         .limit(1);
+      await this.faseDerivacao.aplicarAposMutacao(
+        escritorioId,
+        current.processoId,
+      );
       return { movidoPara: 'historico', registro: last };
     }
 
@@ -389,6 +400,10 @@ export class AudienciasService {
         .where(eq(audienciaLixeira.audienciaIdOrigem, current.id))
         .orderBy(desc(audienciaLixeira.discardedAt))
         .limit(1);
+      await this.faseDerivacao.aplicarAposMutacao(
+        escritorioId,
+        current.processoId,
+      );
       return { movidoPara: 'lixeira', registro: last };
     }
 

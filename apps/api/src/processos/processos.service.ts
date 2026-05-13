@@ -23,6 +23,7 @@ import { reu } from '../db/schema/reu';
 import { reuAlias } from '../db/schema/reu-alias';
 import { AudienciasService } from '../audiencias/audiencias.service';
 import { EscritorioService } from '../escritorio/escritorio.service';
+import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import { StorageService } from '../storage/storage.service';
 import type { SkillExtractResult } from '../skill/skill.service';
 import { SkillService } from '../skill/skill.service';
@@ -82,6 +83,7 @@ export class ProcessosService {
     private readonly skill: SkillService,
     private readonly escritorio: EscritorioService,
     private readonly audiencias: AudienciasService,
+    private readonly faseDerivacao: FaseDerivacaoService,
     private readonly storage: StorageService,
     @Optional()
     @Inject(getQueueToken('pdf-extract'))
@@ -196,6 +198,18 @@ export class ProcessosService {
   ) {
     const antes = await this.obterPorId(escritorioId, id);
     const faseAntes = antes.faseAtual?.trim() ?? null;
+
+    if (dto.faseAtual !== undefined) {
+      const n = await this.faseDerivacao.contarPendenciasAbertas(
+        escritorioId,
+        id,
+      );
+      if (n > 0) {
+        throw new BadRequestException(
+          'Não é possível alterar a fase manualmente enquanto houver pendências abertas.',
+        );
+      }
+    }
 
     if (dto.reuId !== undefined && dto.reuId !== null) {
       const [r] = await this.drizzle.db
@@ -343,7 +357,9 @@ export class ProcessosService {
     }
 
     const atualizado = await this.obterPorId(escritorioId, id);
-    await this.syncProcedenteSeNecessario(escritorioId, atualizado);
+    await this.syncProcedenteSeNecessario(escritorioId, atualizado, {
+      skipFaseDerivacao: dto.faseAtual !== undefined,
+    });
 
     if (
       dto.dataAudiencia !== undefined ||
@@ -517,6 +533,7 @@ export class ProcessosService {
   private async syncProcedenteSeNecessario(
     escritorioId: string,
     row: typeof processo.$inferSelect,
+    opts?: { skipFaseDerivacao?: boolean },
   ) {
     const db = this.drizzle.db;
     const s = (await this.ultimaSentencaResultado(row.id)) ?? '';
@@ -524,6 +541,9 @@ export class ProcessosService {
       await db
         .delete(processoProcedente)
         .where(eq(processoProcedente.processoId, row.id));
+      if (!opts?.skipFaseDerivacao) {
+        await this.faseDerivacao.aplicarAposMutacao(escritorioId, row.id);
+      }
       return;
     }
 
@@ -542,6 +562,9 @@ export class ProcessosService {
         target: processoProcedente.processoId,
         set: { updatedAt: now },
       });
+    if (!opts?.skipFaseDerivacao) {
+      await this.faseDerivacao.aplicarAposMutacao(escritorioId, row.id);
+    }
   }
 
   /** Após insert/update em `sentenca`, reavalia vínculo com `processo_procedente`. */

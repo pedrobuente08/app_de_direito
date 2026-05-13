@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { and, desc, eq } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
+import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import {
   pendencia,
   pendenciaHistorico,
@@ -30,7 +31,10 @@ function hojeIso(): string {
 
 @Injectable()
 export class PendenciasService {
-  constructor(private readonly drizzle: DrizzleService) {}
+  constructor(
+    private readonly drizzle: DrizzleService,
+    private readonly faseDerivacao: FaseDerivacaoService,
+  ) {}
 
   async listar(escritorioId: string, limit = 500) {
     return this.drizzle.db
@@ -82,6 +86,7 @@ export class PendenciasService {
       if (!row) {
         throw new ConflictException('Falha ao criar pendência');
       }
+      await this.faseDerivacao.aplicarAposMutacao(escritorioId, dto.processoId);
       return row;
     } catch (e) {
       if (e instanceof ConflictException) throw e;
@@ -147,6 +152,10 @@ export class PendenciasService {
         and(eq(pendencia.escritorioId, escritorioId), eq(pendencia.id, id)),
       );
 
+    await this.faseDerivacao.aplicarAposMutacao(
+      escritorioId,
+      current.processoId,
+    );
     return this.obter(escritorioId, id);
   }
 
@@ -194,6 +203,10 @@ export class PendenciasService {
       .orderBy(desc(pendenciaHistorico.archivedAt))
       .limit(1);
 
+    await this.faseDerivacao.aplicarAposMutacao(
+      escritorioId,
+      current.processoId,
+    );
     return { movidoPara: 'historico', registro: last };
   }
 
@@ -238,6 +251,10 @@ export class PendenciasService {
       .orderBy(desc(pendenciaProblema.movedAt))
       .limit(1);
 
+    await this.faseDerivacao.aplicarAposMutacao(
+      escritorioId,
+      current.processoId,
+    );
     return { movidoPara: 'problema', registro: last };
   }
 
@@ -295,6 +312,7 @@ export class PendenciasService {
       if (!row) {
         throw new ConflictException('Falha ao reabrir pendência');
       }
+      await this.faseDerivacao.aplicarAposMutacao(escritorioId, h.processoId);
       return row;
     } catch {
       throw new ConflictException(

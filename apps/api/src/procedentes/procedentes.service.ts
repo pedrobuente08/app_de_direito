@@ -6,6 +6,7 @@ import {
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
 import { DrizzleService } from '../db/drizzle.service';
+import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import { processo } from '../db/schema/processo';
 import {
   processoProcedente,
@@ -55,7 +56,10 @@ export type ProcedenteListaItem = {
 
 @Injectable()
 export class ProcedentesService {
-  constructor(private readonly drizzle: DrizzleService) {}
+  constructor(
+    private readonly drizzle: DrizzleService,
+    private readonly faseDerivacao: FaseDerivacaoService,
+  ) {}
 
   private isoDate(d: unknown): string | null {
     if (d == null) {
@@ -225,6 +229,7 @@ export class ProcedentesService {
           set: { updatedAt: now },
         });
       criadas += 1;
+      await this.faseDerivacao.aplicarAposMutacao(escritorioId, p.id);
     }
 
     return { criadas };
@@ -316,6 +321,12 @@ export class ProcedentesService {
         usuarioId: user.userId,
       });
     }
+
+    await this.faseDerivacao.aplicarAposMutacao(
+      escritorioId,
+      processoId,
+      user.userId,
+    );
 
     return this.obter(escritorioId, processoId);
   }

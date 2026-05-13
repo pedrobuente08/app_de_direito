@@ -1,0 +1,11 @@
+/** Valores canônicos de `processo.fase_atual` (PLANO_AJUSTES E3 / BRIEFIN). */
+export const FaseDerivada = {
+  AGUARDANDO_PROCURACAO: 'AGUARDANDO PROCURAÇÃO',
+  EM_RECURSO: 'EM RECURSO',
+  AGUARDANDO_AUDIENCIA: 'AGUARDANDO AUDIÊNCIA',
+  AGUARDANDO_SENTENCA: 'AGUARDANDO SENTENÇA',
+  AGUARDANDO_TRANSITO: 'AGUARDANDO TRÂNSITO',
+  AGUARDANDO_ALVARA: 'AGUARDANDO ALVARÁ',
+} as const;
+
+export type FaseDerivadaKey = keyof typeof FaseDerivada;
