@@ -13,6 +13,7 @@ import {
   audienciaLixeira,
 } from '../db/schema/audiencia';
 import { audienciaAusente } from '../db/schema/audiencia-ausente';
+import { escritorioAdversario } from '../db/schema/escritorio-adversario';
 import { processo } from '../db/schema/processo';
 import { parseCsvSimple } from '../importacao/csv-parse';
 import type { CreateAudienciaDto } from './dto/create-audiencia.dto';
@@ -72,12 +73,67 @@ export class AudienciasService {
   ) {}
 
   async listar(escritorioId: string, limit = 500) {
-    return this.drizzle.db
-      .select()
+    const rows = await this.drizzle.db
+      .select({
+        aud: audiencia,
+        procNumero: processo.numero,
+        procCliente: processo.clienteNome,
+        procTelefone: processo.telefone,
+        procReu: processo.reuTexto,
+        procMateria: processo.materia,
+        procVara: processo.vara,
+        procTipoAud: processo.tipoAudiencia,
+        procQual: processo.qualidadeCaso,
+        procLogin: processo.login,
+        advNome: escritorioAdversario.nomeCanonico,
+      })
       .from(audiencia)
+      .leftJoin(
+        processo,
+        and(
+          eq(audiencia.processoId, processo.id),
+          eq(processo.escritorioId, escritorioId),
+        ),
+      )
+      .leftJoin(
+        escritorioAdversario,
+        eq(audiencia.escritorioAdversarioId, escritorioAdversario.id),
+      )
       .where(eq(audiencia.escritorioId, escritorioId))
       .orderBy(desc(audiencia.data), desc(audiencia.createdAt))
       .limit(limit);
+
+    return rows.map(
+      ({
+        aud,
+        procNumero,
+        procCliente,
+        procTelefone,
+        procReu,
+        procMateria,
+        procVara,
+        procTipoAud,
+        procQual,
+        procLogin,
+        advNome,
+      }) => ({
+        ...aud,
+        processo: procNumero
+          ? {
+              numero: procNumero,
+              clienteNome: procCliente,
+              telefone: procTelefone,
+              reuTexto: procReu,
+              materia: procMateria,
+              vara: procVara,
+              tipoAudiencia: procTipoAud,
+              qualidadeCaso: procQual,
+              login: procLogin,
+            }
+          : undefined,
+        escritorioAdversarioNome: advNome?.trim() || null,
+      }),
+    );
   }
 
   /** E7 — últimos 6 meses (`audiencia_ausente`). */

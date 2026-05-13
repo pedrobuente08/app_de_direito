@@ -191,7 +191,19 @@ export type Audiencia = {
   obsPos?: string | null
   link?: string | null
   createdAt: string
-  processo?: { numero: string; clienteNome: string }
+  processo?: {
+    numero: string
+    clienteNome: string | null
+    telefone?: string | null
+    reuTexto?: string | null
+    materia?: string | null
+    vara?: string | null
+    tipoAudiencia?: string | null
+    qualidadeCaso?: string | null
+    login?: string | null
+  }
+  /** Nome canónico do escritório adversário (tabela `escritorio_adversario`). */
+  escritorioAdversarioNome?: string | null
 }
 
 export type Procedente = {
