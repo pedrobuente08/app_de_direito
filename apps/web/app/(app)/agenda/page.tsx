@@ -16,11 +16,31 @@ function tituloDiaPt(isoYmd: string, total: number): string {
   return `${diaSemana}  ·  ${dataCurta}  ·  ${total} audiência${total === 1 ? '' : 's'}`
 }
 
+function addDays(date: Date, days: number): Date {
+  const d = new Date(date)
+  d.setDate(d.getDate() + days)
+  return d
+}
+
+function toYmd(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
+type Periodo = 'hoje' | 'semana' | '4semanas' | 'tudo'
+
+const PERIODOS: { value: Periodo; label: string }[] = [
+  { value: 'hoje', label: 'Hoje' },
+  { value: 'semana', label: 'Esta semana' },
+  { value: '4semanas', label: 'Próximas 4 semanas' },
+  { value: 'tudo', label: 'Tudo' },
+]
+
 export default function AgendaPage() {
   const [rows, setRows] = useState<Audiencia[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [readOnly, setReadOnly] = useState(false)
+  const [periodo, setPeriodo] = useState<Periodo>('4semanas')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -34,9 +54,7 @@ export default function AgendaPage() {
     }
   }, [])
 
-  useEffect(() => {
-    load()
-  }, [load])
+  useEffect(() => { load() }, [load])
 
   useEffect(() => {
     getAuthMe()
@@ -45,13 +63,27 @@ export default function AgendaPage() {
   }, [])
 
   const agendadasPorDia = useMemo(() => {
+    const hoje = toYmd(new Date())
+
+    let dataFim: string | null = null
+    if (periodo === 'hoje') dataFim = hoje
+    else if (periodo === 'semana') dataFim = toYmd(addDays(new Date(), 7))
+    else if (periodo === '4semanas') dataFim = toYmd(addDays(new Date(), 28))
+
     const ag = rows
-      .filter((a) => a.status === 'AGENDADA')
+      .filter((a) => {
+        if (a.status !== 'AGENDADA') return false
+        const dia = a.data.slice(0, 10)
+        if (dia < hoje) return false
+        if (dataFim && dia > dataFim) return false
+        return true
+      })
       .sort((a, b) => {
         const da = a.data.slice(0, 10).localeCompare(b.data.slice(0, 10))
         if (da !== 0) return da
         return (a.hora ?? '').localeCompare(b.hora ?? '')
       })
+
     const map = new Map<string, Audiencia[]>()
     for (const a of ag) {
       const key = a.data.slice(0, 10)
@@ -59,49 +91,80 @@ export default function AgendaPage() {
       map.get(key)!.push(a)
     }
     const dias = Array.from(map.keys()).sort()
-    return { map, dias }
-  }, [rows])
+    return { map, dias, total: ag.length }
+  }, [rows, periodo])
 
   return (
-    <div className="animate-fade-in-up space-y-6">
-      <div>
+    <div className="animate-fade-in-up space-y-5">
+
+      {/* Cabeçalho */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Agenda</h1>
-        <p className="mt-1 max-w-2xl text-sm text-[var(--color-text-secondary)]">
-          Cartões por dia no formato operacional (briefing): cliente, contato, réu, adversário, matéria/vara/tipo,
-          qualidade e ações.
-        </p>
+        <button
+          type="button"
+          onClick={load}
+          disabled={loading}
+          className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] disabled:opacity-50"
+        >
+          Atualizar
+        </button>
       </div>
 
+      {/* Filtro de período */}
+      <div className="flex flex-wrap gap-1.5">
+        {PERIODOS.map((p) => (
+          <button
+            key={p.value}
+            type="button"
+            onClick={() => setPeriodo(p.value)}
+            className={[
+              'rounded-[var(--radius-md)] border px-3 py-1.5 text-xs font-medium transition-colors',
+              periodo === p.value
+                ? 'border-[var(--color-brand)] bg-[var(--color-brand-subtle)] text-[var(--color-brand-text)]'
+                : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]',
+            ].join(' ')}
+          >
+            {p.label}
+          </button>
+        ))}
+        {!loading && (
+          <span className="ml-2 self-center text-xs text-[var(--color-text-secondary)]">
+            {agendadasPorDia.total} audiência{agendadasPorDia.total !== 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
+
+      {/* Estados */}
       {loading && <p className="text-sm text-[var(--color-text-secondary)]">Carregando…</p>}
       {error && (
-        <div className="rounded-[var(--radius-md)] border border-[var(--urgencia-vencida-border)] bg-[var(--urgencia-vencida-bg)] px-4 py-3 text-sm">
-          {error}
+        <div className="rounded-[var(--radius-md)] border border-[var(--urgencia-vencida-border)] bg-[var(--urgencia-vencida-bg)] px-4 py-3 text-sm text-[var(--urgencia-vencida-text)]">
+          {error}{' '}
+          <button type="button" onClick={load} className="underline">Tentar novamente</button>
         </div>
       )}
 
       {!loading && !error && agendadasPorDia.dias.length === 0 && (
         <div className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-6 py-10 text-center text-sm text-[var(--color-text-secondary)]">
-          Nenhuma audiência agendada.
+          Nenhuma audiência agendada no período selecionado.
         </div>
       )}
 
-      {!loading &&
-        !error &&
-        agendadasPorDia.dias.map((dia) => {
-          const lista = agendadasPorDia.map.get(dia) ?? []
-          return (
-            <section key={dia} className="space-y-3">
-              <h2 className="border-b border-[var(--color-border-default)] pb-2 font-mono text-xs font-medium uppercase tracking-wider text-[var(--color-text-secondary)]">
-                {tituloDiaPt(dia, lista.length)}
-              </h2>
-              <div className="mx-auto flex max-w-xl flex-col gap-4">
-                {lista.map((a) => (
-                  <AgendaCard key={a.id} audiencia={a} readOnly={readOnly} onUpdated={load} />
-                ))}
-              </div>
-            </section>
-          )
-        })}
+      {/* Cards por dia */}
+      {!loading && !error && agendadasPorDia.dias.map((dia) => {
+        const lista = agendadasPorDia.map.get(dia) ?? []
+        return (
+          <section key={dia} className="space-y-3">
+            <h2 className="border-b border-[var(--color-border-default)] pb-2 font-mono text-xs font-medium uppercase tracking-wider text-[var(--color-text-secondary)]">
+              {tituloDiaPt(dia, lista.length)}
+            </h2>
+            <div className="mx-auto flex max-w-xl flex-col gap-4">
+              {lista.map((a) => (
+                <AgendaCard key={a.id} audiencia={a} readOnly={readOnly} onUpdated={load} />
+              ))}
+            </div>
+          </section>
+        )
+      })}
     </div>
   )
 }
