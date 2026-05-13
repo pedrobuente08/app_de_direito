@@ -1,4 +1,5 @@
 -- Garante a coluna `processo.status_processo` esperada pelo Drizzle (PLANO_AJUSTES A3).
+-- Se depois aparecer erro de outras colunas em `processo`, rode também `002_processo_colunas_drizzle.sql`.
 -- Erro típico sem este passo: column "status_processo" does not exist
 --
 -- Aplicar uma vez no Postgres do ambiente, por exemplo:
