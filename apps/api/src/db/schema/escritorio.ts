@@ -18,7 +18,10 @@ export type ComunicaDigestConfig = {
 
 /** Listas opcionais para dropdowns na grid de processos (Intimações). */
 export type DropdownsProcessoConfig = {
+  /** @deprecated usar `status_processo` (3 valores fixos no produto). */
   situacao?: string[];
+  /** ATIVO | SOBRESTADO | ARQUIVADO — opções exibidas na UI. */
+  status_processo?: string[];
   sentenca?: string[];
   fase_atual?: string[];
 };
@@ -29,6 +32,8 @@ export type EscritorioConfig = {
   materias_validas?: string[];
   fase_inicial?: string;
   situacao_inicial?: string;
+  /** Preferência sobre `situacao_inicial` para novos processos. */
+  status_processo_inicial?: string;
   /** Opções de edição rápida na web (uma lista por campo). */
   dropdowns_processo?: DropdownsProcessoConfig;
   comunica_regras?: Record<string, unknown>;

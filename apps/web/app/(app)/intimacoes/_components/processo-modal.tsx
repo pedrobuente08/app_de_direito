@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { patchProcesso } from '@/lib/api'
-import { mergeSentencaOpcoes } from '@/lib/sentenca-opcoes'
 import type { DropdownsProcessoConfig, PatchProcessoPayload, Processo } from '@/lib/types'
 
 type ToastApi = {
@@ -24,15 +23,6 @@ function timeInputValue(v: string | null | undefined): string {
   if (v == null || String(v).trim() === '') return ''
   const m = /^(\d{2}:\d{2})/.exec(String(v).trim())
   return m ? m[1] : ''
-}
-
-function normalizeValorSentenca(raw: string): string | null {
-  const t = raw.trim().replace(/\s/g, '').replace(',', '.')
-  if (t === '') return null
-  if (!/^\d{1,10}(\.\d{1,2})?$/.test(t)) {
-    throw new Error('Valor da sentença: use número com até 2 decimais (ex.: 1500 ou 1500.50).')
-  }
-  return t
 }
 
 function EditableText({
@@ -181,48 +171,6 @@ function EditableTime({
   )
 }
 
-function EditableValor({
-  value, onCommit, toast,
-}: {
-  value: string | null | undefined
-  onCommit: (next: string | null) => Promise<void>
-  toast: ToastApi
-}) {
-  const [local, setLocal] = useState(() => (value != null ? String(value) : ''))
-  const [saving, setSaving] = useState(false)
-  useEffect(() => { setLocal(value != null ? String(value) : '') }, [value])
-
-  async function commit() {
-    let next: string | null
-    try { next = normalizeValorSentenca(local) } catch (err) {
-      toast.error((err as Error).message)
-      setLocal(value != null ? String(value) : '')
-      return
-    }
-    const prev = value == null || String(value).trim() === '' ? null : normalizeValorSentenca(String(value))
-    if (next === prev) return
-    setSaving(true)
-    try { await onCommit(next) } catch (e) {
-      toast.error((e as Error).message)
-      setLocal(value != null ? String(value) : '')
-    } finally { setSaving(false) }
-  }
-
-  return (
-    <input
-      type="text"
-      inputMode="decimal"
-      disabled={saving}
-      value={local}
-      onChange={(e) => setLocal(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-      placeholder="0.00"
-      className="min-h-[32px] w-full rounded border border-transparent bg-[var(--color-bg-subtle)] px-2 py-1 font-mono text-xs text-[var(--color-text-primary)] outline-none focus:border-[var(--color-brand)] disabled:opacity-60"
-    />
-  )
-}
-
 function ReadField({ value }: { value: string | null | undefined }) {
   return (
     <span className="flex min-h-[32px] items-center text-sm text-[var(--color-text-primary)]">
@@ -281,8 +229,14 @@ export function ProcessoModal({ processo, onClose, onUpdated, toast, readOnly, d
   }, [current.id, onUpdated])
 
   const ro = readOnly === true
-  const opcoesSentenca = useMemo(() => mergeSentencaOpcoes(dropdowns?.sentenca), [dropdowns])
-  const situacaoOpts = dropdowns?.situacao ?? []
+  const statusOpts = useMemo(() => {
+    const merged = [
+      ...(dropdowns?.status_processo ?? []),
+      ...(dropdowns?.situacao ?? []),
+    ].filter(Boolean)
+    const uniq = Array.from(new Set(merged))
+    return uniq.length ? uniq : ['ATIVO', 'SOBRESTADO', 'ARQUIVADO']
+  }, [dropdowns])
   const faseOpts = dropdowns?.fase_atual ?? []
 
   if (typeof document === 'undefined') return null
@@ -344,11 +298,11 @@ export function ProcessoModal({ processo, onClose, onUpdated, toast, readOnly, d
                 <EditableText value={current.materia} toast={toast} onCommit={(v) => patch({ materia: v })} />
               )}
             </Field>
-            <Field label="Situação">
-              {ro ? <ReadField value={current.situacao} /> : situacaoOpts.length > 0 ? (
-                <EditableSelect value={current.situacao} options={situacaoOpts} toast={toast} onCommit={(v) => patch({ situacao: v })} />
+            <Field label="Status do processo">
+              {ro ? <ReadField value={current.statusProcesso ?? 'ATIVO'} /> : statusOpts.length > 0 ? (
+                <EditableSelect value={current.statusProcesso ?? 'ATIVO'} options={statusOpts} toast={toast} onCommit={(v) => patch({ statusProcesso: v ?? 'ATIVO' })} />
               ) : (
-                <EditableText value={current.situacao} toast={toast} onCommit={(v) => patch({ situacao: v })} />
+                <EditableText value={current.statusProcesso ?? 'ATIVO'} toast={toast} onCommit={(v) => patch({ statusProcesso: v ?? 'ATIVO' })} />
               )}
             </Field>
             <Field label="Fase">
@@ -406,47 +360,43 @@ export function ProcessoModal({ processo, onClose, onUpdated, toast, readOnly, d
             </Field>
           </Section>
 
-          <Section title="Sentença">
-            <Field label="Sentença">
-              {ro ? <ReadField value={current.sentenca} /> : opcoesSentenca.filter(Boolean).length > 0 ? (
-                <EditableSelect value={current.sentenca} options={opcoesSentenca} toast={toast} onCommit={(v) => patch({ sentenca: v })} />
+          <Section title="Sentenças (por grau)">
+            <div className="col-span-2 sm:col-span-3 rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-xs text-[var(--color-text-secondary)]">
+              As sentenças (1º grau, 2º grau, embargos) são gravadas na tabela dedicada.
+              Para incluir ou alterar, use <span className="font-mono text-[var(--color-text-primary)]">POST /sentencas</span> com{' '}
+              <span className="font-mono">processoId</span> no corpo — ou fluxos da aba Recursos quando estiverem completos.
+            </div>
+          </Section>
+
+          <Section title="Qualidade e justiça gratuita">
+            <Field label="Qualidade do caso">
+              {ro ? <ReadField value={current.qualidadeCaso} /> : (
+                <EditableText value={current.qualidadeCaso} toast={toast} onCommit={(v) => patch({ qualidadeCaso: v })} />
+              )}
+            </Field>
+            <Field label="Justiça gratuita">
+              {ro ? (
+                <ReadField value={current.justicaGratuita ? 'Sim' : 'Não'} />
               ) : (
-                <EditableText value={current.sentenca} toast={toast} onCommit={(v) => patch({ sentenca: v })} />
-              )}
-            </Field>
-            <Field label="Data sentença">
-              {ro ? <ReadField value={current.dataSentenca} /> : (
-                <EditableDate value={current.dataSentenca} toast={toast} onCommit={(v) => patch({ dataSentenca: v })} />
-              )}
-            </Field>
-            <Field label="Valor">
-              {ro ? <ReadField value={current.valorSentenca} /> : (
-                <EditableValor value={current.valorSentenca} toast={toast} onCommit={(v) => patch({ valorSentenca: v })} />
-              )}
-            </Field>
-            <Field label="Recurso">
-              {ro ? <ReadField value={current.recurso} /> : (
-                <EditableText value={current.recurso} toast={toast} onCommit={(v) => patch({ recurso: v })} />
-              )}
-            </Field>
-            <Field label="Turma">
-              {ro ? <ReadField value={current.turma} /> : (
-                <EditableText value={current.turma} toast={toast} onCommit={(v) => patch({ turma: v })} />
-              )}
-            </Field>
-            <Field label="Acórdão">
-              {ro ? <ReadField value={current.acordao} /> : (
-                <EditableText value={current.acordao} toast={toast} onCommit={(v) => patch({ acordao: v })} />
-              )}
-            </Field>
-            <Field label="Situação final">
-              {ro ? <ReadField value={current.situacaoFinal} /> : (
-                <EditableText value={current.situacaoFinal} toast={toast} onCommit={(v) => patch({ situacaoFinal: v })} />
+                <label className="flex min-h-[32px] cursor-pointer items-center gap-2 text-sm text-[var(--color-text-primary)]">
+                  <input
+                    type="checkbox"
+                    className="rounded border-[var(--color-border-default)]"
+                    checked={!!current.justicaGratuita}
+                    onChange={(e) => { void patch({ justicaGratuita: e.target.checked }) }}
+                  />
+                  Marque se o cliente possui justiça gratuita
+                </label>
               )}
             </Field>
           </Section>
 
           <Section title="Outros">
+            <Field label="Situação final">
+              {ro ? <ReadField value={current.situacaoFinal} /> : (
+                <EditableText value={current.situacaoFinal} toast={toast} onCommit={(v) => patch({ situacaoFinal: v })} />
+              )}
+            </Field>
             <Field label="Telefone">
               {ro ? <ReadField value={current.telefone} /> : (
                 <EditableText value={current.telefone} toast={toast} onCommit={(v) => patch({ telefone: v })} />

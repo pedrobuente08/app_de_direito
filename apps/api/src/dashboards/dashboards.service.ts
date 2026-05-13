@@ -80,7 +80,12 @@ export class DashboardsService {
         vara: processo.vara,
         reuTexto: processo.reuTexto,
         total: count(),
-        procedentes: sql<number>`count(*) filter (where ${processo.sentenca} in ('PROCEDENTE','PARCIAL','ACORDO'))::int`,
+        procedentes: sql<number>`count(*) filter (where (
+          select s.resultado from sentenca s
+          where s.processo_id = ${processo.id}
+          order by s.data desc nulls last, s.created_at desc nulls last
+          limit 1
+        ) in ('PROCEDENTE','PARCIAL','ACORDO'))::int`,
       })
       .from(processo)
       .where(and(...parts))

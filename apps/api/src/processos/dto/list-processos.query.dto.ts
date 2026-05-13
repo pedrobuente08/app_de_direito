@@ -70,6 +70,12 @@ export class ListProcessosQueryDto {
 
   @IsOptional()
   @IsString()
+  @IsIn(['ATIVO', 'SOBRESTADO', 'ARQUIVADO'])
+  statusProcesso?: string;
+
+  /** @deprecated Preferir `statusProcesso`. */
+  @IsOptional()
+  @IsString()
   @MaxLength(50)
   situacao?: string;
 
@@ -77,4 +83,10 @@ export class ListProcessosQueryDto {
   @IsString()
   @MaxLength(50)
   faseAtual?: string;
+
+  /** Última sentença: AUTOR (bom), REU (ruim), sem registro. */
+  @IsOptional()
+  @IsString()
+  @IsIn(['BOA', 'RUIM', 'SEM'])
+  filterUltimaSentenca?: 'BOA' | 'RUIM' | 'SEM';
 }

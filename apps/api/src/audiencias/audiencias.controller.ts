@@ -21,6 +21,12 @@ import { UpdateAudienciaDto } from './dto/update-audiencia.dto';
 export class AudienciasController {
   constructor(private readonly audiencias: AudienciasService) {}
 
+  @Get('relatorio-ausentes-6m')
+  @Throttle(ThrottlePresets.audienciasList)
+  relatorioAusentes6m(@CurrentUser() user: AuthUser) {
+    return this.audiencias.relatorioAusentes6Meses(user.escritorioId);
+  }
+
   @Get()
   @Throttle(ThrottlePresets.audienciasList)
   listar(@CurrentUser() user: AuthUser) {

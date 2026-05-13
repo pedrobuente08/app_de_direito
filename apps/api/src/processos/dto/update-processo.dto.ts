@@ -1,6 +1,8 @@
 import {
   IsBoolean,
+  IsIn,
   IsISO8601,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -75,6 +77,12 @@ export class UpdateProcessoDto {
 
   @IsOptional()
   @IsString()
+  @IsIn(['ATIVO', 'SOBRESTADO', 'ARQUIVADO'])
+  statusProcesso?: string;
+
+  /** @deprecated Preferir `statusProcesso`. */
+  @IsOptional()
+  @IsString()
   @MaxLength(50)
   situacao?: string | null;
 
@@ -84,37 +92,17 @@ export class UpdateProcessoDto {
   faseAtual?: string | null;
 
   @IsOptional()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
-    message: 'dataSentenca deve estar em YYYY-MM-DD',
-  })
-  dataSentenca?: string | null;
+  @IsString()
+  @MaxLength(60)
+  qualidadeCaso?: string | null;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(30)
-  sentenca?: string | null;
+  @IsObject()
+  avaliacaoRecurso?: Record<string, unknown> | null;
 
   @IsOptional()
-  @IsString()
-  @Matches(/^\d{1,10}(\.\d{1,2})?$/, {
-    message: 'valorSentenca deve ser numérico com até 2 casas decimais',
-  })
-  valorSentenca?: string | null;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  recurso?: string | null;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  turma?: string | null;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(30)
-  acordao?: string | null;
+  @IsBoolean()
+  justicaGratuita?: boolean;
 
   @IsOptional()
   @IsString()

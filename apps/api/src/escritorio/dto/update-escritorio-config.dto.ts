@@ -16,6 +16,11 @@ export class DropdownsProcessoDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
+  status_processo?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   sentenca?: string[];
 
   @IsOptional()
@@ -49,6 +54,10 @@ export class UpdateEscritorioConfigDto {
   @IsOptional()
   @IsString()
   situacao_inicial?: string;
+
+  @IsOptional()
+  @IsString()
+  status_processo_inicial?: string;
 
   @IsOptional()
   @ValidateNested()

@@ -15,14 +15,12 @@ export type Processo = {
   dataAudiencia?: string | null
   horaAudiencia?: string | null
   tipoAudiencia?: string | null
-  situacao?: string | null
+  /** ATIVO | SOBRESTADO | ARQUIVADO */
+  statusProcesso?: string
   faseAtual?: string | null
-  dataSentenca?: string | null
-  sentenca?: string | null
-  valorSentenca?: string | null
-  recurso?: string | null
-  turma?: string | null
-  acordao?: string | null
+  qualidadeCaso?: string | null
+  avaliacaoRecurso?: Record<string, unknown> | null
+  justicaGratuita?: boolean
   situacaoFinal?: string | null
   telefone?: string | null
   statusAudiencia?: string | null
@@ -47,14 +45,11 @@ export type PatchProcessoPayload = Partial<{
   dataAudiencia: string | null
   horaAudiencia: string | null
   tipoAudiencia: string | null
-  situacao: string | null
+  statusProcesso: string
   faseAtual: string | null
-  dataSentenca: string | null
-  sentenca: string | null
-  valorSentenca: string | null
-  recurso: string | null
-  turma: string | null
-  acordao: string | null
+  qualidadeCaso: string | null
+  avaliacaoRecurso: Record<string, unknown> | null
+  justicaGratuita: boolean
   situacaoFinal: string | null
   telefone: string | null
   statusAudiencia: string | null
@@ -130,6 +125,7 @@ export type Reu = {
 /** Opções de dropdown na grid Intimações (Configurações → salvar). */
 export type DropdownsProcessoConfig = {
   situacao?: string[]
+  status_processo?: string[]
   sentenca?: string[]
   fase_atual?: string[]
 }
@@ -140,6 +136,7 @@ export type EscritorioConfig = {
   materias_validas?: string[]
   fase_inicial?: string
   situacao_inicial?: string
+  status_processo_inicial?: string
   dropdowns_processo?: DropdownsProcessoConfig
 }
 

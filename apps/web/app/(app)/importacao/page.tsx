@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { importarProcessosCsv } from '@/lib/api'
+import { SemaforoImportacao } from '@/components/importacao/semaforo-importacao'
 import type { ImportResult } from '@/lib/types'
 
 const CSV_EXEMPLO = `numero,sistema,cliente_nome,cliente_cpf,reu_texto,vara,materia,login,data_distribuicao
@@ -31,6 +32,8 @@ export default function ImportacaoPage() {
   return (
     <div className="animate-fade-in-up max-w-3xl space-y-5">
       <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Importação de processos</h1>
+
+      <SemaforoImportacao />
 
       <div className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
         <p className="mb-3 text-sm text-[var(--color-text-secondary)]">

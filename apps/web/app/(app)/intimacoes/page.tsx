@@ -42,6 +42,7 @@ export default function IntimacoesPage() {
   const [appliedNumero, setAppliedNumero] = useState('')
   const [appliedCliente, setAppliedCliente] = useState('')
   const [appliedVara, setAppliedVara] = useState('')
+  const [filterUltimaSentenca, setFilterUltimaSentenca] = useState<'' | 'BOA' | 'RUIM' | 'SEM'>('')
   const [sortField, setSortField] = useState<(typeof SORT_OPTIONS)[number]['value']>('createdAt')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [page, setPage] = useState(1)
@@ -81,6 +82,7 @@ export default function IntimacoesPage() {
         ...(appliedNumero.trim() && { numero: appliedNumero.trim() }),
         ...(appliedCliente.trim() && { clienteNome: appliedCliente.trim() }),
         ...(appliedVara.trim() && { vara: appliedVara.trim() }),
+        ...(filterUltimaSentenca && { filterUltimaSentenca }),
       })
       setProcessos(data)
       setMeta(m)
@@ -89,7 +91,7 @@ export default function IntimacoesPage() {
     } finally {
       setLoading(false)
     }
-  }, [appliedNumero, appliedCliente, appliedVara, sortField, sortOrder, page])
+  }, [appliedNumero, appliedCliente, appliedVara, filterUltimaSentenca, sortField, sortOrder, page])
 
   useEffect(() => { load() }, [load])
 
@@ -192,6 +194,22 @@ export default function IntimacoesPage() {
             placeholder="Contém…"
             className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
           />
+        </label>
+        <label className="flex min-w-[160px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+          Última sentença
+          <select
+            value={filterUltimaSentenca}
+            onChange={(e) => {
+              setFilterUltimaSentenca(e.target.value as '' | 'BOA' | 'RUIM' | 'SEM')
+              setPage(1)
+            }}
+            className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+          >
+            <option value="">Todos</option>
+            <option value="BOA">Bom (autor)</option>
+            <option value="RUIM">Ruim (réu)</option>
+            <option value="SEM">Sem sentença</option>
+          </select>
         </label>
         <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
           Ordenar por

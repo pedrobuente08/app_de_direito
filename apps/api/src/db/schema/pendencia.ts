@@ -28,7 +28,9 @@ export const pendencia = pgTable(
     status: varchar('status', { length: 30 }).notNull().default('ABERTA'),
     dataCumprimento: date('data_cumprimento'),
     observacao: text('observacao'),
-    origem: varchar('origem', { length: 20 }).notNull().default('MANUAL'),
+    origem: varchar('origem', { length: 20 })
+      .notNull()
+      .default('MANUAL_INTIMACOES'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),

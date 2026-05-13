@@ -19,6 +19,8 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { DrizzleModule } from './db/drizzle.module';
 import { EscritorioModule } from './escritorio/escritorio.module';
+import { EscritoriosAdversariosModule } from './escritorios-adversarios/escritorios-adversarios.module';
+import { ImprocedentesModule } from './improcedentes/improcedentes.module';
 import { HealthController } from './health.controller';
 import { ImportacaoModule } from './importacao/importacao.module';
 import { MailModule } from './mail/mail.module';
@@ -26,6 +28,7 @@ import { PendenciasModule } from './pendencias/pendencias.module';
 import { ProcessosModule } from './processos/processos.module';
 import { ProcedentesModule } from './procedentes/procedentes.module';
 import { ReusModule } from './reus/reus.module';
+import { SentencasModule } from './sentencas/sentencas.module';
 import { StorageModule } from './storage/storage.module';
 import { TenantInterceptor } from './tenant/tenant.interceptor';
 import { UsuariosModule } from './usuarios/usuarios.module';
@@ -77,6 +80,9 @@ const adminImports = process.env.PLATFORM_JWT_SECRET?.trim()
     UsuariosModule,
     ComarcasModule,
     ReusModule,
+    SentencasModule,
+    ImprocedentesModule,
+    EscritoriosAdversariosModule,
   ],
   controllers: [HealthController],
   providers: [

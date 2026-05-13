@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsIn,
   IsOptional,
   IsString,
   IsUUID,
@@ -69,6 +70,12 @@ export class CreateProcessoDto {
   @MaxLength(50)
   tipoAudiencia?: string | null;
 
+  @IsOptional()
+  @IsString()
+  @IsIn(['ATIVO', 'SOBRESTADO', 'ARQUIVADO'])
+  statusProcesso?: string | null;
+
+  /** @deprecated Preferir `statusProcesso`. */
   @IsOptional()
   @IsString()
   @MaxLength(50)

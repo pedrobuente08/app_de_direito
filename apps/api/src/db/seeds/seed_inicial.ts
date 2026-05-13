@@ -128,6 +128,7 @@ async function main() {
     materias_validas: ESCRITORIO.materias_validas,
     fase_inicial: 'AUDIÊNCIA AGENDADA',
     situacao_inicial: 'ATIVO',
+    status_processo_inicial: 'ATIVO',
     mapa_comarcas,
     login_map,
   };

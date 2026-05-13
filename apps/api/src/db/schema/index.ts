@@ -7,20 +7,29 @@ export * from './reu-alias';
 export * from './processo';
 export * from './extracao-pendente';
 export * from './pendencia';
+export * from './escritorio-adversario';
 export * from './audiencia';
+export * from './audiencia-ausente';
 export * from './comunicacao';
 export * from './oab-escuta';
 export * from './processo-procedente';
+export * from './sentenca';
+export * from './fase-historico';
+export * from './improcedente';
 export * from './audit-log';
 export * from './password-reset-token';
 export * from './platform-admin';
 
 import { auditLog } from './audit-log';
 import { audiencia, audienciaHistorico, audienciaLixeira } from './audiencia';
+import { audienciaAusente } from './audiencia-ausente';
 import { comarca } from './comarca';
 import { comunicacao } from './comunicacao';
 import { escritorio } from './escritorio';
+import { escritorioAdversario, escritorioAdversarioAlias } from './escritorio-adversario';
 import { extracaoPendente } from './extracao-pendente';
+import { faseHistorico } from './fase-historico';
+import { improcedente } from './improcedente';
 import { oabEscuta } from './oab-escuta';
 import { passwordResetToken } from './password-reset-token';
 import { platformAdmin } from './platform-admin';
@@ -34,6 +43,7 @@ import { processoProcedente, procedenteTransicao } from './processo-procedente';
 import { refreshTokens } from './refresh-token';
 import { reu } from './reu';
 import { reuAlias } from './reu-alias';
+import { sentenca } from './sentenca';
 import { usuario } from './usuario';
 
 export const schema = {
@@ -48,13 +58,19 @@ export const schema = {
   pendencia,
   pendenciaHistorico,
   pendenciaProblema,
+  escritorioAdversario,
+  escritorioAdversarioAlias,
   audiencia,
   audienciaHistorico,
   audienciaLixeira,
+  audienciaAusente,
   comunicacao,
   oabEscuta,
   processoProcedente,
   procedenteTransicao,
+  sentenca,
+  faseHistorico,
+  improcedente,
   auditLog,
   passwordResetToken,
   platformAdmin,

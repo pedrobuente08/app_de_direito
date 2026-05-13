@@ -27,6 +27,8 @@ export class EscritorioService {
       materias_validas: c.materias_validas ?? [],
       fase_inicial: c.fase_inicial ?? 'AUDIÊNCIA AGENDADA',
       situacao_inicial: c.situacao_inicial ?? 'ATIVO',
+      status_processo_inicial:
+        c.status_processo_inicial ?? c.situacao_inicial ?? 'ATIVO',
     };
   }
 
@@ -69,6 +71,9 @@ export class EscritorioService {
       ...(dto.fase_inicial !== undefined ? { fase_inicial: dto.fase_inicial } : {}),
       ...(dto.situacao_inicial !== undefined
         ? { situacao_inicial: dto.situacao_inicial }
+        : {}),
+      ...(dto.status_processo_inicial !== undefined
+        ? { status_processo_inicial: dto.status_processo_inicial }
         : {}),
       ...(dto.dropdowns_processo !== undefined
         ? {

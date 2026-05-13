@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
 import { DrizzleService } from '../db/drizzle.service';
 import { processo } from '../db/schema/processo';
@@ -14,6 +14,21 @@ import {
 import type { UpdateProcedenteDto } from './dto/update-procedente.dto';
 
 const SENT = ['PROCEDENTE', 'PARCIAL', 'ACORDO'] as const;
+
+/** Último resultado em `sentenca` é procedente/parcial/acordo. */
+const sqlUltimaSentencaProcedente = sql`(
+  select s.resultado from sentenca s
+  where s.processo_id = ${processo.id}
+  order by s.data desc nulls last, s.created_at desc nulls last
+  limit 1
+) in ('PROCEDENTE','PARCIAL','ACORDO')`;
+
+const sqlUltimaSentencaResultado = sql<string | null>`(
+  select s.resultado from sentenca s
+  where s.processo_id = ${processo.id}
+  order by s.data desc nulls last, s.created_at desc nulls last
+  limit 1
+)`;
 
 export type ProcedenteListaItem = {
   id: string;
@@ -68,6 +83,7 @@ export class ProcedentesService {
   private mapItem(
     p: typeof processo.$inferSelect,
     proc: typeof processoProcedente.$inferSelect | null,
+    ultimaSentencaResultado: string | null,
   ): ProcedenteListaItem {
     return {
       id: p.id,
@@ -89,7 +105,7 @@ export class ProcedentesService {
         numero: p.numero,
         clienteNome: p.clienteNome ?? '',
         reuTexto: p.reuTexto ?? '',
-        sentenca: p.sentenca,
+        sentenca: ultimaSentencaResultado,
       },
     };
   }
@@ -100,9 +116,14 @@ export class ProcedentesService {
   ): Promise<{
     processo: typeof processo.$inferSelect;
     procedente: typeof processoProcedente.$inferSelect | null;
+    ultimaSentencaResultado: string | null;
   } | null> {
     const [row] = await this.drizzle.db
-      .select({ processo, procedente: processoProcedente })
+      .select({
+        processo,
+        procedente: processoProcedente,
+        ultimaSentencaResultado: sqlUltimaSentencaResultado,
+      })
       .from(processo)
       .leftJoin(
         processoProcedente,
@@ -112,7 +133,7 @@ export class ProcedentesService {
         and(
           eq(processo.escritorioId, escritorioId),
           eq(processo.id, processoId),
-          inArray(processo.sentenca, [...SENT]),
+          sqlUltimaSentencaProcedente,
         ),
       )
       .limit(1);
@@ -128,6 +149,7 @@ export class ProcedentesService {
       .select({
         processo,
         procedente: processoProcedente,
+        ultimaSentencaResultado: sqlUltimaSentencaResultado,
       })
       .from(processo)
       .leftJoin(
@@ -135,15 +157,12 @@ export class ProcedentesService {
         eq(processoProcedente.processoId, processo.id),
       )
       .where(
-        and(
-          eq(processo.escritorioId, escritorioId),
-          inArray(processo.sentenca, [...SENT]),
-        ),
+        and(eq(processo.escritorioId, escritorioId), sqlUltimaSentencaProcedente),
       )
       .limit(limit);
 
-    return rows.map(({ processo: p, procedente: proc }) =>
-      this.mapItem(p, proc),
+    return rows.map(({ processo: p, procedente: proc, ultimaSentencaResultado }) =>
+      this.mapItem(p, proc, ultimaSentencaResultado),
     );
   }
 
@@ -157,12 +176,15 @@ export class ProcedentesService {
         'Processo não encontrado ou sem sentença procedente/parcial/acordo.',
       );
     }
-    return this.mapItem(row.processo, row.procedente);
+    return this.mapItem(
+      row.processo,
+      row.procedente,
+      row.ultimaSentencaResultado,
+    );
   }
 
   /**
-   * Processos com sentença procedente/parcial/acordo mas sem linha em `processo_procedente`
-   * (ex.: dados migrados). Mesma lógica que `ProcessosService.syncProcedenteSeNecessario`.
+   * Processos com última sentença procedente/parcial/acordo mas sem linha em `processo_procedente`.
    */
   async sincronizarLinhasEmFalta(escritorioId: string): Promise<{ criadas: number }> {
     const db = this.drizzle.db;
@@ -179,7 +201,7 @@ export class ProcedentesService {
       .where(
         and(
           eq(processo.escritorioId, escritorioId),
-          inArray(processo.sentenca, [...SENT]),
+          sqlUltimaSentencaProcedente,
           isNull(processoProcedente.processoId),
         ),
       );
@@ -208,7 +230,6 @@ export class ProcedentesService {
     return { criadas };
   }
 
-
   async atualizar(
     escritorioId: string,
     processoId: string,
@@ -227,7 +248,7 @@ export class ProcedentesService {
 
     if (!procRow) {
       throw new BadRequestException(
-        'Linha de procedente ainda não existe — use «Gerar linhas em falta» ou altere a sentença em Intimações e salve novamente.',
+        'Linha de procedente ainda não existe — use «Gerar linhas em falta» ou registre sentença em Intimações.',
       );
     }
 

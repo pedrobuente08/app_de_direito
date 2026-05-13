@@ -15,8 +15,8 @@ const STATUS_CLASS: Record<string, string> = {
 type CriarForm = { processoId: string; data: string; tipo: string; hora: string; pautista: string; link: string; obsPre: string }
 const CRIAR_VAZIO: CriarForm = { processoId: '', data: '', tipo: '', hora: '', pautista: '', link: '', obsPre: '' }
 
-type FinalizarForm = { obsPos: string; status: string }
-const FINALIZAR_VAZIO: FinalizarForm = { obsPos: '', status: 'REALIZADA' }
+type FinalizarForm = { obsPos: string; status: string; autorPresenca: string; motivoAusencia: string }
+const FINALIZAR_VAZIO: FinalizarForm = { obsPos: '', status: 'REALIZADA', autorPresenca: 'PRESENTE', motivoAusencia: '' }
 
 const STATUS_FINALIZAR = ['REALIZADA', 'CANCELADA', 'ADIADA', 'REDESIGNADA']
 
@@ -79,7 +79,19 @@ export default function AudienciasPage() {
     if (!finalizandoId) return
     setSubmittingFinalizar(true)
     try {
-      await finalizarAudiencia(finalizandoId, finalizarForm.obsPos, finalizarForm.status)
+      const body: {
+        obsPos: string
+        status?: string
+        autorPresenca?: string
+        motivoAusencia?: string
+      } = { obsPos: finalizarForm.obsPos, status: finalizarForm.status }
+      if (finalizarForm.status === 'REALIZADA') {
+        body.autorPresenca = finalizarForm.autorPresenca
+        if (finalizarForm.autorPresenca === 'AUSENTE') {
+          body.motivoAusencia = finalizarForm.motivoAusencia
+        }
+      }
+      await finalizarAudiencia(finalizandoId, body)
       toast.success('Audiência finalizada.')
       setFinalizandoId(null)
       setFinalizarForm(FINALIZAR_VAZIO)
@@ -214,6 +226,25 @@ export default function AudienciasPage() {
                               onChange={e => setFinalizarForm(prev => ({ ...prev, obsPos: e.target.value }))}
                               className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none" />
                           </div>
+                          {finalizarForm.status === 'REALIZADA' && (
+                            <>
+                              <div>
+                                <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">Autor</label>
+                                <select value={finalizarForm.autorPresenca} onChange={e => setFinalizarForm(prev => ({ ...prev, autorPresenca: e.target.value }))}
+                                  className="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none">
+                                  <option value="PRESENTE">Presente</option>
+                                  <option value="AUSENTE">Ausente</option>
+                                </select>
+                              </div>
+                              {finalizarForm.autorPresenca === 'AUSENTE' && (
+                                <div className="min-w-48 flex-1">
+                                  <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">Motivo da ausência</label>
+                                  <input required value={finalizarForm.motivoAusencia} onChange={e => setFinalizarForm(prev => ({ ...prev, motivoAusencia: e.target.value }))}
+                                    className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none" />
+                                </div>
+                              )}
+                            </>
+                          )}
                           <div>
                             <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">Resultado</label>
                             <select value={finalizarForm.status} onChange={e => setFinalizarForm(prev => ({ ...prev, status: e.target.value }))}

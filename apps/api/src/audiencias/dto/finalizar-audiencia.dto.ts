@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 export class FinalizarAudienciaDto {
   @IsString()
@@ -11,4 +11,19 @@ export class FinalizarAudienciaDto {
   @IsString()
   @MaxLength(30)
   status?: string;
+
+  /** Obrigatório quando `status` é REALIZADA (ou omitido). */
+  @IsOptional()
+  @IsString()
+  @IsIn(['PRESENTE', 'AUSENTE'])
+  autorPresenca?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(8000)
+  motivoAusencia?: string;
+
+  @IsOptional()
+  @IsUUID('4')
+  escritorioAdversarioId?: string | null;
 }

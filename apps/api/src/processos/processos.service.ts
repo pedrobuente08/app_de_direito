@@ -10,12 +10,14 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import type { Queue } from 'bullmq';
-import { and, asc, count, desc, eq, ilike } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, sql } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import { audiencia } from '../db/schema/audiencia';
 import { extracaoPendente } from '../db/schema/extracao-pendente';
+import { faseHistorico } from '../db/schema/fase-historico';
 import { pendencia } from '../db/schema/pendencia';
 import { processo } from '../db/schema/processo';
+import { sentenca } from '../db/schema/sentenca';
 import { processoProcedente } from '../db/schema/processo-procedente';
 import { reu } from '../db/schema/reu';
 import { reuAlias } from '../db/schema/reu-alias';
@@ -40,6 +42,16 @@ const MIN_CONF_INSERT_AUTOMATICO = 0.6;
 const MIN_CONF_SEM_FLAG_CONFERENCIA = 0.8;
 
 const SENTENCAS_PROCEDENTE = new Set(['PROCEDENTE', 'PARCIAL', 'ACORDO']);
+
+function normalizeStatusProcesso(raw: unknown): string {
+  const t = String(raw ?? '')
+    .trim()
+    .toUpperCase();
+  if (t === 'SOBRESTADO' || t === 'ARQUIVADO' || t === 'ATIVO') {
+    return t;
+  }
+  return 'ATIVO';
+}
 
 export type UploadPdfExtracaoResult =
   | {
@@ -100,11 +112,26 @@ export class ProcessosService {
     if (query.clienteNome?.trim()) {
       filters.push(ilike(processo.clienteNome, `%${query.clienteNome.trim()}%`));
     }
-    if (query.situacao?.trim()) {
-      filters.push(ilike(processo.situacao, `%${query.situacao.trim()}%`));
+    const statusFiltro =
+      query.statusProcesso?.trim() || query.situacao?.trim();
+    if (statusFiltro) {
+      filters.push(eq(processo.statusProcesso, normalizeStatusProcesso(statusFiltro)));
     }
     if (query.faseAtual?.trim()) {
       filters.push(ilike(processo.faseAtual, `%${query.faseAtual.trim()}%`));
+    }
+    if (query.filterUltimaSentenca === 'BOA') {
+      filters.push(
+        sql`(select s.favoravel_para from sentenca s where s.processo_id = ${processo.id} order by s.data desc nulls last, s.created_at desc nulls last limit 1) = 'AUTOR'`,
+      );
+    } else if (query.filterUltimaSentenca === 'RUIM') {
+      filters.push(
+        sql`(select s.favoravel_para from sentenca s where s.processo_id = ${processo.id} order by s.data desc nulls last, s.created_at desc nulls last limit 1) = 'REU'`,
+      );
+    } else if (query.filterUltimaSentenca === 'SEM') {
+      filters.push(
+        sql`not exists (select 1 from sentenca s where s.processo_id = ${processo.id})`,
+      );
     }
 
     const whereClause = and(...filters);
@@ -165,8 +192,10 @@ export class ProcessosService {
     escritorioId: string,
     id: string,
     dto: UpdateProcessoDto,
+    usuarioId?: string | null,
   ) {
-    await this.obterPorId(escritorioId, id);
+    const antes = await this.obterPorId(escritorioId, id);
+    const faseAntes = antes.faseAtual?.trim() ?? null;
 
     if (dto.reuId !== undefined && dto.reuId !== null) {
       const [r] = await this.drizzle.db
@@ -238,34 +267,24 @@ export class ProcessosService {
       patch.tipoAudiencia =
         dto.tipoAudiencia === null ? null : nullableTrim(dto.tipoAudiencia);
     }
-    if (dto.situacao !== undefined) {
-      patch.situacao =
-        dto.situacao === null ? null : nullableTrim(dto.situacao);
+    if (dto.statusProcesso !== undefined) {
+      patch.statusProcesso = normalizeStatusProcesso(dto.statusProcesso);
+    } else if (dto.situacao !== undefined) {
+      patch.statusProcesso = normalizeStatusProcesso(dto.situacao);
     }
     if (dto.faseAtual !== undefined) {
       patch.faseAtual =
         dto.faseAtual === null ? null : nullableTrim(dto.faseAtual);
     }
-    if (dto.dataSentenca !== undefined) {
-      patch.dataSentenca = dto.dataSentenca;
+    if (dto.qualidadeCaso !== undefined) {
+      patch.qualidadeCaso =
+        dto.qualidadeCaso === null ? null : nullableTrim(dto.qualidadeCaso);
     }
-    if (dto.sentenca !== undefined) {
-      patch.sentenca =
-        dto.sentenca === null ? null : nullableTrim(dto.sentenca);
+    if (dto.avaliacaoRecurso !== undefined) {
+      patch.avaliacaoRecurso = dto.avaliacaoRecurso;
     }
-    if (dto.valorSentenca !== undefined) {
-      patch.valorSentenca = dto.valorSentenca;
-    }
-    if (dto.recurso !== undefined) {
-      patch.recurso =
-        dto.recurso === null ? null : nullableTrim(dto.recurso);
-    }
-    if (dto.turma !== undefined) {
-      patch.turma = dto.turma === null ? null : nullableTrim(dto.turma);
-    }
-    if (dto.acordao !== undefined) {
-      patch.acordao =
-        dto.acordao === null ? null : nullableTrim(dto.acordao);
+    if (dto.justicaGratuita !== undefined) {
+      patch.justicaGratuita = dto.justicaGratuita;
     }
     if (dto.situacaoFinal !== undefined) {
       patch.situacaoFinal =
@@ -307,6 +326,21 @@ export class ProcessosService {
       .where(
         and(eq(processo.escritorioId, escritorioId), eq(processo.id, id)),
       );
+
+    if (
+      dto.faseAtual !== undefined &&
+      usuarioId &&
+      (patch.faseAtual ?? null) !== (faseAntes ?? null)
+    ) {
+      await this.drizzle.db.insert(faseHistorico).values({
+        processoId: id,
+        escritorioId,
+        faseAnterior: faseAntes,
+        faseNova: patch.faseAtual ?? '(sem fase)',
+        origem: 'MANUAL',
+        usuarioId,
+      });
+    }
 
     const atualizado = await this.obterPorId(escritorioId, id);
     await this.syncProcedenteSeNecessario(escritorioId, atualizado);
@@ -361,7 +395,10 @@ export class ProcessosService {
       dataAudiencia: parseBrDate(skillProc.data_audiencia),
       horaAudiencia: normalizeTime(skillProc.hora_audiencia),
       tipoAudiencia: emptyToNull(skillProc.tipo_audiencia),
-      situacao: emptyToNull(skillProc.situacao_inicial),
+      statusProcesso: normalizeStatusProcesso(
+        emptyToNull(skillProc.status_processo_inicial) ??
+          emptyToNull(skillProc.situacao_inicial),
+      ),
       faseAtual: emptyToNull(skillProc.fase_inicial),
       requerConferencia: options.requerConferencia,
       updatedAt: new Date(),
@@ -380,7 +417,7 @@ export class ProcessosService {
       dataAudiencia: insertValues.dataAudiencia,
       horaAudiencia: insertValues.horaAudiencia,
       tipoAudiencia: insertValues.tipoAudiencia,
-      situacao: insertValues.situacao,
+      statusProcesso: insertValues.statusProcesso,
       faseAtual: insertValues.faseAtual,
       requerConferencia: insertValues.requerConferencia,
       updatedAt: new Date(),
@@ -465,12 +502,24 @@ export class ProcessosService {
     return ins?.id ?? null;
   }
 
+  private async ultimaSentencaResultado(
+    processoId: string,
+  ): Promise<string | null> {
+    const [r] = await this.drizzle.db
+      .select({ resultado: sentenca.resultado })
+      .from(sentenca)
+      .where(eq(sentenca.processoId, processoId))
+      .orderBy(desc(sentenca.data), desc(sentenca.createdAt))
+      .limit(1);
+    return r?.resultado?.trim() ?? null;
+  }
+
   private async syncProcedenteSeNecessario(
     escritorioId: string,
     row: typeof processo.$inferSelect,
   ) {
     const db = this.drizzle.db;
-    const s = row.sentenca?.trim() ?? '';
+    const s = (await this.ultimaSentencaResultado(row.id)) ?? '';
     if (!SENTENCAS_PROCEDENTE.has(s)) {
       await db
         .delete(processoProcedente)
@@ -493,6 +542,15 @@ export class ProcessosService {
         target: processoProcedente.processoId,
         set: { updatedAt: now },
       });
+  }
+
+  /** Após insert/update em `sentenca`, reavalia vínculo com `processo_procedente`. */
+  async recalcularProcedenteAposSentenca(
+    escritorioId: string,
+    processoId: string,
+  ) {
+    const row = await this.obterPorId(escritorioId, processoId);
+    await this.syncProcedenteSeNecessario(escritorioId, row);
   }
 
   async criarManual(escritorioId: string, dto: CreateProcessoDto) {
@@ -528,7 +586,10 @@ export class ProcessosService {
       data_audiencia: dto.dataAudiencia ?? null,
       hora_audiencia: dto.horaAudiencia ?? null,
       tipo_audiencia: dto.tipoAudiencia ?? null,
-      situacao_inicial: dto.situacao ?? (cfg.situacao_inicial as string),
+      status_processo_inicial:
+        dto.statusProcesso ??
+        dto.situacao ??
+        (cfg.status_processo_inicial ?? cfg.situacao_inicial),
       fase_inicial: dto.faseAtual ?? (cfg.fase_inicial as string),
     };
 

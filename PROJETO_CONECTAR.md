@@ -736,6 +736,21 @@ Implementado via TOTP (Google Authenticator / Authy). Quando ativado pelo usuár
 
 ## 8. Banco de dados
 
+### Ajustes de schema (PLANO_AJUSTES — maio/2026)
+
+Implementado no repositório conforme `PLANO_AJUSTES.md` e alinhado ao briefing:
+
+- **`sentenca`** — tabela 1:N com `processo` (grau, data, valor, `resultado`, `favoravel_para`, etc.). Indicadores e procedentes usam a **última** sentença por `data` / `created_at`.
+- **`processo`** — `status_processo` (ATIVO \| SOBRESTADO \| ARQUIVADO) separado de `fase_atual`; campos `qualidade_caso`, `avaliacao_recurso` (JSONB), `justica_gratuita`; removidos da tabela os campos de sentença que migraram para `sentenca`.
+- **`fase_historico`** — auditoria de mudanças de fase (origem MANUAL na edição via API).
+- **`audiencia_ausente`** — snapshot quando audiência REALIZADA com autor AUSENTE; relatório `GET /audiencias/relatorio-ausentes-6m`.
+- **`escritorio_adversario`** + **`escritorio_adversario_alias`**; FK opcional em `audiencia`.
+- **`improcedente`** — sucumbência; listagem `GET /improcedentes`.
+- **`pendencia.origem`** — padrão `MANUAL_INTIMACOES`; valores operacionais `POS_AUDIENCIA`, `MANUAL_INTIMACOES`, `COMUNICA`, `IMPORT` (e `MANUAL` aceito no DTO para legado).
+- **Procedentes** — família `EM_RECURSO` removida da UI (cinco famílias finais).
+
+**Novas rotas REST:** `GET`/`POST /sentencas` (query `processoId` no GET; corpo com `processoId` no POST), `GET /improcedentes`, `GET`/`POST /escritorios-adversarios`, `GET /audiencias/relatorio-ausentes-6m`.
+
 ### Drizzle — por que não Prisma
 
 O modelo de dados tem queries analíticas pesadas nos dashboards (§ 8 do `BRIEFING_DEV_M0.md`) que usam `PERCENTILE_CONT`, window functions, `FILTER WHERE`, CTEs. Com Prisma, todas cairiam em `$queryRaw` perdendo type-safety. Com Drizzle, mesmo essas queries têm tipagem completa.
@@ -751,7 +766,12 @@ const resultado = await db
     reuId: processo.reuId,
     amostra: count(),
     taxaFavoravel: sql<number>`
-      COUNT(*) FILTER (WHERE ${processo.sentenca} IN ('PROCEDENTE','PARCIAL','ACORDO'))
+      COUNT(*) FILTER (WHERE (
+        SELECT s.resultado FROM sentenca s
+        WHERE s.processo_id = ${processo.id}
+        ORDER BY s.data DESC NULLS LAST, s.created_at DESC NULLS LAST
+        LIMIT 1
+      ) IN ('PROCEDENTE','PARCIAL','ACORDO'))
       * 100.0 / COUNT(*)
     `,
   })
@@ -759,8 +779,8 @@ const resultado = await db
   .where(
     and(
       eq(processo.escritorioId, escritorioId),
-      isNotNull(processo.sentenca),
-      gte(processo.dataSentenca, periodoInicio),
+      sql`exists (select 1 from sentenca s where s.processo_id = ${processo.id})`,
+      gte(processo.updatedAt, periodoInicio),
     )
   )
   .groupBy(processo.vara, processo.materia, processo.reuId)
@@ -863,7 +883,7 @@ CREATE INDEX idx_audiencia_data ON audiencia(escritorio_id, data)
 
 -- Para o dashboard "processo esquecido"
 CREATE INDEX idx_processo_updated_at ON processo(escritorio_id, updated_at)
-  WHERE sentenca IS NULL AND situacao_final IS NULL;
+  WHERE situacao_final IS NULL;
 
 -- Audit log — leitura sempre por escritório + entidade
 CREATE INDEX idx_audit_escritorio_entidade ON audit_log(escritorio_id, entidade, created_at DESC);

@@ -76,7 +76,7 @@ export class PendenciasService {
           responsavel: dto.responsavel?.trim() || null,
           status: (dto.status ?? 'ABERTA').trim(),
           observacao: dto.observacao?.trim() || null,
-          origem: (dto.origem ?? 'MANUAL').trim(),
+          origem: (dto.origem ?? 'MANUAL_INTIMACOES').trim(),
         })
         .returning();
       if (!row) {

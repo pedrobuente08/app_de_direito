@@ -20,11 +20,16 @@ const navGroups = [
     items: [
       { href: '/pendencias', label: 'Pendências' },
       { href: '/audiencias', label: 'Audiências' },
+      { href: '/agenda', label: 'Agenda' },
     ],
   },
   {
     label: 'Execução',
-    items: [{ href: '/procedentes', label: 'Procedentes' }],
+    items: [
+      { href: '/procedentes', label: 'Procedentes' },
+      { href: '/recursos', label: 'Recursos' },
+      { href: '/improcedentes', label: 'Improcedentes' },
+    ],
   },
   {
     label: 'Análise',

@@ -147,7 +147,12 @@ export class ProcessosController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateProcessoDto,
   ) {
-    return this.processos.atualizarParcial(user.escritorioId, id, dto);
+    return this.processos.atualizarParcial(
+      user.escritorioId,
+      id,
+      dto,
+      user.userId,
+    );
   }
 
   @Get(':id')

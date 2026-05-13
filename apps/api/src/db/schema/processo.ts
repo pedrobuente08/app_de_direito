@@ -1,6 +1,7 @@
 import {
   boolean,
   date,
+  jsonb,
   numeric,
   pgTable,
   text,
@@ -12,6 +13,15 @@ import {
 } from 'drizzle-orm/pg-core';
 import { escritorio } from './escritorio';
 import { reu } from './reu';
+
+/** JSON em `processo.avaliacao_recurso` (estado AVALIAR). */
+export type AvaliacaoRecursoJson = {
+  ativa?: boolean;
+  criado_em?: string;
+  prazo?: string;
+  responsavel?: string;
+  observacao?: string;
+};
 
 export const processo = pgTable(
   'processo',
@@ -33,14 +43,14 @@ export const processo = pgTable(
     dataAudiencia: date('data_audiencia'),
     horaAudiencia: time('hora_audiencia'),
     tipoAudiencia: varchar('tipo_audiencia', { length: 50 }),
-    situacao: varchar('situacao', { length: 50 }),
+    /** Marco amplo: ATIVO | SOBRESTADO | ARQUIVADO */
+    statusProcesso: varchar('status_processo', { length: 20 })
+      .notNull()
+      .default('ATIVO'),
     faseAtual: varchar('fase_atual', { length: 50 }),
-    dataSentenca: date('data_sentenca'),
-    sentenca: varchar('sentenca', { length: 30 }),
-    valorSentenca: numeric('valor_sentenca', { precision: 12, scale: 2 }),
-    recurso: varchar('recurso', { length: 50 }),
-    turma: varchar('turma', { length: 50 }),
-    acordao: varchar('acordao', { length: 30 }),
+    qualidadeCaso: varchar('qualidade_caso', { length: 60 }),
+    avaliacaoRecurso: jsonb('avaliacao_recurso').$type<AvaliacaoRecursoJson | null>(),
+    justicaGratuita: boolean('justica_gratuita').default(false),
     situacaoFinal: varchar('situacao_final', { length: 50 }),
     telefone: varchar('telefone', { length: 20 }),
     statusAudiencia: varchar('status_audiencia', { length: 30 }),

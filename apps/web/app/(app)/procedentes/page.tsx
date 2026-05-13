@@ -12,7 +12,6 @@ import { ToastContainer, useToast } from '@/lib/toast'
 import type { Procedente } from '@/lib/types'
 
 const FAMILIAS = [
-  { value: 'EM_RECURSO', label: 'Em recurso', bg: 'var(--familia-em-recurso-bg)', text: 'var(--familia-em-recurso-text)' },
   { value: 'AGUARDAR_TRANSITO', label: 'Aguardar trânsito', bg: 'var(--familia-aguardar-transito-bg)', text: 'var(--familia-aguardar-transito-text)' },
   { value: 'PEND_INTERNA', label: 'Pend. interna', bg: 'var(--familia-pend-interna-bg)', text: 'var(--familia-pend-interna-text)' },
   { value: 'EXEC_ATIVA', label: 'Exec. ativa', bg: 'var(--familia-exec-ativa-bg)', text: 'var(--familia-exec-ativa-text)' },

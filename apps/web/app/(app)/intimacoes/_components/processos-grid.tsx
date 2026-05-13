@@ -102,11 +102,11 @@ export function ProcessosGrid({ data, onRowClick }: Props) {
       ),
     },
     {
-      id: 'situacao',
-      header: 'Situação',
+      id: 'statusProcesso',
+      header: 'Status',
       size: 110,
       cell: ({ row }) => (
-        <span className="block truncate text-sm">{row.original.situacao ?? '—'}</span>
+        <span className="block truncate text-sm">{row.original.statusProcesso ?? '—'}</span>
       ),
     },
   ], [])

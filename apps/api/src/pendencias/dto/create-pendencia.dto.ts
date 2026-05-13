@@ -1,4 +1,4 @@
-import { Matches, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { Matches, IsOptional, IsString, IsUUID, MaxLength, IsIn } from 'class-validator';
 
 export class CreatePendenciaDto {
   @IsUUID('4')
@@ -39,5 +39,12 @@ export class CreatePendenciaDto {
   @IsOptional()
   @IsString()
   @MaxLength(20)
+  @IsIn([
+    'POS_AUDIENCIA',
+    'MANUAL_INTIMACOES',
+    'COMUNICA',
+    'IMPORT',
+    'MANUAL',
+  ])
   origem?: string;
 }

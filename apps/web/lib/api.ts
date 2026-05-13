@@ -397,13 +397,17 @@ export async function criarAudiencia(payload: {
 
 export async function finalizarAudiencia(
   id: string,
-  obsPos: string,
-  status?: string,
+  body: {
+    obsPos: string
+    status?: string
+    autorPresenca?: string
+    motivoAusencia?: string
+  },
 ): Promise<void> {
   await apiFetch<void>(`/audiencias/${id}/finalizar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ obsPos, ...(status ? { status } : {}) }),
+    body: JSON.stringify(body),
   })
 }
 

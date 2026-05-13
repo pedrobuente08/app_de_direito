@@ -4,13 +4,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, gte } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import {
   audiencia,
   audienciaHistorico,
   audienciaLixeira,
 } from '../db/schema/audiencia';
+import { audienciaAusente } from '../db/schema/audiencia-ausente';
 import { processo } from '../db/schema/processo';
 import { parseCsvSimple } from '../importacao/csv-parse';
 import type { CreateAudienciaDto } from './dto/create-audiencia.dto';
@@ -73,6 +74,22 @@ export class AudienciasService {
       .where(eq(audiencia.escritorioId, escritorioId))
       .orderBy(desc(audiencia.data), desc(audiencia.createdAt))
       .limit(limit);
+  }
+
+  /** E7 — últimos 6 meses (`audiencia_ausente`). */
+  async relatorioAusentes6Meses(escritorioId: string) {
+    const desde = new Date();
+    desde.setMonth(desde.getMonth() - 6);
+    return this.drizzle.db
+      .select()
+      .from(audienciaAusente)
+      .where(
+        and(
+          eq(audienciaAusente.escritorioId, escritorioId),
+          gte(audienciaAusente.createdAt, desde),
+        ),
+      )
+      .orderBy(desc(audienciaAusente.createdAt));
   }
 
   private async assertProcesso(escritorioId: string, processoId: string) {
@@ -270,7 +287,45 @@ export class AudienciasService {
     const status = (dto.status ?? 'REALIZADA').trim().toUpperCase();
 
     if (status === 'REALIZADA') {
+      const ap = dto.autorPresenca?.trim().toUpperCase();
+      if (ap !== 'PRESENTE' && ap !== 'AUSENTE') {
+        throw new BadRequestException(
+          'Para audiência REALIZADA informe autorPresenca: PRESENTE ou AUSENTE.',
+        );
+      }
+      if (ap === 'AUSENTE' && !dto.motivoAusencia?.trim()) {
+        throw new BadRequestException(
+          'motivoAusencia é obrigatório quando autorPresenca é AUSENTE.',
+        );
+      }
       await this.drizzle.db.transaction(async (tx) => {
+        if (ap === 'AUSENTE') {
+          const [proc] = await tx
+            .select()
+            .from(processo)
+            .where(
+              and(
+                eq(processo.escritorioId, escritorioId),
+                eq(processo.id, current.processoId),
+              ),
+            )
+            .limit(1);
+          if (proc) {
+            await tx.insert(audienciaAusente).values({
+              escritorioId,
+              audienciaId: current.id,
+              processoId: proc.id,
+              numeroProcesso: proc.numero,
+              clienteNome: proc.clienteNome,
+              reuId: proc.reuId,
+              materia: proc.materia,
+              vara: proc.vara,
+              qualidadeCaso: proc.qualidadeCaso,
+              dataAudiencia: current.data,
+              motivoAusencia: dto.motivoAusencia!.trim(),
+            });
+          }
+        }
         await tx.insert(audienciaHistorico).values({
           audienciaIdOrigem: current.id,
           escritorioId,
