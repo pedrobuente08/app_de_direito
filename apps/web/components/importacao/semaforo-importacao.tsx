@@ -146,7 +146,8 @@ export function SemaforoImportacao() {
 
   function salvarEdicao() {
     if (!editingId) return
-    const { itemId: _i, ...rest } = draftEdicao as ConfirmarBatchItem
+    const rest = { ...(draftEdicao as ConfirmarBatchItem) }
+    delete rest.itemId
     setEdit(editingId, rest)
     setEditingId(null)
     setDraftEdicao({})
