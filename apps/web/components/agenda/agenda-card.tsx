@@ -93,7 +93,12 @@ export function AgendaCard({ audiencia: a, readOnly, onUpdated }: Props) {
     setErro(null)
     setSalvando(true)
     try {
-      const body: Record<string, string> = { obsPos: obsPos.trim(), status: statusF }
+      const body: {
+        obsPos: string
+        status?: string
+        autorPresenca?: string
+        motivoAusencia?: string
+      } = { obsPos: obsPos.trim(), status: statusF }
       if (statusF === 'REALIZADA') {
         body.autorPresenca = autorPresenca
         if (autorPresenca === 'AUSENTE') body.motivoAusencia = motivoAusencia.trim()

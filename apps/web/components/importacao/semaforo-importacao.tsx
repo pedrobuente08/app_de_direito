@@ -146,9 +146,9 @@ export function SemaforoImportacao() {
 
   function salvarEdicao() {
     if (!editingId) return
-    const rest = { ...(draftEdicao as ConfirmarBatchItem) }
+    const rest = { ...(draftEdicao as ConfirmarBatchItem) } as Record<string, unknown>
     delete rest.itemId
-    setEdit(editingId, rest)
+    setEdit(editingId, rest as Omit<ConfirmarBatchItem, 'itemId'>)
     setEditingId(null)
     setDraftEdicao({})
   }
