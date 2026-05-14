@@ -22,7 +22,6 @@ import type {
   ProcessoCampos,
   ProcessosListResponse,
   Reu,
-  UploadPdfResult,
   Usuario,
 } from '@/lib/types'
 
@@ -173,6 +172,10 @@ export async function getProcessos(
   )
 }
 
+export async function getProcesso(id: string): Promise<Processo> {
+  return apiFetch<Processo>(`/processos/${id}`)
+}
+
 export async function patchProcesso(
   id: string,
   payload: PatchProcessoPayload,
@@ -182,21 +185,6 @@ export async function patchProcesso(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-}
-
-export async function uploadPdf(file: File): Promise<UploadPdfResult> {
-  const form = new FormData()
-  form.append('file', file)
-  const res = await fetch(apiUrl('/processos/upload-pdf'), {
-    method: 'POST',
-    credentials: 'include',
-    body: form,
-  })
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>
-    throw new Error(parseApiErrorMessage(body))
-  }
-  return res.json() as Promise<UploadPdfResult>
 }
 
 export async function previewPdfBatch(files: File[]): Promise<PdfPreviewItem[]> {

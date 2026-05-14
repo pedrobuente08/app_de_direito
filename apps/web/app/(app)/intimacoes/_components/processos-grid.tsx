@@ -50,27 +50,11 @@ export function ProcessosGrid({ data, onRowClick }: Props) {
       ),
     },
     {
-      id: 'reuTexto',
-      header: 'Réu',
-      size: 180,
+      id: 'materia',
+      header: 'Matéria',
+      size: 160,
       cell: ({ row }) => (
-        <span className="block truncate text-sm">{row.original.reuTexto ?? '—'}</span>
-      ),
-    },
-    {
-      id: 'vara',
-      header: 'Vara',
-      size: 100,
-      cell: ({ row }) => (
-        <span className="block truncate text-sm">{row.original.vara ?? '—'}</span>
-      ),
-    },
-    {
-      id: 'sistema',
-      header: 'Sistema',
-      size: 90,
-      cell: ({ row }) => (
-        <span className="block truncate text-sm">{row.original.sistema ?? '—'}</span>
+        <span className="block truncate text-sm">{row.original.materia?.trim() || '—'}</span>
       ),
     },
     {
@@ -82,8 +66,16 @@ export function ProcessosGrid({ data, onRowClick }: Props) {
       ),
     },
     {
-      id: 'faseAtual',
+      id: 'statusProcesso',
       header: 'Situação',
+      size: 110,
+      cell: ({ row }) => (
+        <span className="block truncate text-sm">{row.original.statusProcesso ?? '—'}</span>
+      ),
+    },
+    {
+      id: 'faseAtual',
+      header: 'Fase atual',
       size: 130,
       cell: ({ row }) => (
         <span className="block truncate text-sm text-[var(--color-text-primary)]">
@@ -92,11 +84,13 @@ export function ProcessosGrid({ data, onRowClick }: Props) {
       ),
     },
     {
-      id: 'statusProcesso',
-      header: 'Status',
-      size: 110,
+      id: 'ultimaSentencaResultado',
+      header: 'Sentença',
+      size: 120,
       cell: ({ row }) => (
-        <span className="block truncate text-sm">{row.original.statusProcesso ?? '—'}</span>
+        <span className="block truncate text-sm">
+          {row.original.ultimaSentencaResultado?.trim() || '—'}
+        </span>
       ),
     },
   ], [])

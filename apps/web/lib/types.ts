@@ -17,6 +17,8 @@ export type Processo = {
   tipoAudiencia?: string | null
   /** ATIVO | SOBRESTADO | ARQUIVADO */
   statusProcesso?: string
+  /** Resultado da sentença mais recente (1º/2º grau, etc.), só na listagem. */
+  ultimaSentencaResultado?: string | null
   faseAtual?: string | null
   qualidadeCaso?: string | null
   avaliacaoRecurso?: Record<string, unknown> | null

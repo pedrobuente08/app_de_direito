@@ -13,7 +13,16 @@ import {
 import type { Queue } from 'bullmq';
 import { randomUUID } from 'node:crypto';
 import type { Express } from 'express';
-import { and, asc, count, desc, eq, ilike, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  getTableColumns,
+  ilike,
+  sql,
+} from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import { audiencia } from '../db/schema/audiencia';
 import { extracaoPendente } from '../db/schema/extracao-pendente';
@@ -166,7 +175,15 @@ export class ProcessosService {
       .where(whereClause);
 
     const rows = await db
-      .select()
+      .select({
+        ...getTableColumns(processo),
+        ultimaSentencaResultado: sql<string | null>`
+          (select s.resultado from sentenca s
+           where s.processo_id = ${processo.id}
+           order by s.data desc nulls last, s.created_at desc nulls last
+           limit 1)
+        `.as('ultimaSentencaResultado'),
+      })
       .from(processo)
       .where(whereClause)
       .orderBy(orderExpr)

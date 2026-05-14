@@ -1,13 +1,23 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { getAuthMe, getEscritorioConfig, getProcessos, uploadPdf } from '@/lib/api'
+import {
+  confirmarBatchPdf,
+  getAuthMe,
+  getEscritorioConfig,
+  getProcesso,
+  getProcessos,
+  previewPdfBatch,
+} from '@/lib/api'
 import { ToastContainer, useToast } from '@/lib/toast'
 import type {
+  ConfirmarBatchItem,
   DropdownsProcessoConfig,
+  PdfPreviewItem,
   Processo,
   ProcessosListMeta,
 } from '@/lib/types'
+import { PdfRevisaoModal } from './_components/pdf-revisao-modal'
 import { ProcessosGrid } from './_components/processos-grid'
 import { ProcessoModal } from './_components/processo-modal'
 import { ReuNormalizacao } from './_components/reu-normalizacao'
@@ -61,6 +71,9 @@ export default function IntimacoesPage() {
   const [readOnly, setReadOnly] = useState(false)
   const [dropdowns, setDropdowns] = useState<DropdownsProcessoConfig | null>(null)
   const [selectedProcesso, setSelectedProcesso] = useState<Processo | null>(null)
+  const [pdfRevisaoOpen, setPdfRevisaoOpen] = useState(false)
+  const [pdfPreviewItem, setPdfPreviewItem] = useState<PdfPreviewItem | null>(null)
+  const [confirmingPdf, setConfirmingPdf] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -145,22 +158,53 @@ export default function IntimacoesPage() {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
+    setPdfPreviewItem(null)
     try {
-      const result = await uploadPdf(file)
-      if ('assincrono' in result && result.assincrono) {
-        toast.success(`PDF na fila de processamento (job ${result.jobId}). Atualize em instantes.`)
-        load()
-      } else if ('ok' in result && result.ok) {
-        toast.success('Processo importado com sucesso.')
-        load()
-      } else if ('ok' in result && !result.ok) {
-        toast.error(`Revisão necessária: ${result.motivo}`)
+      const data = await previewPdfBatch([file])
+      const first = data[0]
+      if (!first) {
+        toast.error('Não foi possível analisar o PDF.')
+        return
       }
-    } catch (e) {
-      toast.error((e as Error).message)
+      setPdfPreviewItem(first)
+      setPdfRevisaoOpen(true)
+    } catch (err) {
+      toast.error((err as Error).message)
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  async function handleConfirmarPdf(payload: ConfirmarBatchItem) {
+    setConfirmingPdf(true)
+    try {
+      const res = await confirmarBatchPdf([payload])
+      if (res.erros.length > 0) {
+        toast.error(res.erros.map((x) => x.mensagem).join(' '))
+        return
+      }
+      if (res.inseridos > 0) {
+        toast.success('Processo inserido.')
+      } else if (res.jaExistiam > 0) {
+        toast.error('Este número já existe — nada foi inserido.')
+      }
+      setPdfRevisaoOpen(false)
+      setPdfPreviewItem(null)
+      load()
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setConfirmingPdf(false)
+    }
+  }
+
+  async function handleAbrirProcessoDuplicado(id: string) {
+    try {
+      const p = await getProcesso(id)
+      setSelectedProcesso(p)
+    } catch (e) {
+      toast.error((e as Error).message)
     }
   }
 
@@ -368,6 +412,18 @@ export default function IntimacoesPage() {
           dropdowns={dropdowns}
         />
       )}
+
+      <PdfRevisaoModal
+        open={pdfRevisaoOpen}
+        item={pdfPreviewItem}
+        confirming={confirmingPdf}
+        onClose={() => {
+          setPdfRevisaoOpen(false)
+          setPdfPreviewItem(null)
+        }}
+        onConfirm={handleConfirmarPdf}
+        onAbrirProcessoExistente={handleAbrirProcessoDuplicado}
+      />
 
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
     </div>
