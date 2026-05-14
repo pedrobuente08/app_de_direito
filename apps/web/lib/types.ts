@@ -19,6 +19,8 @@ export type Processo = {
   statusProcesso?: string
   /** Resultado da sentença mais recente (1º/2º grau, etc.), só na listagem. */
   ultimaSentencaResultado?: string | null
+  /** AUTOR | REU conforme última sentença; define “Situação” Boa/Ruim na grid. */
+  ultimaSentencaFavoravelPara?: string | null
   faseAtual?: string | null
   qualidadeCaso?: string | null
   avaliacaoRecurso?: Record<string, unknown> | null

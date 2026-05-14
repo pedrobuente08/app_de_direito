@@ -14,6 +14,30 @@ type Props = {
   onRowClick: (processo: Processo) => void
 }
 
+/** Situação na grid = qualidade face à última sentença (favorável ao autor ou ao réu). */
+function situacaoQualidadeLabel(favoravel: string | null | undefined): {
+  texto: string
+  className: string
+} {
+  const f = (favoravel ?? '').trim().toUpperCase()
+  if (f === 'AUTOR') {
+    return {
+      texto: 'Boa',
+      className: 'font-medium text-[var(--urgencia-normal-text)]',
+    }
+  }
+  if (f === 'REU') {
+    return {
+      texto: 'Ruim',
+      className: 'font-medium text-[var(--urgencia-vencida-text)]',
+    }
+  }
+  return {
+    texto: 'Sem sentença',
+    className: 'text-[var(--color-text-secondary)]',
+  }
+}
+
 export function ProcessosGrid({ data, onRowClick }: Props) {
   const columns = useMemo<ColumnDef<Processo>[]>(() => [
     {
@@ -66,12 +90,15 @@ export function ProcessosGrid({ data, onRowClick }: Props) {
       ),
     },
     {
-      id: 'statusProcesso',
+      id: 'situacaoQualidade',
       header: 'Situação',
-      size: 110,
-      cell: ({ row }) => (
-        <span className="block truncate text-sm">{row.original.statusProcesso ?? '—'}</span>
-      ),
+      size: 120,
+      cell: ({ row }) => {
+        const { texto, className } = situacaoQualidadeLabel(
+          row.original.ultimaSentencaFavoravelPara,
+        )
+        return <span className={`block truncate text-sm ${className}`}>{texto}</span>
+      },
     },
     {
       id: 'faseAtual',

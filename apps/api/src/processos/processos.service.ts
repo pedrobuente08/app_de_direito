@@ -183,6 +183,12 @@ export class ProcessosService {
            order by s.data desc nulls last, s.created_at desc nulls last
            limit 1)
         `.as('ultimaSentencaResultado'),
+        ultimaSentencaFavoravelPara: sql<string | null>`
+          (select s.favoravel_para from sentenca s
+           where s.processo_id = ${processo.id}
+           order by s.data desc nulls last, s.created_at desc nulls last
+           limit 1)
+        `.as('ultimaSentencaFavoravelPara'),
       })
       .from(processo)
       .where(whereClause)
