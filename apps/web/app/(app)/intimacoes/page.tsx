@@ -4,20 +4,24 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   confirmarBatchPdf,
   getAuthMe,
+  getComarcas,
   getEscritorioConfig,
   getProcesso,
   getProcessos,
+  getUsuarios,
   previewPdfBatch,
 } from '@/lib/api'
 import { ToastContainer, useToast } from '@/lib/toast'
 import type {
+  Comarca,
   ConfirmarBatchItem,
   DropdownsProcessoConfig,
   PdfPreviewItem,
   Processo,
   ProcessosListMeta,
+  Usuario,
 } from '@/lib/types'
-import { PdfRevisaoModal } from './_components/pdf-revisao-modal'
+import { PdfRevisaoModal, type PdfRevisaoCatalogo } from './_components/pdf-revisao-modal'
 import { ProcessosGrid } from './_components/processos-grid'
 import { ProcessoModal } from './_components/processo-modal'
 import { ReuNormalizacao } from './_components/reu-normalizacao'
@@ -74,19 +78,48 @@ export default function IntimacoesPage() {
   const [pdfRevisaoOpen, setPdfRevisaoOpen] = useState(false)
   const [pdfPreviewItem, setPdfPreviewItem] = useState<PdfPreviewItem | null>(null)
   const [confirmingPdf, setConfirmingPdf] = useState(false)
+  const [pdfCatalogo, setPdfCatalogo] = useState<PdfRevisaoCatalogo>({
+    materias: [],
+    comarcas: [],
+    logins: [],
+  })
 
   useEffect(() => {
     let cancelled = false
     async function loadSession() {
       try {
-        const [me, cfg] = await Promise.all([getAuthMe(), getEscritorioConfig()])
+        const [me, cfg, comarcasRes, usuariosRes] = await Promise.all([
+          getAuthMe(),
+          getEscritorioConfig(),
+          getComarcas().catch(() => [] as Comarca[]),
+          getUsuarios().catch(() => [] as Usuario[]),
+        ])
         if (cancelled) return
         setReadOnly(me.perfil === 'leitura')
         setDropdowns(cfg.dropdowns_processo ?? null)
+        const comarcas = (comarcasRes ?? [])
+          .map((c) => c.nome.trim())
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+        const logins = Array.from(
+          new Set(
+            (usuariosRes ?? []).flatMap((u) =>
+              (u.loginAliases ?? []).map((a) => String(a).trim()).filter(Boolean),
+            ),
+          ),
+        ).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+        setPdfCatalogo({
+          materias: (cfg.materias_validas ?? [])
+            .map((m) => String(m).trim())
+            .filter(Boolean),
+          comarcas,
+          logins,
+        })
       } catch {
         if (!cancelled) {
           setReadOnly(false)
           setDropdowns(null)
+          setPdfCatalogo({ materias: [], comarcas: [], logins: [] })
         }
       }
     }
@@ -417,6 +450,7 @@ export default function IntimacoesPage() {
         open={pdfRevisaoOpen}
         item={pdfPreviewItem}
         confirming={confirmingPdf}
+        catalogo={pdfCatalogo}
         onClose={() => {
           setPdfRevisaoOpen(false)
           setPdfPreviewItem(null)
