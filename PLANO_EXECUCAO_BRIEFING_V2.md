@@ -301,13 +301,23 @@ flowchart LR
 
 **Arquivos principais:** `GET /processos/resumo`, `nova-pendencia-dialog.tsx`, `intimacoes/page.tsx`, `procedentes/page.tsx`, `pendencias/page.tsx`
 
-### Sprint 5 — Importação e cadastros
-- F3.1, F3.3, F3.4
-- F0.2.1 (menu minimizado)
+### Sprint 5 — Importação e cadastros ✅ (implementado maio/2026)
+- [x] F3.1.1 → F3.1.4 (comarcas, fuzzy réu/banca, inserir verdes, alerta contagem)
+- [x] F3.1.5 spike ProJudi (nota em `/importacao`)
+- [x] F3.3.1 → F3.3.4 (bancas adversárias, seed TJBA, ausentes 6m, card Agenda)
+- [x] F3.4.1 → F3.4.4 (transições, vocabulário, tipos pendência, prazos AVALIAR, digest Comunica)
+- [x] F0.2.1 (menu lateral recolhido por padrão + `localStorage`)
+- [x] Atalho Intimações → importação em lote; **1 PDF + modal inalterado**
 
-### Sprint 6 — Indicadores e polish
-- F4.* 
-- F3.2 (migração planilha, se ainda necessária)
+**Arquivos principais:** `pdf-semaforo-enrich.ts`, `semaforo-importacao.tsx`, `escritorios-adversarios/`, `ausentes/page.tsx`, `layout.tsx`, `configuracoes/page.tsx`
+
+### Sprint 6 — Indicadores e polish ✅ (implementado maio/2026)
+- [x] F4.1 → F4.5 (dashboards: qualidade×procedência, top bancas, 5D, passivo, % origem)
+- [x] F4.6 (digest Comunica — entregue na Sprint 5 em Configurações)
+- [x] F4.7 (`GET /audit-log` + página `/audit-log` com filtros)
+- [x] F3.2.1 parcial (`preview-complemento` + parser; gravação em massa pendente F3.2.2)
+
+**Arquivos principais:** `dashboards.service.ts`, `dashboards/page.tsx`, `audit-log/page.tsx`, `migracao/complemento.parser.ts`, `PENDENCIAS_PLANO_EXECUCAO_BRIEFING_V2.md`
 
 ---
 
@@ -331,12 +341,12 @@ Considerar o briefing V2 **executado** quando:
 - [x] Sentença cadastrável na UI com travas data+valor+favorável *(Sprint 1 — valor obrigatório para PROCEDENTE/PARCIAL/ACORDO)*
 - [x] Pop-up pós-audiência conforme §4.1.1 *(Sprint 2)*
 - [x] Pop-up pós-improcedência conforme §4.1.6 *(Sprint 3)*
-- [ ] Abas Recursos, Improcedentes, Procedentes, Pendências, Agenda com cards §5
-- [ ] Semáforo importação com regras §3.2 e “inserir verdes”
-- [ ] Relatório ausentes 6 meses na UI
-- [ ] Config: fases, qualidade, pendências, AVALIAR *(parcial: transições de fase em Sprint 2)*
-- [ ] Indicadores mínimos: qualidade×procedência, sucumbência a pagar, % pendência por origem
-- [ ] Audit log consultável (admin)
+- [x] Abas Recursos, Improcedentes, Procedentes, Pendências, Agenda com cards §5 *(Procedentes/Agenda: filtros extras em `PENDENCIAS_…md`)*
+- [x] Semáforo importação com regras §3.2 e “inserir verdes”
+- [x] Relatório ausentes 6 meses na UI
+- [x] Config: fases, qualidade, pendências, AVALIAR
+- [x] Indicadores mínimos: qualidade×procedência, sucumbência a pagar, % pendência por origem
+- [x] Audit log consultável (admin)
 
 **Fora do DoD (explícito):** Banco de Teses (M7), perguntas §6 itens 8/11/12.
 
@@ -361,6 +371,7 @@ Considerar o briefing V2 **executado** quando:
 ## 14. Manutenção deste plano
 
 - Atualizar checkboxes da §12 a cada entrega.
+- Itens ainda em aberto: ver `PENDENCIAS_PLANO_EXECUCAO_BRIEFING_V2.md`.
 - Registrar desvios do briefing em comentário no PR (ex.: “valor sentença opcional em ACORDO”).
 - Revisar após cada sprint se a ordem das fases ainda faz sentido.
 

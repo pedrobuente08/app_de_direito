@@ -23,6 +23,7 @@ import { EscritoriosAdversariosModule } from './escritorios-adversarios/escritor
 import { ImprocedentesModule } from './improcedentes/improcedentes.module';
 import { HealthController } from './health.controller';
 import { ImportacaoModule } from './importacao/importacao.module';
+import { MigracaoModule } from './migracao/migracao.module';
 import { MailModule } from './mail/mail.module';
 import { PendenciasModule } from './pendencias/pendencias.module';
 import { ProcessosModule } from './processos/processos.module';
@@ -76,6 +77,7 @@ const adminImports = process.env.PLATFORM_JWT_SECRET?.trim()
     ComunicacoesModule,
     DashboardsModule,
     ImportacaoModule,
+    MigracaoModule,
     EscritorioConfigApiModule,
     ProcedentesModule,
     UsuariosModule,

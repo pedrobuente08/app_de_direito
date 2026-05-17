@@ -1,7 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { criarComarca, deletarComarca, editarComarca, getComarcas } from '@/lib/api'
+import {
+  criarComarca,
+  deletarComarca,
+  editarComarca,
+  getComarcas,
+  seedComarcasPadraoBa,
+} from '@/lib/api'
 import { ToastContainer, useToast } from '@/lib/toast'
 import type { Comarca } from '@/lib/types'
 
@@ -94,12 +100,30 @@ export default function ComarcasPage() {
     <div className="animate-fade-in-up">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Comarcas</h1>
-        <button
-          onClick={openCreate}
-          className="rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)]"
-        >
-          Nova comarca
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const r = await seedComarcasPadraoBa()
+                toast.success(`Seed TJBA: até ${r.totalPadrao} comarcas (tentativa ${r.inseridas}).`)
+                load()
+              } catch (e) {
+                toast.error((e as Error).message)
+              }
+            }}
+            className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] px-3 py-2 text-sm hover:bg-[var(--color-bg-hover)]"
+          >
+            Seed TJBA
+          </button>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)]"
+          >
+            Nova comarca
+          </button>
+        </div>
       </div>
 
       {showForm && (

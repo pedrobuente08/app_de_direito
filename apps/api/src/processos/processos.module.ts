@@ -3,6 +3,8 @@ import { AudienciasModule } from '../audiencias/audiencias.module';
 import { EscritorioModule } from '../escritorio/escritorio.module';
 import { FaseDerivacaoModule } from '../fase-derivacao/fase-derivacao.module';
 import { PendenciasModule } from '../pendencias/pendencias.module';
+import { EscritoriosAdversariosModule } from '../escritorios-adversarios/escritorios-adversarios.module';
+import { ReusModule } from '../reus/reus.module';
 import { SkillModule } from '../skill/skill.module';
 import { ExtracaoPendenteController } from './extracao-pendente.controller';
 import { PosImprocedenciaService } from './pos-improcedencia.service';
@@ -16,6 +18,8 @@ import { ProcessosService } from './processos.service';
     AudienciasModule,
     FaseDerivacaoModule,
     PendenciasModule,
+    ReusModule,
+    EscritoriosAdversariosModule,
   ],
   controllers: [ProcessosController, ExtracaoPendenteController],
   providers: [ProcessosService, PosImprocedenciaService],

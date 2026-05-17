@@ -34,6 +34,13 @@ export class ComarcasController {
     return this.comarcas.criar(user.escritorioId, dto);
   }
 
+  @Post('seed-padrao-ba')
+  @Roles('admin', 'adm')
+  @Throttle(ThrottlePresets.comarcasWrite)
+  seedPadraoBa(@CurrentUser() user: AuthUser) {
+    return this.comarcas.seedPadraoBa(user.escritorioId);
+  }
+
   @Patch(':id')
   @Roles('admin', 'adm')
   @Throttle(ThrottlePresets.comarcasWrite)

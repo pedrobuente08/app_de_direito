@@ -1,8 +1,28 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getDashAudiencias, getDashPendencias, getDashTeseReuVara, getDashVaras } from '@/lib/api'
-import type { DashAudiencias, DashPendenciaStatus, DashTeseReuVara, DashVara } from '@/lib/types'
+import {
+  getDashAudiencias,
+  getDashCruzamento5d,
+  getDashPassivoSucumbencia,
+  getDashPendencias,
+  getDashPendenciasOrigem,
+  getDashQualidadeProcedencia,
+  getDashTeseReuVara,
+  getDashTopBancas,
+  getDashVaras,
+} from '@/lib/api'
+import type {
+  DashAudiencias,
+  DashCruzamento5d,
+  DashPassivoSucumbencia,
+  DashPendenciaStatus,
+  DashPendenciasOrigem,
+  DashQualidadeProcedencia,
+  DashTeseReuVara,
+  DashTopBancas,
+  DashVara,
+} from '@/lib/types'
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -34,10 +54,21 @@ export default function DashboardsPage() {
   const [filterReu, setFilterReu] = useState('')
   const [filterVara, setFilterVara] = useState('')
 
+  const [qualidade, setQualidade] = useState<DashQualidadeProcedencia[]>([])
+  const [topBancas, setTopBancas] = useState<DashTopBancas | null>(null)
+  const [cruzamento5d, setCruzamento5d] = useState<DashCruzamento5d[]>([])
+  const [passivo, setPassivo] = useState<DashPassivoSucumbencia | null>(null)
+  const [pendOrigem, setPendOrigem] = useState<DashPendenciasOrigem | null>(null)
+
   useEffect(() => {
     getDashVaras().then(setVaras).finally(() => setLoadingVaras(false))
     getDashPendencias().then(setPendencias).finally(() => setLoadingPendencias(false))
     getDashAudiencias().then(setAudiencias).finally(() => setLoadingAudiencias(false))
+    getDashQualidadeProcedencia().then(setQualidade).catch(() => {})
+    getDashTopBancas().then(setTopBancas).catch(() => {})
+    getDashCruzamento5d().then(setCruzamento5d).catch(() => {})
+    getDashPassivoSucumbencia().then(setPassivo).catch(() => {})
+    getDashPendenciasOrigem().then(setPendOrigem).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -54,6 +85,68 @@ export default function DashboardsPage() {
   return (
     <div className="animate-fade-in-up space-y-5">
       <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Dashboards</h1>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Card title="Passivo sucumbência a pagar">
+          {passivo ? (
+            <div>
+              <p className="text-2xl font-bold text-[var(--urgencia-vencida-text)]">
+                R$ {Number(passivo.valorTotalAPagar).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+              <p className="text-sm text-[var(--color-text-secondary)]">{passivo.linhasAPagar} linha(s) A_PAGAR</p>
+            </div>
+          ) : (
+            <p className="text-sm">Sem dados.</p>
+          )}
+        </Card>
+        <Card title="Pendências por origem">
+          {pendOrigem ? (
+            <div className="space-y-2">
+              {pendOrigem.alertaManualAlto && (
+                <p className="rounded border border-[var(--urgencia-atencao-border)] bg-[var(--urgencia-atencao-bg)] px-2 py-1 text-xs text-[var(--urgencia-atencao-text)]">
+                  MANUAL: {pendOrigem.pctManual}% (&gt;70%)
+                </p>
+              )}
+              <ul className="space-y-1 text-sm">
+                {pendOrigem.porOrigem.map((o) => (
+                  <li key={o.origem} className="flex justify-between"><span>{o.origem}</span><span>{o.total} ({o.pct}%)</span></li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-sm">Sem dados.</p>
+          )}
+        </Card>
+      </div>
+
+      <Card title="Procedência por situação (qualidade)">
+        {qualidade.length ? (
+          <table className="w-full text-sm">
+            <thead><tr className="text-xs uppercase text-[var(--color-text-secondary)]"><th className="pb-2 text-left">Situação</th><th className="pb-2 text-right">Total</th><th className="pb-2 text-right">Proc.</th><th className="pb-2 text-right">%</th></tr></thead>
+            <tbody>{qualidade.map((q) => (<tr key={q.qualidadeCaso} className="border-t"><td className="py-1">{q.qualidadeCaso}</td><td className="py-1 text-right font-mono">{q.total}</td><td className="py-1 text-right font-mono">{q.procedentes}</td><td className="py-1 text-right">{q.taxaProcedenciaPct}%</td></tr>))}</tbody>
+          </table>
+        ) : <p className="text-sm">Sem dados.</p>}
+      </Card>
+
+      <Card title="Top bancas adversárias">
+        {topBancas?.bancas.length ? (
+          <>
+            <p className="mb-2 text-xs">Tempo médio até sentença: <strong>{topBancas.tempoMedioDiasAteSentenca}</strong> dias</p>
+            <table className="w-full text-sm"><thead><tr className="text-xs uppercase"><th className="text-left">Banca</th><th className="text-right">Aud.</th><th className="text-right">Acordo %</th></tr></thead>
+            <tbody>{topBancas.bancas.map((b) => (<tr key={b.bancaId} className="border-t"><td className="py-1">{b.banca}</td><td className="py-1 text-right font-mono">{b.audiencias}</td><td className="py-1 text-right">{b.taxaAcordoPct}%</td></tr>))}</tbody></table>
+          </>
+        ) : <p className="text-sm">Vincule bancas nas audiências.</p>}
+      </Card>
+
+      <Card title="Cruzamento 5D">
+        {cruzamento5d.length ? (
+          <div className="max-h-72 overflow-auto text-xs">
+            <table className="w-full"><thead><tr><th>Banca</th><th>Réu</th><th>Mat.</th><th>Vara</th><th>Res.</th><th>N</th></tr></thead>
+            <tbody>{cruzamento5d.map((r,i) => (<tr key={i} className="border-t"><td className="py-0.5">{r.banca}</td><td>{r.reuTexto??'—'}</td><td>{r.materia??'—'}</td><td>{r.vara??'—'}</td><td>{r.resultado}</td><td className="font-mono">{r.total}</td></tr>))}</tbody></table>
+          </div>
+        ) : <p className="text-sm">Sem dados.</p>}
+      </Card>
+
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
 

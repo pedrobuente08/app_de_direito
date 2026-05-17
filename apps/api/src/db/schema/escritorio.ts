@@ -45,6 +45,10 @@ export type EscritorioConfig = {
   comunica_webhook_token?: string;
   /** Resumo por e-mail (cron diário ~7h). */
   comunica_digest?: ComunicaDigestConfig;
+  /** Tipos exibidos ao criar pendência manual. */
+  tipos_pendencia?: string[];
+  /** Fatores de provisão (%), ex.: 60, 85, 100. */
+  fatores_provisao_pct?: number[];
 };
 
 export const escritorio = pgTable('escritorio', {

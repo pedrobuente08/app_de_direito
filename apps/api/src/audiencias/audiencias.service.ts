@@ -157,6 +157,56 @@ export class AudienciasService {
       .orderBy(desc(audienciaAusente.createdAt));
   }
 
+  async resumoAusentes6Meses(escritorioId: string) {
+    const rows = await this.relatorioAusentes6Meses(escritorioId);
+    const total = rows.length;
+    const reaproveitaveis = rows.filter((r) => r.reaproveitavel === true).length;
+    const reaproveitados = rows.filter((r) => r.reaproveitadoEm != null).length;
+    const pct =
+      total > 0 ? Math.round((reaproveitados / total) * 1000) / 10 : 0;
+    return { total, reaproveitaveis, reaproveitados, pctReaproveitados: pct };
+  }
+
+  async atualizarAusente(
+    escritorioId: string,
+    id: string,
+    patch: {
+      reaproveitavel?: boolean;
+      reaproveitadoEm?: string | null;
+      observacoesRevisao?: string | null;
+    },
+  ) {
+    const [row] = await this.drizzle.db
+      .select()
+      .from(audienciaAusente)
+      .where(
+        and(
+          eq(audienciaAusente.escritorioId, escritorioId),
+          eq(audienciaAusente.id, id),
+        ),
+      )
+      .limit(1);
+    if (!row) {
+      throw new NotFoundException('Registro de ausente não encontrado');
+    }
+    const values: Partial<typeof audienciaAusente.$inferInsert> = {};
+    if (patch.reaproveitavel !== undefined) {
+      values.reaproveitavel = patch.reaproveitavel;
+    }
+    if (patch.reaproveitadoEm !== undefined) {
+      values.reaproveitadoEm = patch.reaproveitadoEm;
+    }
+    if (patch.observacoesRevisao !== undefined) {
+      values.observacoesRevisao = patch.observacoesRevisao?.trim() || null;
+    }
+    const [updated] = await this.drizzle.db
+      .update(audienciaAusente)
+      .set(values)
+      .where(eq(audienciaAusente.id, id))
+      .returning();
+    return updated;
+  }
+
   private async assertProcesso(escritorioId: string, processoId: string) {
     const [p] = await this.drizzle.db
       .select({ id: processo.id })

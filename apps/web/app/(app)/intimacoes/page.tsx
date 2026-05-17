@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   confirmarBatchPdf,
@@ -365,8 +366,14 @@ export default function IntimacoesPage() {
                 disabled={uploading}
                 className="rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-50"
               >
-                Enviar PDF
+                Enviar 1 PDF
               </button>
+              <Link
+                href="/importacao"
+                className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
+              >
+                Importar vários PDFs…
+              </Link>
             </>
           )}
         </div>

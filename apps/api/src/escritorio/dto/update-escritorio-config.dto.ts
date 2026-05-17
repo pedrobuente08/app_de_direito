@@ -86,4 +86,14 @@ export class UpdateEscritorioConfigDto {
   @IsInt()
   @Min(1)
   prazo_elaborar_recurso_dias?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tipos_pendencia?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  fatores_provisao_pct?: number[];
 }

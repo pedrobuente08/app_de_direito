@@ -14,6 +14,11 @@ export default function ConfiguracoesPage() {
   const [transicoesFaseRaw, setTransicoesFaseRaw] = useState('')
   const [prazoAvaliar, setPrazoAvaliar] = useState('7')
   const [prazoElaborar, setPrazoElaborar] = useState('10')
+  const [tiposPendenciaRaw, setTiposPendenciaRaw] = useState('')
+  const [fatoresProvisaoRaw, setFatoresProvisaoRaw] = useState('60\n85\n100')
+  const [digestEnabled, setDigestEnabled] = useState(false)
+  const [digestEmails, setDigestEmails] = useState('')
+  const [digestDias, setDigestDias] = useState('1')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -36,6 +41,11 @@ export default function ConfiguracoesPage() {
         )
         setPrazoAvaliar(String(cfg.prazo_avaliacao_recurso_dias ?? 7))
         setPrazoElaborar(String(cfg.prazo_elaborar_recurso_dias ?? 10))
+        setTiposPendenciaRaw((cfg.tipos_pendencia ?? []).join('\n'))
+        setFatoresProvisaoRaw((cfg.fatores_provisao_pct ?? [60, 85, 100]).join('\n'))
+        setDigestEnabled(cfg.comunica_digest?.enabled ?? false)
+        setDigestEmails((cfg.comunica_digest?.emails ?? []).join('\n'))
+        setDigestDias(String(cfg.comunica_digest?.dias ?? 1))
       } catch (e) {
         setError((e as Error).message)
       } finally {
@@ -95,6 +105,22 @@ export default function ConfiguracoesPage() {
         ...(transicoes_fase !== undefined ? { transicoes_fase } : {}),
         prazo_avaliacao_recurso_dias: Number(prazoAvaliar) || 7,
         prazo_elaborar_recurso_dias: Number(prazoElaborar) || 10,
+        tipos_pendencia: tiposPendenciaRaw
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean),
+        fatores_provisao_pct: fatoresProvisaoRaw
+          .split('\n')
+          .map((s) => Number(s.trim()))
+          .filter((n) => !Number.isNaN(n) && n > 0),
+        comunica_digest: {
+          enabled: digestEnabled,
+          emails: digestEmails
+            .split('\n')
+            .map((s) => s.trim())
+            .filter(Boolean),
+          dias: Number(digestDias) || 1,
+        },
       })
       toast.success('Configurações salvas.')
     } catch (e) {
@@ -135,13 +161,31 @@ export default function ConfiguracoesPage() {
 
       <form onSubmit={handleSave} className="space-y-4">
         <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
-          <div className="mb-3">
-            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
-              Matérias válidas
-            </h2>
-            <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
-              Uma por linha. A skill alerta quando extrai uma matéria fora desta lista.
-            </p>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                Matérias válidas
+              </h2>
+              <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+                Uma por linha. A skill alerta quando extrai matéria fora desta lista.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const padrao = [
+                  'BOA — SEM NADA',
+                  'RUIM — CONTRATO ASSINADO',
+                  'MEEIRA',
+                  'RUIM — SEM CONTRATO',
+                ]
+                setDdSituacao(padrao.join('\n'))
+                toast.success('Sugestão de situação (qualidade) aplicada no formulário — salve para gravar.')
+              }}
+              className="text-xs text-[var(--color-brand)] hover:underline"
+            >
+              Aplicar vocabulário sugerido (situação)
+            </button>
           </div>
           <textarea
             rows={6}
@@ -244,6 +288,59 @@ export default function ConfiguracoesPage() {
             placeholder={`{\n  "AGUARDANDO AUDIÊNCIA": ["AGUARDANDO SENTENÇA", "EM RECURSO"],\n  "AGUARDANDO SENTENÇA": ["AGUARDANDO TRÂNSITO", "EM RECURSO"]\n}`}
             className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
           />
+        </section>
+
+        <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
+          <h2 className="mb-2 text-sm font-semibold">Tipos de pendência (manual)</h2>
+          <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
+            Uma por linha — sugeridos ao criar pendência em Intimações.
+          </p>
+          <textarea
+            rows={5}
+            value={tiposPendenciaRaw}
+            onChange={(e) => setTiposPendenciaRaw(e.target.value)}
+            placeholder={'MANIFESTAR\nJUNTAR DOCUMENTOS\nVERIFICAR SENTENÇA'}
+            className="w-full rounded border px-2 py-1.5 font-mono text-sm"
+          />
+        </section>
+
+        <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
+          <h2 className="mb-2 text-sm font-semibold">Fatores de provisão (%)</h2>
+          <textarea
+            rows={3}
+            value={fatoresProvisaoRaw}
+            onChange={(e) => setFatoresProvisaoRaw(e.target.value)}
+            className="w-full rounded border px-2 py-1.5 font-mono text-sm"
+          />
+        </section>
+
+        <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
+          <h2 className="mb-2 text-sm font-semibold">Comunica — digest por e-mail</h2>
+          <label className="mb-2 flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={digestEnabled}
+              onChange={(e) => setDigestEnabled(e.target.checked)}
+            />
+            Ativar resumo diário
+          </label>
+          <textarea
+            rows={2}
+            value={digestEmails}
+            onChange={(e) => setDigestEmails(e.target.value)}
+            placeholder="email@escritorio.com"
+            className="mb-2 w-full rounded border px-2 py-1.5 text-sm"
+          />
+          <label className="text-xs text-[var(--color-text-secondary)]">
+            Janela (dias)
+            <input
+              type="number"
+              min={1}
+              value={digestDias}
+              onChange={(e) => setDigestDias(e.target.value)}
+              className="ml-2 w-16 rounded border px-2 py-1 text-sm"
+            />
+          </label>
         </section>
 
         <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">

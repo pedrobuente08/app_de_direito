@@ -5,5 +5,6 @@ import { ReusService } from './reus.service';
 @Module({
   controllers: [ReusController],
   providers: [ReusService],
+  exports: [ReusService],
 })
 export class ReusModule {}

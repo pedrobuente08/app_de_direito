@@ -34,11 +34,24 @@ export default function ImportacaoPage() {
       <div>
         <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Importação de PDFs</h1>
         <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-          Envie vários PDFs, revise o semáforo e confirme antes de gravar em Intimações.
+          Envie vários PDFs, revise o semáforo e confirme antes de gravar em Intimações. Em Intimações,
+          &quot;Enviar 1 PDF&quot; mantém o modal de revisão obrigatório (mesmo para linhas verdes).
         </p>
       </div>
 
       <SemaforoImportacao />
+
+      <details className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-muted)] p-3 text-xs text-[var(--color-text-secondary)]">
+        <summary className="cursor-pointer font-medium text-[var(--color-text-primary)]">
+          Nota técnica — login/advogado ProJudi (spike F3.1.5)
+        </summary>
+        <p className="mt-2 leading-relaxed">
+          A skill já extrai <code className="font-mono">login</code> quando presente no PDF. Em PDFs
+          ProJudi sem credencial legível, preencha manualmente no modal (1 PDF) ou na edição de linha
+          (lote). Próximo passo: validar com amostra real se o campo advogado do cabeçalho pode ser
+          mapeado de forma estável.
+        </p>
+      </details>
 
       <details className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
         <summary className="cursor-pointer text-sm font-medium text-[var(--color-brand)] hover:underline">

@@ -8,6 +8,12 @@ export type ClassificacaoSemaforo = {
   alertas: string[];
 };
 
+export type SugestaoMergePreview = {
+  id: string;
+  nomeCanonico: string;
+  score: number;
+};
+
 export type PdfPreviewItem = {
   arquivo: string;
   itemId: string;
@@ -27,6 +33,8 @@ export type PdfPreviewItem = {
   confidence: number;
   duplicata: boolean;
   processoExistenteId?: string;
+  sugestaoMergeReu?: SugestaoMergePreview;
+  sugestaoMergeAdversario?: SugestaoMergePreview;
 };
 
 function datasInconsistentes(

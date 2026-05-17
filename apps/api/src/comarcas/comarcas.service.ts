@@ -99,6 +99,36 @@ export class ComarcasService {
     return { ok: true };
   }
 
+  /** Comarcas frequentes TJBA + federais na BA (§3.3.2). */
+  async seedPadraoBa(escritorioId: string) {
+    const padrao: { codigo: string; nome: string; abreviado: string }[] = [
+      { codigo: '0001', nome: 'Salvador', abreviado: 'SSA' },
+      { codigo: '0020', nome: 'Feira de Santana', abreviado: 'FSA' },
+      { codigo: '0022', nome: 'Vitória da Conquista', abreviado: 'VCA' },
+      { codigo: '0025', nome: 'Ilhéus', abreviado: 'ILH' },
+      { codigo: '0030', nome: 'Juazeiro', abreviado: 'JZR' },
+      { codigo: '0033', nome: 'Barreiras', abreviado: 'BRR' },
+      { codigo: '0038', nome: 'Lauro de Freitas', abreviado: 'LFT' },
+      { codigo: '0040', nome: 'Porto Seguro', abreviado: 'PTS' },
+      { codigo: '0045', nome: 'Jequié', abreviado: 'JEQ' },
+      { codigo: '0050', nome: 'Alagoinhas', abreviado: 'AGS' },
+    ];
+    let inseridas = 0;
+    for (const row of padrao) {
+      try {
+        await this.drizzle.db
+          .insert(comarca)
+          .values({ escritorioId, ...row })
+          .onConflictDoNothing();
+        inseridas += 1;
+      } catch {
+        /* ignora duplicata */
+      }
+    }
+    this.escritorio.invalidarCacheSkill(escritorioId);
+    return { inseridas, totalPadrao: padrao.length };
+  }
+
   private async obter(escritorioId: string, id: string) {
     const [row] = await this.drizzle.db
       .select()

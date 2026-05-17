@@ -1,10 +1,10 @@
-import { IsArray, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
 
-export class CreateEscritorioAdversarioDto {
+export class UpdateEscritorioAdversarioDto {
+  @IsOptional()
   @IsString()
-  @MinLength(2)
   @MaxLength(300)
-  nomeCanonico!: string;
+  nomeCanonico?: string;
 
   @IsOptional()
   @IsString()

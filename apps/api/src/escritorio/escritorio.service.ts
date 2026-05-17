@@ -159,6 +159,12 @@ export class EscritorioService {
     if (dto.prazo_elaborar_recurso_dias !== undefined) {
       merged.prazo_elaborar_recurso_dias = dto.prazo_elaborar_recurso_dias;
     }
+    if (dto.tipos_pendencia !== undefined) {
+      merged.tipos_pendencia = dto.tipos_pendencia;
+    }
+    if (dto.fatores_provisao_pct !== undefined) {
+      merged.fatores_provisao_pct = dto.fatores_provisao_pct;
+    }
 
     await this.drizzle.db
       .update(escritorio)

@@ -15,6 +15,7 @@ import { Roles } from '../common/metadata';
 import { AudienciasService } from './audiencias.service';
 import { CreateAudienciaDto } from './dto/create-audiencia.dto';
 import { FinalizarAudienciaDto } from './dto/finalizar-audiencia.dto';
+import { UpdateAusenteDto } from './dto/update-ausente.dto';
 import { UpdateAudienciaDto } from './dto/update-audiencia.dto';
 
 @Controller('audiencias')
@@ -25,6 +26,23 @@ export class AudienciasController {
   @Throttle(ThrottlePresets.audienciasList)
   relatorioAusentes6m(@CurrentUser() user: AuthUser) {
     return this.audiencias.relatorioAusentes6Meses(user.escritorioId);
+  }
+
+  @Get('relatorio-ausentes-6m/resumo')
+  @Throttle(ThrottlePresets.audienciasList)
+  resumoAusentes6m(@CurrentUser() user: AuthUser) {
+    return this.audiencias.resumoAusentes6Meses(user.escritorioId);
+  }
+
+  @Patch('ausentes/:id')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.audienciasWrite)
+  atualizarAusente(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateAusenteDto,
+  ) {
+    return this.audiencias.atualizarAusente(user.escritorioId, id, dto);
   }
 
   @Get()

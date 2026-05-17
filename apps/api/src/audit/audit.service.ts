@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, count, desc, eq, ilike } from 'drizzle-orm';
+import { and, count, desc, eq, gte, ilike, lte } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import { auditLog } from '../db/schema/audit-log';
 
@@ -7,6 +7,9 @@ export type ListAuditLogQuery = {
   page?: number;
   limit?: number;
   entidade?: string;
+  usuarioId?: string;
+  desde?: string;
+  ate?: string;
 };
 
 @Injectable()
@@ -20,6 +23,15 @@ export class AuditService {
     const filters = [eq(auditLog.escritorioId, escritorioId)];
     if (query.entidade?.trim()) {
       filters.push(ilike(auditLog.entidade, `%${query.entidade.trim()}%`));
+    }
+    if (query.usuarioId?.trim()) {
+      filters.push(eq(auditLog.usuarioId, query.usuarioId.trim()));
+    }
+    if (query.desde?.trim()) {
+      filters.push(gte(auditLog.createdAt, new Date(`${query.desde.trim()}T00:00:00Z`)));
+    }
+    if (query.ate?.trim()) {
+      filters.push(lte(auditLog.createdAt, new Date(`${query.ate.trim()}T23:59:59Z`)));
     }
     const whereClause = and(...filters);
     const db = this.drizzle.db;

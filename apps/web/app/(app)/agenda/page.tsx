@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getAudiencias, getAuthMe } from '@/lib/api'
+import Link from 'next/link'
+import { getAudiencias, getAuthMe, getResumoAusentes6m } from '@/lib/api'
+import type { Ausentes6mResumo } from '@/lib/types'
 import type { Audiencia } from '@/lib/types'
 import { AgendaCard } from '@/components/agenda/agenda-card'
 
@@ -41,12 +43,18 @@ export default function AgendaPage() {
   const [error, setError] = useState<string | null>(null)
   const [readOnly, setReadOnly] = useState(false)
   const [periodo, setPeriodo] = useState<Periodo>('4semanas')
+  const [ausentesResumo, setAusentesResumo] = useState<Ausentes6mResumo | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      setRows(await getAudiencias())
+      const [aud, aus] = await Promise.all([
+        getAudiencias(),
+        getResumoAusentes6m().catch(() => null),
+      ])
+      setRows(aud)
+      setAusentesResumo(aus)
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -109,6 +117,22 @@ export default function AgendaPage() {
           Atualizar
         </button>
       </div>
+
+      {ausentesResumo && ausentesResumo.total > 0 && (
+        <Link
+          href="/ausentes"
+          className="block rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-4 py-3 hover:bg-[var(--color-bg-hover)]"
+        >
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
+            Autores ausentes (6 meses)
+          </p>
+          <p className="mt-1 text-sm text-[var(--color-text-primary)]">
+            <strong>{ausentesResumo.pctReaproveitados}%</strong> reaproveitados ·{' '}
+            {ausentesResumo.reaproveitados}/{ausentesResumo.total} ·{' '}
+            {ausentesResumo.reaproveitaveis} marcados para reprotocolar
+          </p>
+        </Link>
+      )}
 
       {/* Filtro de período */}
       <div className="flex flex-wrap gap-1.5">

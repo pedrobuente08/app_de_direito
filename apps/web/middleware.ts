@@ -15,6 +15,13 @@ const ROTAS_AUTENTICADAS = [
   '/configuracoes',
   '/importacao',
   '/reus',
+  '/escritorios-adversarios',
+  '/ausentes',
+  '/agenda',
+  '/recursos',
+  '/improcedentes',
+  '/audit-log',
+  '/migracao-procedentes',
 ] as const;
 
 function precisaAutenticacao(pathname: string): boolean {
@@ -54,5 +61,12 @@ export const config = {
     '/configuracoes/:path*',
     '/importacao/:path*',
     '/reus/:path*',
+    '/escritorios-adversarios/:path*',
+    '/ausentes/:path*',
+    '/agenda/:path*',
+    '/recursos/:path*',
+    '/improcedentes/:path*',
+    '/audit-log/:path*',
+    '/migracao-procedentes/:path*',
   ],
 };

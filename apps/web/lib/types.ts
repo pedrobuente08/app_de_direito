@@ -189,6 +189,9 @@ export type EscritorioConfig = {
   prazo_avaliacao_recurso_dias?: number
   /** Default 10 — pendência ao RECORRER. */
   prazo_elaborar_recurso_dias?: number
+  tipos_pendencia?: string[]
+  fatores_provisao_pct?: number[]
+  comunica_digest?: { enabled?: boolean; emails?: string[]; dias?: number }
 }
 
 export type ImprocedenteRow = {
@@ -278,6 +281,30 @@ export type EscritorioAdversario = {
   nomeCanonico: string
   cnpj?: string | null
   createdAt?: string
+  aliases?: string[]
+}
+
+export type AudienciaAusente = {
+  id: string
+  escritorioId: string
+  processoId: string
+  numeroProcesso: string
+  clienteNome?: string | null
+  materia?: string | null
+  vara?: string | null
+  dataAudiencia: string
+  motivoAusencia: string
+  reaproveitavel?: boolean | null
+  reaproveitadoEm?: string | null
+  observacoesRevisao?: string | null
+  createdAt?: string | null
+}
+
+export type Ausentes6mResumo = {
+  total: number
+  reaproveitaveis: number
+  reaproveitados: number
+  pctReaproveitados: number
 }
 
 export type PdfSemaforoCor = 'VERDE' | 'AMARELO' | 'VERMELHO'
@@ -301,6 +328,8 @@ export type PdfPreviewItem = {
   confidence: number
   duplicata: boolean
   processoExistenteId?: string
+  sugestaoMergeReu?: { id: string; nomeCanonico: string; score: number }
+  sugestaoMergeAdversario?: { id: string; nomeCanonico: string; score: number }
 }
 
 export type ConfirmarBatchItem = {
@@ -322,6 +351,7 @@ export type ConfirmarBatchResult = {
   inseridos: number
   jaExistiam: number
   erros: { itemId: string; mensagem: string }[]
+  totalSolicitados: number
 }
 
 export type AuthMe = {
@@ -417,6 +447,62 @@ export type DashTeseReuVara = {
   reuTexto: string
   total: number
   procedentes: number
+}
+
+export type DashQualidadeProcedencia = {
+  qualidadeCaso: string
+  total: number
+  procedentes: number
+  taxaProcedenciaPct: number
+}
+
+export type DashTopBancas = {
+  bancas: {
+    bancaId: string
+    banca: string
+    audiencias: number
+    acordos: number
+    taxaAcordoPct: number
+  }[]
+  tempoMedioDiasAteSentenca: number
+}
+
+export type DashCruzamento5d = {
+  banca: string
+  reuTexto: string | null
+  materia: string | null
+  vara: string | null
+  resultado: string
+  total: number
+}
+
+export type DashPassivoSucumbencia = {
+  linhasAPagar: number
+  valorTotalAPagar: string
+}
+
+export type DashPendenciasOrigem = {
+  totalAbertas: number
+  pctManual: number
+  alertaManualAlto: boolean
+  porOrigem: { origem: string; total: number; pct: number }[]
+}
+
+export type AuditLogRow = {
+  id: string
+  escritorioId: string | null
+  usuarioId: string | null
+  entidade: string
+  entidadeId: string
+  acao: string
+  diff: Record<string, unknown> | null
+  ip: string | null
+  createdAt: string
+}
+
+export type AuditLogList = {
+  data: AuditLogRow[]
+  meta: { page: number; limit: number; total: number; totalPages: number }
 }
 
 export type Comunicacao = {

@@ -5,5 +5,6 @@ import { EscritoriosAdversariosService } from './escritorios-adversarios.service
 @Module({
   controllers: [EscritoriosAdversariosController],
   providers: [EscritoriosAdversariosService],
+  exports: [EscritoriosAdversariosService],
 })
 export class EscritoriosAdversariosModule {}

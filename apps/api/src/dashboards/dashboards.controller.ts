@@ -45,4 +45,34 @@ export class DashboardsController {
       vara,
     );
   }
+
+  @Get('qualidade-procedencia')
+  @Throttle(ThrottlePresets.dashboardRead)
+  qualidadeProcedencia(@CurrentUser() user: AuthUser) {
+    return this.dashboards.qualidadeProcedencia(user.escritorioId);
+  }
+
+  @Get('top-bancas-adversarias')
+  @Throttle(ThrottlePresets.dashboardRead)
+  topBancas(@CurrentUser() user: AuthUser) {
+    return this.dashboards.topBancasAdversarias(user.escritorioId);
+  }
+
+  @Get('cruzamento-5d')
+  @Throttle(ThrottlePresets.dashboardRead)
+  cruzamento5d(@CurrentUser() user: AuthUser) {
+    return this.dashboards.cruzamento5d(user.escritorioId);
+  }
+
+  @Get('passivo-sucumbencia')
+  @Throttle(ThrottlePresets.dashboardRead)
+  passivoSucumbencia(@CurrentUser() user: AuthUser) {
+    return this.dashboards.passivoSucumbencia(user.escritorioId);
+  }
+
+  @Get('pendencias-origem')
+  @Throttle(ThrottlePresets.dashboardRead)
+  pendenciasOrigem(@CurrentUser() user: AuthUser) {
+    return this.dashboards.pendenciasPorOrigem(user.escritorioId);
+  }
 }

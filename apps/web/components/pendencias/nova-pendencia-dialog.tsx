@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { criarPendencia } from '@/lib/api'
+import { criarPendencia, getEscritorioConfig } from '@/lib/api'
 import type { Processo } from '@/lib/types'
 
 type Props = {
@@ -24,9 +24,13 @@ export function NovaPendenciaDialog({
   const [observacao, setObservacao] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const [tiposSugeridos, setTiposSugeridos] = useState<string[]>([])
 
   useEffect(() => {
     if (!open) return
+    getEscritorioConfig()
+      .then((cfg) => setTiposSugeridos(cfg.tipos_pendencia ?? []))
+      .catch(() => setTiposSugeridos([]))
     setTipo('')
     setDataLimite('')
     setResponsavel('')
@@ -88,11 +92,19 @@ export function NovaPendenciaDialog({
             Tipo *
             <input
               required
+              list="tipos-pendencia-opts"
               value={tipo}
               onChange={(e) => setTipo(e.target.value)}
               placeholder="Ex.: MANIFESTAR, PROCURAÇÃO…"
               className="mt-1 w-full rounded border px-2 py-1.5 text-sm"
             />
+            {tiposSugeridos.length > 0 && (
+              <datalist id="tipos-pendencia-opts">
+                {tiposSugeridos.map((t) => (
+                  <option key={t} value={t} />
+                ))}
+              </datalist>
+            )}
           </label>
           <label className="block text-xs text-[var(--color-text-secondary)]">
             Data limite

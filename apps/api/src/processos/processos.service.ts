@@ -34,7 +34,9 @@ import { processoProcedente } from '../db/schema/processo-procedente';
 import { reu } from '../db/schema/reu';
 import { reuAlias } from '../db/schema/reu-alias';
 import { AudienciasService } from '../audiencias/audiencias.service';
+import { EscritoriosAdversariosService } from '../escritorios-adversarios/escritorios-adversarios.service';
 import { EscritorioService } from '../escritorio/escritorio.service';
+import { ReusService } from '../reus/reus.service';
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import { transicaoFasePermitida } from '../fase-derivacao/fase-transicoes';
 import type { EscritorioConfig } from '../db/schema/escritorio';
@@ -52,6 +54,10 @@ import {
   type PdfPreviewItem,
   type PdfSemaforoCor,
 } from './pdf-batch-classifier';
+import {
+  enriquecerClassificacaoSemaforo,
+  type SemaforoEnrichContext,
+} from './pdf-semaforo-enrich';
 import {
   emptyToNull,
   normalizeTime,
@@ -102,6 +108,8 @@ export class ProcessosService {
     private readonly drizzle: DrizzleService,
     private readonly skill: SkillService,
     private readonly escritorio: EscritorioService,
+    private readonly reus: ReusService,
+    private readonly escritoriosAdversarios: EscritoriosAdversariosService,
     private readonly audiencias: AudienciasService,
     private readonly faseDerivacao: FaseDerivacaoService,
     private readonly storage: StorageService,
@@ -993,16 +1001,74 @@ export class ProcessosService {
     return row?.id ?? null;
   }
 
+  private async buildSemaforoContext(
+    escritorioId: string,
+    config: Record<string, unknown>,
+  ): Promise<SemaforoEnrichContext> {
+    const mapaComarcas = (config.mapa_comarcas ?? {}) as Record<string, string>;
+    const [reusRows, advRows] = await Promise.all([
+      this.reus.listar(escritorioId),
+      this.escritoriosAdversarios.listarComAliases(escritorioId),
+    ]);
+    return {
+      mapaComarcas,
+      reus: reusRows.map((r) => ({
+        id: r.id,
+        nomeCanonico: r.nomeCanonico,
+        aliases: r.aliases ?? [],
+      })),
+      adversarios: advRows.map((a) => ({
+        id: a.id,
+        nomeCanonico: a.nomeCanonico,
+        aliases: a.aliases ?? [],
+      })),
+    };
+  }
+
+  private aplicarEnriquecimentoPreview(
+    item: PdfPreviewItem,
+    resultado: SkillExtractResult,
+    duplicata: boolean,
+    ctx: SemaforoEnrichContext,
+  ): PdfPreviewItem {
+    const base = classificarResultadoSkill(resultado, duplicata);
+    const enriched = enriquecerClassificacaoSemaforo(
+      {
+        classificacao: base,
+        duplicata,
+        alertaSkill: resultado.alerta,
+        numero: item.numero,
+        vara: item.vara,
+        reuTexto: item.reuTexto,
+        arquivo: item.arquivo,
+        materia: item.materia,
+      },
+      ctx,
+    );
+    return {
+      ...item,
+      cor: enriched.cor,
+      alertas: enriched.alertas,
+      ...(enriched.sugestaoMergeReu
+        ? { sugestaoMergeReu: enriched.sugestaoMergeReu }
+        : {}),
+      ...(enriched.sugestaoMergeAdversario
+        ? { sugestaoMergeAdversario: enriched.sugestaoMergeAdversario }
+        : {}),
+    };
+  }
+
   async previewPdfBatch(
     escritorioId: string,
     files: Express.Multer.File[],
   ): Promise<PdfPreviewItem[]> {
     const config = await this.escritorio.getSkillConfigJson(escritorioId);
+    const ctx = await this.buildSemaforoContext(escritorioId, config);
     const out: PdfPreviewItem[] = [];
     for (let i = 0; i < files.length; i += 5) {
       const chunk = files.slice(i, i + 5);
       const part = await Promise.all(
-        chunk.map((f) => this.previewUmPdf(escritorioId, f, config)),
+        chunk.map((f) => this.previewUmPdf(escritorioId, f, config, ctx)),
       );
       out.push(...part);
     }
@@ -1016,6 +1082,7 @@ export class ProcessosService {
     inseridos: number;
     jaExistiam: number;
     erros: { itemId: string; mensagem: string }[];
+    totalSolicitados: number;
   }> {
     const cfg = await this.escritorio.getSkillConfigJson(escritorioId);
     let inseridos = 0;
@@ -1048,7 +1115,7 @@ export class ProcessosService {
       }
     }
 
-    return { inseridos, jaExistiam, erros };
+    return { inseridos, jaExistiam, erros, totalSolicitados: items.length };
   }
 
   private confirmarItemParaSkill(
@@ -1073,16 +1140,16 @@ export class ProcessosService {
     };
   }
 
-  private previewPdfItemFromSkill(
+  private previewPdfItemBase(
     arquivo: string,
     itemId: string,
     resultado: SkillExtractResult,
-    cls: { cor: PdfSemaforoCor; alertas: string[] },
     duplicata: boolean,
     processoExistenteId: string | undefined,
   ): PdfPreviewItem {
     const proc = resultado.processo;
     const conf = Number(resultado.confidence) || 0;
+    const cls = classificarResultadoSkill(resultado, duplicata);
     return {
       arquivo,
       itemId,
@@ -1109,6 +1176,7 @@ export class ProcessosService {
     escritorioId: string,
     file: Express.Multer.File,
     config: Record<string, unknown>,
+    ctx: SemaforoEnrichContext,
   ): Promise<PdfPreviewItem> {
     const nome =
       file.originalname
@@ -1134,14 +1202,18 @@ export class ProcessosService {
           processoExistenteId = dupId;
         }
       }
-      const cls = classificarResultadoSkill(resultado, duplicata);
-      return this.previewPdfItemFromSkill(
+      const base = this.previewPdfItemBase(
         nome,
         itemId,
         resultado,
-        cls,
         duplicata,
         processoExistenteId,
+      );
+      return this.aplicarEnriquecimentoPreview(
+        base,
+        resultado,
+        duplicata,
+        ctx,
       );
     } catch (err) {
       const msg =

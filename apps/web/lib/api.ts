@@ -526,10 +526,75 @@ export async function getEscritoriosAdversarios(): Promise<
   )
 }
 
+export async function criarEscritorioAdversario(payload: {
+  nomeCanonico: string
+  cnpj?: string | null
+  aliases?: string[]
+}): Promise<import('@/lib/types').EscritorioAdversario> {
+  return apiFetch('/escritorios-adversarios', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function editarEscritorioAdversario(
+  id: string,
+  payload: Partial<{
+    nomeCanonico: string
+    cnpj: string | null
+    aliases: string[]
+  }>,
+): Promise<import('@/lib/types').EscritorioAdversario> {
+  return apiFetch(`/escritorios-adversarios/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deletarEscritorioAdversario(id: string): Promise<void> {
+  await apiFetch<void>(`/escritorios-adversarios/${id}`, { method: 'DELETE' })
+}
+
+export async function seedComarcasPadraoBa(): Promise<{
+  inseridas: number
+  totalPadrao: number
+}> {
+  return apiFetch('/comarcas/seed-padrao-ba', { method: 'POST' })
+}
+
 // ─── Audiências ───────────────────────────────────────────────────────────────
 
 export async function getAudiencias(): Promise<Audiencia[]> {
   return apiFetch<Audiencia[]>('/audiencias')
+}
+
+export async function getRelatorioAusentes6m(): Promise<
+  import('@/lib/types').AudienciaAusente[]
+> {
+  return apiFetch('/audiencias/relatorio-ausentes-6m')
+}
+
+export async function getResumoAusentes6m(): Promise<
+  import('@/lib/types').Ausentes6mResumo
+> {
+  return apiFetch('/audiencias/relatorio-ausentes-6m/resumo')
+}
+
+export async function atualizarAusente(
+  id: string,
+  payload: Partial<{
+    reaproveitavel: boolean
+    reaproveitadoEm: string | null
+    observacoesRevisao: string | null
+  }>,
+): Promise<import('@/lib/types').AudienciaAusente> {
+  return apiFetch(`/audiencias/ausentes/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
 }
 
 export async function criarAudiencia(payload: {
@@ -643,7 +708,11 @@ export async function getDashPendencias(): Promise<DashPendenciaStatus[]> {
 }
 
 export async function getDashAudiencias(): Promise<DashAudiencias> {
-  return apiFetch<DashAudiencias>('/dashboards/audiencias')
+  const r = await apiFetch<{
+    audienciasFuturas: number
+    audienciasCadastradas: number
+  }>('/dashboards/audiencias')
+  return { futuras: r.audienciasFuturas, total: r.audienciasCadastradas }
 }
 
 export async function getDashTeseReuVara(filters?: {
@@ -657,6 +726,76 @@ export async function getDashTeseReuVara(filters?: {
   if (filters?.vara) params.set('vara', filters.vara)
   const qs = params.toString()
   return apiFetch<DashTeseReuVara[]>(`/dashboards/tese-reu-vara${qs ? `?${qs}` : ''}`)
+}
+
+export async function getDashQualidadeProcedencia(): Promise<
+  import('@/lib/types').DashQualidadeProcedencia[]
+> {
+  return apiFetch('/dashboards/qualidade-procedencia')
+}
+
+export async function getDashTopBancas(): Promise<
+  import('@/lib/types').DashTopBancas
+> {
+  return apiFetch('/dashboards/top-bancas-adversarias')
+}
+
+export async function getDashCruzamento5d(): Promise<
+  import('@/lib/types').DashCruzamento5d[]
+> {
+  return apiFetch('/dashboards/cruzamento-5d')
+}
+
+export async function getDashPassivoSucumbencia(): Promise<
+  import('@/lib/types').DashPassivoSucumbencia
+> {
+  return apiFetch('/dashboards/passivo-sucumbencia')
+}
+
+export async function getDashPendenciasOrigem(): Promise<
+  import('@/lib/types').DashPendenciasOrigem
+> {
+  return apiFetch('/dashboards/pendencias-origem')
+}
+
+export async function getAuditLog(params?: {
+  page?: number
+  limit?: number
+  entidade?: string
+  usuarioId?: string
+  desde?: string
+  ate?: string
+}): Promise<import('@/lib/types').AuditLogList> {
+  const q = new URLSearchParams()
+  if (params?.page) q.set('page', String(params.page))
+  if (params?.limit) q.set('limit', String(params.limit))
+  if (params?.entidade) q.set('entidade', params.entidade)
+  if (params?.usuarioId) q.set('usuarioId', params.usuarioId)
+  if (params?.desde) q.set('desde', params.desde)
+  if (params?.ate) q.set('ate', params.ate)
+  const qs = q.toString()
+  return apiFetch(`/audit-log${qs ? `?${qs}` : ''}`)
+}
+
+export async function previewMigracaoComplemento(linhas: string[]): Promise<{
+  total: number
+  autoMapeaveis: number
+  pctAuto: number
+  candidatos: Array<{
+    entrada: string
+    confianca: number
+    recursoTipo?: string
+    recursoOrigem?: string
+    recursoResultado?: string
+    docPendente?: string[]
+    sentencaResultado?: string
+  }>
+}> {
+  return apiFetch('/migracao-procedentes/preview-complemento', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ linhas }),
+  })
 }
 
 // ─── Comunicações ─────────────────────────────────────────────────────────────

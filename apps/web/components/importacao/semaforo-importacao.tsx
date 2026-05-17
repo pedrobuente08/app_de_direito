@@ -58,6 +58,7 @@ export function SemaforoImportacao() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftEdicao, setDraftEdicao] = useState<Partial<ConfirmarBatchItem>>({})
   const [resultado, setResultado] = useState<ConfirmarBatchResult | null>(null)
+  const [pdfTotalLote, setPdfTotalLote] = useState(0)
 
   const todosSelecionaveis = useMemo(
     () => itens.filter((i) => linhaSelecionavel(i)),
@@ -94,9 +95,10 @@ export function SemaforoImportacao() {
     setResultado(null)
     try {
       const data = await previewPdfBatch(files)
+      setPdfTotalLote(files.length)
       const mapped: ItemEditavel[] = data.map((row) => ({
         ...row,
-        selecionado: linhaSelecionavel(row),
+        selecionado: row.cor === 'VERDE' && linhaSelecionavel(row),
         camposEditados: {},
       }))
       setItens(mapped)
@@ -153,13 +155,12 @@ export function SemaforoImportacao() {
     setDraftEdicao({})
   }
 
-  async function confirmarSelecionados() {
-    const sel = itens.filter((i) => i.selecionado)
-    if (!sel.length) {
-      toast.error('Marque ao menos uma linha selecionável.')
+  async function confirmarLinhas(linhas: ItemEditavel[]) {
+    if (!linhas.length) {
+      toast.error('Nenhuma linha elegível para confirmar.')
       return
     }
-    const payloads = sel.map((it) =>
+    const payloads = linhas.map((it) =>
       previewItemToConfirmBatchItem(mergeCampos(it, it.camposEditados)),
     )
     setEstado('confirmando')
@@ -167,14 +168,51 @@ export function SemaforoImportacao() {
       const res = await confirmarBatchPdf(payloads)
       setResultado(res)
       setEstado('resultado')
-      toast.success(
-        `Inseridos: ${res.inseridos}. Já existiam: ${res.jaExistiam}. Erros: ${res.erros.length}.`,
-      )
+      const contabilizado =
+        res.inseridos + res.jaExistiam + res.erros.length
+      if (contabilizado !== res.totalSolicitados) {
+        toast.error('Resposta da API com contagem inconsistente.')
+      } else if (pdfTotalLote > 0 && res.inseridos !== pdfTotalLote) {
+        toast.error(
+          `Lote: ${pdfTotalLote} PDF(s) analisado(s). Novos inseridos: ${res.inseridos}. ` +
+            `Já existiam: ${res.jaExistiam}. Erros: ${res.erros.length}. ` +
+            (res.totalSolicitados < pdfTotalLote
+              ? `${pdfTotalLote - res.totalSolicitados} PDF(s) não foram confirmados nesta operação.`
+              : 'Revise duplicatas, erros ou linhas não selecionadas.'),
+        )
+      } else {
+        toast.success(
+          `Inseridos: ${res.inseridos}. Já existiam: ${res.jaExistiam}. Erros: ${res.erros.length}.`,
+        )
+      }
     } catch (e) {
       toast.error((e as Error).message)
       setEstado('revisao')
     }
   }
+
+  function confirmarSelecionados() {
+    const sel = itens.filter((i) => i.selecionado)
+    if (!sel.length) {
+      toast.error('Marque ao menos uma linha selecionável.')
+      return
+    }
+    void confirmarLinhas(sel)
+  }
+
+  function inserirTodosVerdes() {
+    const verdes = itens.filter((i) => i.cor === 'VERDE' && linhaSelecionavel(i))
+    if (!verdes.length) {
+      toast.error('Não há linhas VERDE selecionáveis neste lote.')
+      return
+    }
+    void confirmarLinhas(verdes)
+  }
+
+  const countVerdes = useMemo(
+    () => itens.filter((i) => i.cor === 'VERDE' && linhaSelecionavel(i)).length,
+    [itens],
+  )
 
   function cancelarTudo() {
     setEstado('idle')
@@ -183,6 +221,7 @@ export function SemaforoImportacao() {
     setEditingId(null)
     setDraftEdicao({})
     setResultado(null)
+    setPdfTotalLote(0)
   }
 
   function novaImportacao() {
@@ -374,6 +413,14 @@ export function SemaforoImportacao() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
+              onClick={inserirTodosVerdes}
+              disabled={countVerdes === 0}
+              className="rounded-[var(--radius-md)] border border-[var(--urgencia-normal-border)] bg-[var(--urgencia-normal-bg)] px-4 py-2 text-sm font-medium text-[var(--urgencia-normal-text)] hover:opacity-90 disabled:opacity-50"
+            >
+              Inserir todos os verdes ({countVerdes})
+            </button>
+            <button
+              type="button"
               onClick={confirmarSelecionados}
               disabled={selecionadosCount === 0}
               className="rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-50"
@@ -401,10 +448,24 @@ export function SemaforoImportacao() {
       {estado === 'resultado' && resultado && (
         <div className="space-y-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
           <p className="text-sm text-[var(--color-text-primary)]">
-            <strong>{resultado.inseridos}</strong> inserido(s),{' '}
-            <strong>{resultado.jaExistiam}</strong> já existente(s),{' '}
-            <strong>{resultado.erros.length}</strong> erro(s).
+            PDFs analisados: <strong>{pdfTotalLote}</strong> · Confirmados:{' '}
+            <strong>{resultado.totalSolicitados}</strong> · Inseridos:{' '}
+            <strong>{resultado.inseridos}</strong> · Já existiam:{' '}
+            <strong>{resultado.jaExistiam}</strong> · Erros:{' '}
+            <strong>{resultado.erros.length}</strong>
           </p>
+          {pdfTotalLote > 0 && resultado.inseridos !== pdfTotalLote && (
+            <p className="rounded-[var(--radius-sm)] border border-[var(--urgencia-atencao-border)] bg-[var(--urgencia-atencao-bg)] px-3 py-2 text-xs text-[var(--urgencia-atencao-text)]">
+              Atenção: {pdfTotalLote} PDF(s) no lote, mas apenas {resultado.inseridos} novo(s)
+              inserido(s). Revise duplicatas, linhas amarelas/vermelhas ou erros abaixo.
+            </p>
+          )}
+          {pdfTotalLote > resultado.totalSolicitados && (
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              {pdfTotalLote - resultado.totalSolicitados} PDF(s) não foram confirmados nesta
+              operação.
+            </p>
+          )}
           {resultado.erros.length > 0 && (
             <ul className="list-inside list-disc text-xs text-[var(--urgencia-vencida-text)]">
               {resultado.erros.map((err) => (

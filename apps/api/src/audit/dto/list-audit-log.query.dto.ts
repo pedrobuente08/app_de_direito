@@ -19,4 +19,19 @@ export class ListAuditLogQueryDto {
   @IsString()
   @MaxLength(50)
   entidade?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(36)
+  usuarioId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  desde?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  ate?: string;
 }
