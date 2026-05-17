@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -10,6 +10,16 @@ import { RecursosService } from './recursos.service';
 @Controller('recursos')
 export class RecursosController {
   constructor(private readonly recursos: RecursosService) {}
+
+  @Get()
+  listar(@CurrentUser() user: AuthUser) {
+    return this.recursos.listar(user.escritorioId);
+  }
+
+  @Get('resumo')
+  resumo(@CurrentUser() user: AuthUser) {
+    return this.recursos.resumo(user.escritorioId);
+  }
 
   @Post('segundo-grau')
   @Roles('admin', 'adm', 'advogado')

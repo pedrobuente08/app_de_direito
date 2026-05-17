@@ -185,6 +185,65 @@ export type EscritorioConfig = {
   status_processo_inicial?: string
   dropdowns_processo?: DropdownsProcessoConfig
   transicoes_fase?: Record<string, string[]>
+  /** Default 7 — estado AVALIAR após improcedente. */
+  prazo_avaliacao_recurso_dias?: number
+  /** Default 10 — pendência ao RECORRER. */
+  prazo_elaborar_recurso_dias?: number
+}
+
+export type ImprocedenteRow = {
+  id: string
+  processoId: string
+  valorSucumbencia?: string | null
+  destinatarioSucumbencia?: string | null
+  statusPagamento: string
+  dataPrazoPagamento?: string | null
+  dataPagamento?: string | null
+  decisaoRecurso?: string | null
+  numero?: string
+  clienteNome?: string | null
+  materia?: string | null
+  vara?: string | null
+  justicaGratuita?: boolean | null
+  avaliacaoRecurso?: Record<string, unknown> | null
+  faseAtual?: string | null
+}
+
+export type ImprocedentesResumo = {
+  total: number
+  emAvaliacao: number
+  sucumbenciaAPagar: number
+  venceEm15: number
+  passivoTotal: string
+}
+
+export type RecursoListaItem = {
+  processoId: string
+  numero: string
+  clienteNome?: string | null
+  materia?: string | null
+  vara?: string | null
+  faseAtual?: string | null
+  origemRecurso?: 'NOSSO' | 'REU' | null
+  tipoRecurso?: string | null
+  prazoManifestacao?: string | null
+  pendenciaRecurso?: string | null
+}
+
+export type RecursosResumo = {
+  totalEmRecurso: number
+  manifestacao7d: number
+  aguardandoAcordao: number
+  comDecisao: number
+}
+
+export type PosImprocedenciaPayload = {
+  sentencaId: string
+  decisao: 'RECORRER' | 'NAO_RECORRER' | 'AVALIAR'
+  valorSucumbencia?: string | null
+  observacao?: string | null
+  responsavel?: string | null
+  prazoDias?: number
 }
 
 export type EscritorioAdversario = {

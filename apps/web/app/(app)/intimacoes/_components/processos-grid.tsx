@@ -20,15 +20,27 @@ export function ProcessosGrid({ data, onRowClick }: Props) {
       id: 'flags',
       header: '',
       size: 72,
-      cell: ({ row }) => (
-        <div className="flex flex-wrap gap-1">
-          {row.original.requerConferencia ? (
-            <span className="rounded-full bg-[var(--urgencia-atencao-bg)] px-2 py-0.5 text-[10px] text-[var(--urgencia-atencao-text)]">
-              Conferir
-            </span>
-          ) : null}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const av = row.original.avaliacaoRecurso as { ativa?: boolean; prazo?: string } | null
+        const emAvaliacao = av?.ativa === true
+        return (
+          <div className="flex flex-wrap gap-1">
+            {emAvaliacao ? (
+              <span
+                className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-900"
+                title={av?.prazo ? `Prazo: ${av.prazo}` : 'Em avaliação de recurso'}
+              >
+                AVALIAR
+              </span>
+            ) : null}
+            {row.original.requerConferencia ? (
+              <span className="rounded-full bg-[var(--urgencia-atencao-bg)] px-2 py-0.5 text-[10px] text-[var(--urgencia-atencao-text)]">
+                Conferir
+              </span>
+            ) : null}
+          </div>
+        )
+      },
     },
     {
       id: 'numero',

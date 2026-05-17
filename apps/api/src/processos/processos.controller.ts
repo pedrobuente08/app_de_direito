@@ -23,7 +23,9 @@ import { Roles } from '../common/metadata';
 import { ConfirmarBatchDto } from './dto/confirmar-batch.dto';
 import { CreateProcessoDto } from './dto/create-processo.dto';
 import { ListProcessosQueryDto } from './dto/list-processos.query.dto';
+import { PosImprocedenciaDto } from './dto/pos-improcedencia.dto';
 import { UpdateProcessoDto } from './dto/update-processo.dto';
+import { PosImprocedenciaService } from './pos-improcedencia.service';
 import { ProcessosService } from './processos.service';
 
 function sanitizePdfFilename(name: string): string {
@@ -54,7 +56,10 @@ function pdfMulterFileFilter(
 
 @Controller('processos')
 export class ProcessosController {
-  constructor(private readonly processos: ProcessosService) {}
+  constructor(
+    private readonly processos: ProcessosService,
+    private readonly posImprocedencia: PosImprocedenciaService,
+  ) {}
 
   @Get()
   @Throttle(ThrottlePresets.processosList)
@@ -174,6 +179,22 @@ export class ProcessosController {
     @Body() dto: UpdateProcessoDto,
   ) {
     return this.processos.atualizarParcial(
+      user.escritorioId,
+      id,
+      dto,
+      user.userId,
+    );
+  }
+
+  @Post(':id/pos-improcedencia')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.processoPostManual)
+  posImprocedencia(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PosImprocedenciaDto,
+  ) {
+    return this.posImprocedencia.aplicar(
       user.escritorioId,
       id,
       dto,

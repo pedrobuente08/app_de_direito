@@ -153,6 +153,12 @@ export class EscritorioService {
     if (dto.transicoes_fase !== undefined) {
       merged.transicoes_fase = dto.transicoes_fase;
     }
+    if (dto.prazo_avaliacao_recurso_dias !== undefined) {
+      merged.prazo_avaliacao_recurso_dias = dto.prazo_avaliacao_recurso_dias;
+    }
+    if (dto.prazo_elaborar_recurso_dias !== undefined) {
+      merged.prazo_elaborar_recurso_dias = dto.prazo_elaborar_recurso_dias;
+    }
 
     await this.drizzle.db
       .update(escritorio)

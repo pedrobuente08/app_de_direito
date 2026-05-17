@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { PosImprocedenciaDialog } from '@/components/sentencas/pos-improcedencia-dialog'
 import { createSentenca } from '@/lib/api'
 import { mergeSentencaOpcoes } from '@/lib/sentenca-opcoes'
 import {
@@ -21,6 +22,7 @@ const GRAU_LABEL: Record<string, string> = {
 
 type Props = {
   processoId: string
+  processoNumero?: string | null
   sentencas: Sentenca[]
   readOnly?: boolean
   dropdowns?: DropdownsProcessoConfig | null
@@ -28,8 +30,18 @@ type Props = {
   onCreated: () => void
 }
 
+function normResultado(r: string): string {
+  return r.normalize('NFD').replace(/\p{M}/gu, '').trim().toUpperCase()
+}
+
+function isPrimeiroGrau(grau: string): boolean {
+  const g = grau.trim().toUpperCase()
+  return !g.includes('SEGUNDO') && g !== 'STJ' && g !== 'TST'
+}
+
 export function RegistrarSentencaSection({
   processoId,
+  processoNumero,
   sentencas,
   readOnly,
   dropdowns,
@@ -37,6 +49,7 @@ export function RegistrarSentencaSection({
   onCreated,
 }: Props) {
   const [open, setOpen] = useState(false)
+  const [posImprocedencia, setPosImprocedencia] = useState<Sentenca | null>(null)
   const [saving, setSaving] = useState(false)
   const [grau, setGrau] = useState<string>('PRIMEIRO_GRAU')
   const [data, setData] = useState(() => new Date().toISOString().slice(0, 10))
@@ -62,7 +75,7 @@ export function RegistrarSentencaSection({
     setFormError(null)
     setSaving(true)
     try {
-      await createSentenca({
+      const created = await createSentenca({
         processoId,
         grau,
         data: data.slice(0, 10),
@@ -75,6 +88,12 @@ export function RegistrarSentencaSection({
       setValor('')
       setResultado('')
       onCreated()
+      if (
+        normResultado(created.resultado) === 'IMPROCEDENTE' &&
+        isPrimeiroGrau(created.grau)
+      ) {
+        setPosImprocedencia(created)
+      }
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
@@ -213,6 +232,18 @@ export function RegistrarSentencaSection({
           )}
         </>
       )}
+
+      <PosImprocedenciaDialog
+        open={!!posImprocedencia}
+        processoId={processoId}
+        processoNumero={processoNumero}
+        sentenca={posImprocedencia}
+        onClose={() => setPosImprocedencia(null)}
+        onSuccess={() => {
+          toast.success('Decisão pós-improcedência registrada.')
+          onCreated()
+        }}
+      />
     </div>
   )
 }

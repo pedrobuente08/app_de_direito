@@ -12,6 +12,8 @@ export default function ConfiguracoesPage() {
   const [ddSentenca, setDdSentenca] = useState('')
   const [ddFase, setDdFase] = useState('')
   const [transicoesFaseRaw, setTransicoesFaseRaw] = useState('')
+  const [prazoAvaliar, setPrazoAvaliar] = useState('7')
+  const [prazoElaborar, setPrazoElaborar] = useState('10')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -32,6 +34,8 @@ export default function ConfiguracoesPage() {
             ? JSON.stringify(cfg.transicoes_fase, null, 2)
             : '',
         )
+        setPrazoAvaliar(String(cfg.prazo_avaliacao_recurso_dias ?? 7))
+        setPrazoElaborar(String(cfg.prazo_elaborar_recurso_dias ?? 10))
       } catch (e) {
         setError((e as Error).message)
       } finally {
@@ -89,6 +93,8 @@ export default function ConfiguracoesPage() {
             .filter(Boolean),
         },
         ...(transicoes_fase !== undefined ? { transicoes_fase } : {}),
+        prazo_avaliacao_recurso_dias: Number(prazoAvaliar) || 7,
+        prazo_elaborar_recurso_dias: Number(prazoElaborar) || 10,
       })
       toast.success('Configurações salvas.')
     } catch (e) {
@@ -187,6 +193,34 @@ export default function ConfiguracoesPage() {
                 onChange={(e) => setDdFase(e.target.value)}
                 placeholder={'AUDIÊNCIA AGENDADA\nREVELIA DECRETADA'}
                 className="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
+              />
+            </label>
+          </div>
+        </section>
+
+        <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
+          <h2 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">
+            Prazos — recurso pós-improcedência
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+              Estado AVALIAR (dias)
+              <input
+                type="number"
+                min={1}
+                value={prazoAvaliar}
+                onChange={(e) => setPrazoAvaliar(e.target.value)}
+                className="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+              Elaborar recurso ao RECORRER (dias)
+              <input
+                type="number"
+                min={1}
+                value={prazoElaborar}
+                onChange={(e) => setPrazoElaborar(e.target.value)}
+                className="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm"
               />
             </label>
           </div>

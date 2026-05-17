@@ -1,46 +1,291 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { apiUrl } from '@/lib/api'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  getAuthMe,
+  getImprocedentes,
+  getImprocedentesResumo,
+  patchImprocedente,
+} from '@/lib/api'
+import type { ImprocedenteRow, ImprocedentesResumo } from '@/lib/types'
+import { ToastContainer, useToast } from '@/lib/toast'
 
-type Row = Record<string, unknown>
+const STATUS_OPCOES = ['A_PAGAR', 'PAGO', 'SUSPENSO'] as const
 
 export default function ImprocedentesPage() {
-  const [rows, setRows] = useState<Row[]>([])
+  const toast = useToast()
+  const [readOnly, setReadOnly] = useState(false)
+  const [rows, setRows] = useState<ImprocedenteRow[]>([])
+  const [resumo, setResumo] = useState<ImprocedentesResumo | null>(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({
+    valorSucumbencia: '',
+    destinatarioSucumbencia: '',
+    statusPagamento: 'A_PAGAR',
+    dataPrazoPagamento: '',
+    dataPagamento: '',
+    justicaGratuita: false,
+  })
 
-  useEffect(() => {
-    let c = false
-    ;(async () => {
-      try {
-        const res = await fetch(apiUrl('/improcedentes'), { credentials: 'include' })
-        const j = await res.json().catch(() => [])
-        if (!c && res.ok) setRows(Array.isArray(j) ? j : [])
-        else if (!c) setError(typeof j?.message === 'string' ? j.message : 'Falha ao listar.')
-      } catch (e) {
-        if (!c) setError((e as Error).message)
-      }
-    })()
-    return () => { c = true }
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const [list, r] = await Promise.all([
+        getImprocedentes(),
+        getImprocedentesResumo(),
+      ])
+      setRows(list)
+      setResumo(r)
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
+  useEffect(() => {
+    getAuthMe()
+      .then((me) => setReadOnly(me.perfil === 'leitura'))
+      .catch(() => setReadOnly(false))
+    void load()
+  }, [load])
+
+  function openEdit(row: ImprocedenteRow) {
+    setEditId(row.id)
+    setForm({
+      valorSucumbencia: row.valorSucumbencia ?? '',
+      destinatarioSucumbencia: row.destinatarioSucumbencia ?? '',
+      statusPagamento: row.statusPagamento ?? 'A_PAGAR',
+      dataPrazoPagamento: row.dataPrazoPagamento ?? '',
+      dataPagamento: row.dataPagamento ?? '',
+      justicaGratuita: !!row.justicaGratuita,
+    })
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editId) return
+    setSaving(true)
+    try {
+      await patchImprocedente(editId, {
+        valorSucumbencia: form.valorSucumbencia.trim() || null,
+        destinatarioSucumbencia: form.destinatarioSucumbencia.trim() || null,
+        statusPagamento: form.statusPagamento,
+        dataPrazoPagamento: form.dataPrazoPagamento.trim() || null,
+        dataPagamento: form.dataPagamento.trim() || null,
+        justicaGratuita: form.justicaGratuita,
+      })
+      toast.success('Sucumbência atualizada.')
+      setEditId(null)
+      void load()
+    } catch (err) {
+      toast.error((err as Error).message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const cards = [
+    { label: 'Total', value: resumo?.total ?? '—' },
+    { label: 'Em avaliação', value: resumo?.emAvaliacao ?? '—' },
+    { label: 'Sucumbência a pagar', value: resumo?.sucumbenciaAPagar ?? '—' },
+    { label: 'Vence em 15d', value: resumo?.venceEm15 ?? '—' },
+    {
+      label: 'Passivo (R$)',
+      value: resumo?.passivoTotal ?? '—',
+    },
+  ]
+
   return (
-    <div className="animate-fade-in-up space-y-3">
-      <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Improcedentes</h1>
-      <p className="max-w-2xl text-sm text-[var(--color-text-secondary)]">
-        Gestão de sucumbência e estado AVALIAR (tabela <code className="rounded bg-[var(--color-bg-subtle)] px-1 font-mono text-xs">improcedente</code>). Lista carregada da API.
-      </p>
-      {error && (
-        <div className="rounded-[var(--radius-md)] border border-[var(--urgencia-vencida-border)] bg-[var(--urgencia-vencida-bg)] px-4 py-3 text-sm">{error}</div>
+    <div className="animate-fade-in-up space-y-4">
+      <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
+
+      <div>
+        <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">
+          Improcedentes
+        </h1>
+        <p className="mt-1 max-w-2xl text-sm text-[var(--color-text-secondary)]">
+          Gestão de sucumbência e processos com decisão pós-sentença improcedente.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        {cards.map((c) => (
+          <div
+            key={c.label}
+            className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-3 py-2"
+          >
+            <p className="text-[10px] text-[var(--color-text-secondary)]">{c.label}</p>
+            <p className="text-lg font-semibold">{c.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {error ? (
+        <div className="rounded-[var(--radius-md)] border border-[var(--urgencia-vencida-border)] bg-[var(--urgencia-vencida-bg)] px-4 py-3 text-sm">
+          {error}
+        </div>
+      ) : null}
+
+      {loading ? (
+        <p className="text-sm text-[var(--color-text-secondary)]">Carregando…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          Nenhum registro de improcedente.
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)]">
+          <table className="w-full text-sm">
+            <thead className="bg-[var(--color-bg-muted)]">
+              <tr>
+                {[
+                  'Processo',
+                  'Cliente',
+                  'Decisão',
+                  'Valor',
+                  'Status',
+                  'Prazo pag.',
+                  'JG',
+                  '',
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="whitespace-nowrap px-3 py-2 text-left text-xs font-semibold uppercase text-[var(--color-text-secondary)]"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-border-default)]">
+              {rows.map((r) => {
+                const av = r.avaliacaoRecurso as { ativa?: boolean } | null
+                return (
+                  <tr key={r.id}>
+                    <td className="px-3 py-2 font-mono text-xs">{r.numero ?? '—'}</td>
+                    <td className="px-3 py-2">{r.clienteNome ?? '—'}</td>
+                    <td className="px-3 py-2">
+                      {av?.ativa ? (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-900">
+                          AVALIAR
+                        </span>
+                      ) : (
+                        r.decisaoRecurso ?? '—'
+                      )}
+                    </td>
+                    <td className="px-3 py-2">{r.valorSucumbencia ?? '—'}</td>
+                    <td className="px-3 py-2">{r.statusPagamento}</td>
+                    <td className="px-3 py-2">{r.dataPrazoPagamento ?? '—'}</td>
+                    <td className="px-3 py-2">{r.justicaGratuita ? 'Sim' : 'Não'}</td>
+                    <td className="px-3 py-2 text-right">
+                      {!readOnly ? (
+                        <button
+                          type="button"
+                          onClick={() => openEdit(r)}
+                          className="text-xs text-[var(--color-brand)] hover:underline"
+                        >
+                          Editar
+                        </button>
+                      ) : null}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
-      {!error && rows.length === 0 && (
-        <p className="text-sm text-[var(--color-text-secondary)]">Nenhum registro de improcedente ainda.</p>
-      )}
-      {rows.length > 0 && (
-        <pre className="overflow-auto rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] p-3 text-xs">
-          {JSON.stringify(rows, null, 2)}
-        </pre>
-      )}
+
+      {editId ? (
+        <form
+          onSubmit={handleSave}
+          className="max-w-md space-y-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4"
+        >
+          <h2 className="text-sm font-semibold">Editar sucumbência</h2>
+          <label className="block text-xs">
+            Valor
+            <input
+              value={form.valorSucumbencia}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, valorSucumbencia: e.target.value }))
+              }
+              className="mt-1 w-full rounded border px-2 py-1 text-sm"
+            />
+          </label>
+          <label className="block text-xs">
+            Destinatário
+            <input
+              value={form.destinatarioSucumbencia}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, destinatarioSucumbencia: e.target.value }))
+              }
+              className="mt-1 w-full rounded border px-2 py-1 text-sm"
+            />
+          </label>
+          <label className="block text-xs">
+            Status pagamento
+            <select
+              value={form.statusPagamento}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, statusPagamento: e.target.value }))
+              }
+              className="mt-1 w-full rounded border px-2 py-1 text-sm"
+            >
+              {STATUS_OPCOES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs">
+            Prazo pagamento
+            <input
+              type="date"
+              value={form.dataPrazoPagamento}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, dataPrazoPagamento: e.target.value }))
+              }
+              className="mt-1 w-full rounded border px-2 py-1 text-sm"
+            />
+          </label>
+          <label className="block text-xs">
+            Data pagamento
+            <input
+              type="date"
+              value={form.dataPagamento}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, dataPagamento: e.target.value }))
+              }
+              className="mt-1 w-full rounded border px-2 py-1 text-sm"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.justicaGratuita}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, justicaGratuita: e.target.checked }))
+              }
+            />
+            Justiça gratuita (suspende alerta de pagamento)
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded bg-[var(--color-brand)] px-3 py-1.5 text-sm text-white disabled:opacity-50"
+            >
+              {saving ? 'Salvando…' : 'Salvar'}
+            </button>
+            <button type="button" onClick={() => setEditId(null)} className="text-sm underline">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      ) : null}
     </div>
   )
 }

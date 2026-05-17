@@ -1,9 +1,11 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsInt,
   IsObject,
   IsOptional,
   IsString,
+  Min,
   ValidateNested,
 } from 'class-validator';
 
@@ -74,4 +76,14 @@ export class UpdateEscritorioConfigDto {
   @IsOptional()
   @IsObject()
   transicoes_fase?: Record<string, string[]>;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  prazo_avaliacao_recurso_dias?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  prazo_elaborar_recurso_dias?: number;
 }

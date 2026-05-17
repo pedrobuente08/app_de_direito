@@ -160,6 +160,11 @@ export class ProcessosService {
         sql`not exists (select 1 from sentenca s where s.processo_id = ${processo.id})`,
       );
     }
+    if (query.emAvaliacao === true) {
+      filters.push(
+        sql`coalesce((${processo.avaliacaoRecurso}->>'ativa')::boolean, false) = true`,
+      );
+    }
 
     const whereClause = and(...filters);
 

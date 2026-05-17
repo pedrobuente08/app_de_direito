@@ -214,6 +214,64 @@ export async function createSentenca(
   })
 }
 
+export async function aplicarPosImprocedencia(
+  processoId: string,
+  payload: import('@/lib/types').PosImprocedenciaPayload,
+): Promise<import('@/lib/types').Processo> {
+  return apiFetch<import('@/lib/types').Processo>(
+    `/processos/${processoId}/pos-improcedencia`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+}
+
+export async function getRecursos(): Promise<
+  import('@/lib/types').RecursoListaItem[]
+> {
+  return apiFetch<import('@/lib/types').RecursoListaItem[]>('/recursos')
+}
+
+export async function getRecursosResumo(): Promise<
+  import('@/lib/types').RecursosResumo
+> {
+  return apiFetch<import('@/lib/types').RecursosResumo>('/recursos/resumo')
+}
+
+export async function getImprocedentes(): Promise<
+  import('@/lib/types').ImprocedenteRow[]
+> {
+  return apiFetch<import('@/lib/types').ImprocedenteRow[]>('/improcedentes')
+}
+
+export async function getImprocedentesResumo(): Promise<
+  import('@/lib/types').ImprocedentesResumo
+> {
+  return apiFetch<import('@/lib/types').ImprocedentesResumo>(
+    '/improcedentes/resumo',
+  )
+}
+
+export async function patchImprocedente(
+  id: string,
+  payload: Partial<{
+    valorSucumbencia: string | null
+    destinatarioSucumbencia: string | null
+    statusPagamento: string
+    dataPrazoPagamento: string | null
+    dataPagamento: string | null
+    justicaGratuita: boolean
+  }>,
+): Promise<import('@/lib/types').ImprocedenteRow> {
+  return apiFetch<import('@/lib/types').ImprocedenteRow>(`/improcedentes/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function previewPdfBatch(files: File[]): Promise<PdfPreviewItem[]> {
   const form = new FormData()
   for (const f of files) {

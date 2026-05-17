@@ -5,8 +5,11 @@ import {
 import { and, desc, eq } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import { improcedente } from '../db/schema/improcedente';
+import { pendencia } from '../db/schema/pendencia';
+import { processo } from '../db/schema/processo';
 import { processoProcedente } from '../db/schema/processo-procedente';
 import { sentenca } from '../db/schema/sentenca';
+import { FaseDerivada } from '../fase-derivacao/fase-derivacao.constants';
 import { ProcessosService } from '../processos/processos.service';
 import type { RegistrarSegundoGrauDto } from './dto/registrar-segundo-grau.dto';
 
@@ -26,6 +29,127 @@ export class RecursosService {
     private readonly drizzle: DrizzleService,
     private readonly processos: ProcessosService,
   ) {}
+
+  /** Processos em recurso sem acórdão de 2º grau registrado. */
+  async listar(escritorioId: string) {
+    const db = this.drizzle.db;
+    const rows = await db
+      .select({
+        processoId: processo.id,
+        numero: processo.numero,
+        clienteNome: processo.clienteNome,
+        materia: processo.materia,
+        vara: processo.vara,
+        faseAtual: processo.faseAtual,
+        decisaoRecurso: improcedente.decisaoRecurso,
+        recursoOrigem: processoProcedente.recursoOrigem,
+        recursoTipo: processoProcedente.recursoTipo,
+        familiaSituacao: processoProcedente.familiaSituacao,
+      })
+      .from(processo)
+      .leftJoin(improcedente, eq(improcedente.processoId, processo.id))
+      .leftJoin(
+        processoProcedente,
+        eq(processoProcedente.processoId, processo.id),
+      )
+      .where(eq(processo.escritorioId, escritorioId))
+      .orderBy(desc(processo.updatedAt));
+
+    const comSegundo = new Set(
+      (
+        await db
+          .select({ processoId: sentenca.processoId })
+          .from(sentenca)
+          .where(
+            and(
+              eq(sentenca.escritorioId, escritorioId),
+              eq(sentenca.grau, 'SEGUNDO_GRAU'),
+            ),
+          )
+      ).map((r) => r.processoId),
+    );
+
+    const emRecurso = rows.filter((r) => {
+      if (comSegundo.has(r.processoId)) return false;
+      const fase = (r.faseAtual ?? '').toUpperCase();
+      if (fase.includes('RECURSO') || fase === FaseDerivada.EM_RECURSO.toUpperCase()) {
+        return true;
+      }
+      const dec = (r.decisaoRecurso ?? '').toUpperCase();
+      if (dec === 'RECORRER') return true;
+      if (r.recursoOrigem || r.recursoTipo) return true;
+      return false;
+    });
+
+    const uniq = new Map<string, (typeof emRecurso)[0]>();
+    for (const r of emRecurso) {
+      if (!uniq.has(r.processoId)) uniq.set(r.processoId, r);
+    }
+
+    const lista = Array.from(uniq.values());
+    const pendenciasAbertas = await db
+      .select({
+        processoId: pendencia.processoId,
+        tipo: pendencia.tipo,
+        dataLimite: pendencia.dataLimite,
+      })
+      .from(pendencia)
+      .where(
+        and(
+          eq(pendencia.escritorioId, escritorioId),
+          eq(pendencia.status, 'ABERTA'),
+        ),
+      );
+
+    const pendPorProc = new Map<string, { tipo: string; dataLimite: string | null }[]>();
+    for (const p of pendenciasAbertas) {
+      const arr = pendPorProc.get(p.processoId) ?? [];
+      arr.push({ tipo: p.tipo, dataLimite: p.dataLimite });
+      pendPorProc.set(p.processoId, arr);
+    }
+
+    return lista.map((r) => {
+      const pends = pendPorProc.get(r.processoId) ?? [];
+      const pendRecurso = pends.find((p) =>
+        p.tipo.toUpperCase().includes('RECURSO'),
+      );
+      let origem: 'NOSSO' | 'REU' | null = null;
+      if (r.decisaoRecurso === 'RECORRER') origem = 'NOSSO';
+      else if (r.recursoOrigem?.toUpperCase() === 'REU') origem = 'REU';
+      else if (r.recursoOrigem?.toUpperCase() === 'NOSSO') origem = 'NOSSO';
+      else if (r.familiaSituacao) origem = 'REU';
+
+      return {
+        processoId: r.processoId,
+        numero: r.numero,
+        clienteNome: r.clienteNome,
+        materia: r.materia,
+        vara: r.vara,
+        faseAtual: r.faseAtual,
+        origemRecurso: origem,
+        tipoRecurso: r.recursoTipo,
+        prazoManifestacao: pendRecurso?.dataLimite ?? null,
+        pendenciaRecurso: pendRecurso?.tipo ?? null,
+      };
+    });
+  }
+
+  async resumo(escritorioId: string) {
+    const lista = await this.listar(escritorioId);
+    const hoje = new Date().toISOString().slice(0, 10);
+    let manifestacao7d = 0;
+    for (const r of lista) {
+      const prazo = r.prazoManifestacao;
+      if (!prazo) continue;
+      if (prazo >= hoje && prazo <= addDaysYmd(hoje, 7)) manifestacao7d += 1;
+    }
+    return {
+      totalEmRecurso: lista.length,
+      manifestacao7d,
+      aguardandoAcordao: lista.filter((r) => !r.prazoManifestacao).length,
+      comDecisao: 0,
+    };
+  }
 
   private async assertSemSegundoGrau(escritorioId: string, processoId: string) {
     const [row] = await this.drizzle.db
@@ -231,4 +355,10 @@ export class RecursosService {
 
     return { cenario: cen, sentencas: lista };
   }
+}
+
+function addDaysYmd(baseYmd: string, days: number): string {
+  const d = new Date(`${baseYmd.slice(0, 10)}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
 }

@@ -1,150 +1,154 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { getAuthMe, registrarSegundoGrau } from '@/lib/api'
+import { useCallback, useEffect, useState } from 'react'
+import { RegistrarSegundoGrauDialog } from '@/components/recursos/registrar-segundo-grau-dialog'
+import type { RecursoLinha } from '@/components/recursos/registrar-segundo-grau-dialog'
+import { getAuthMe, getRecursos, getRecursosResumo } from '@/lib/api'
+import type { RecursoListaItem, RecursosResumo } from '@/lib/types'
 import { ToastContainer, useToast } from '@/lib/toast'
-
-const CENARIOS = [
-  { id: 'A' as const, label: 'A — Provimento (1º improcedente → procedentes)' },
-  { id: 'B' as const, label: 'B — Negado (permanece improcedência / sucumbência)' },
-  { id: 'C' as const, label: 'C — Manutenção (1º procedente, réu recorreu)' },
-  { id: 'D' as const, label: 'D — Reforma (sai de procedentes → improcedentes)' },
-]
 
 export default function RecursosPage() {
   const toast = useToast()
   const [readOnly, setReadOnly] = useState(false)
-  const [processoId, setProcessoId] = useState('')
-  const [cenario, setCenario] = useState<'A' | 'B' | 'C' | 'D'>('A')
-  const [data, setData] = useState(() => new Date().toISOString().slice(0, 10))
-  const [valor, setValor] = useState('')
-  const [turma, setTurma] = useState('')
-  const [observacoes, setObservacoes] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [lista, setLista] = useState<RecursoListaItem[]>([])
+  const [resumo, setResumo] = useState<RecursosResumo | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [dialogItem, setDialogItem] = useState<RecursoLinha | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const [items, r] = await Promise.all([getRecursos(), getRecursosResumo()])
+      setLista(items)
+      setResumo(r)
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     getAuthMe()
       .then((me) => setReadOnly(me.perfil === 'leitura'))
       .catch(() => setReadOnly(false))
-  }, [])
+    void load()
+  }, [load])
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const pid = processoId.trim()
-    if (!pid) {
-      toast.error('Informe o UUID do processo.')
-      return
-    }
-    setLoading(true)
-    try {
-      const res = await registrarSegundoGrau({
-        processoId: pid,
-        cenario,
-        data,
-        valor: valor.trim() || null,
-        turma: turma.trim() || null,
-        observacoes: observacoes.trim() || null,
-      })
-      toast.success(`Cenário ${res.cenario} registrado. ${res.sentencas.length} sentença(s) no histórico.`)
-    } catch (err) {
-      toast.error((err as Error).message)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const cards = [
+    { label: 'Total em recurso', value: resumo?.totalEmRecurso ?? '—' },
+    { label: 'Manifestação ≤7d', value: resumo?.manifestacao7d ?? '—' },
+    { label: 'Aguardando acórdão', value: resumo?.aguardandoAcordao ?? '—' },
+  ]
 
   return (
     <div className="animate-fade-in-up space-y-4">
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
+
       <div>
         <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Recursos</h1>
         <p className="mt-1 max-w-2xl text-sm text-[var(--color-text-secondary)]">
-          Registro de decisão de 2º grau conforme os quatro cenários do plano (E4). A API valida a última
-          sentença de 1º grau e aplica efeitos em <code className="rounded bg-[var(--color-bg-subtle)] px-1 font-mono text-xs">sentenca</code>,{' '}
-          <code className="rounded bg-[var(--color-bg-subtle)] px-1 font-mono text-xs">processo_procedente</code> e{' '}
-          <code className="rounded bg-[var(--color-bg-subtle)] px-1 font-mono text-xs">improcedente</code>.
+          Processos em recurso sem acórdão de 2º grau. Registre a decisão pelo botão na linha.
         </p>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="max-w-lg space-y-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-4"
-      >
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)]">
-          Processo (UUID)
-          <input
-            className="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
-            value={processoId}
-            onChange={(e) => setProcessoId(e.target.value)}
-            placeholder="00000000-0000-0000-0000-000000000000"
-            disabled={readOnly}
-          />
-        </label>
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)]">
-          Cenário
-          <select
-            className="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
-            value={cenario}
-            onChange={(e) => setCenario(e.target.value as 'A' | 'B' | 'C' | 'D')}
-            disabled={readOnly}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {cards.map((c) => (
+          <div
+            key={c.label}
+            className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-4 py-3"
           >
-            {CENARIOS.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)]">
-          Data da decisão (2º grau)
-          <input
-            type="date"
-            className="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
-            value={data}
-            onChange={(e) => setData(e.target.value)}
-            disabled={readOnly}
-          />
-        </label>
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)]">
-          Valor (opcional)
-          <input
-            className="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-            placeholder="0.00"
-            disabled={readOnly}
-          />
-        </label>
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)]">
-          Turma (opcional)
-          <input
-            className="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
-            value={turma}
-            onChange={(e) => setTurma(e.target.value)}
-            disabled={readOnly}
-          />
-        </label>
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)]">
-          Observações (opcional)
-          <textarea
-            className="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
-            rows={2}
-            value={observacoes}
-            onChange={(e) => setObservacoes(e.target.value)}
-            disabled={readOnly}
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={readOnly || loading}
-          className="rounded bg-[var(--color-accent)] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
-          {loading ? 'Enviando…' : 'Registrar 2º grau'}
-        </button>
-        {readOnly && (
-          <p className="text-xs text-amber-700">Perfil somente leitura — não é possível enviar.</p>
-        )}
-      </form>
+            <p className="text-xs text-[var(--color-text-secondary)]">{c.label}</p>
+            <p className="mt-1 text-2xl font-semibold text-[var(--color-text-primary)]">
+              {c.value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {error ? (
+        <div className="rounded-[var(--radius-md)] border border-[var(--urgencia-vencida-border)] bg-[var(--urgencia-vencida-bg)] px-4 py-3 text-sm">
+          {error}{' '}
+          <button type="button" onClick={() => void load()} className="underline">
+            Tentar novamente
+          </button>
+        </div>
+      ) : null}
+
+      {loading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-10 animate-pulse rounded bg-[var(--color-bg-subtle)]" />
+          ))}
+        </div>
+      ) : lista.length === 0 ? (
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          Nenhum processo em recurso no momento.
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)]">
+          <table className="w-full text-sm">
+            <thead className="bg-[var(--color-bg-muted)]">
+              <tr>
+                {['Processo', 'Cliente', 'Origem', 'Fase', 'Prazo manifestação', ''].map((h) => (
+                  <th
+                    key={h}
+                    className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-border-default)]">
+              {lista.map((r) => (
+                <tr key={r.processoId} className="hover:bg-[var(--color-bg-hover)]">
+                  <td className="px-4 py-2.5 font-mono text-xs">{r.numero}</td>
+                  <td className="px-4 py-2.5">{r.clienteNome ?? '—'}</td>
+                  <td className="px-4 py-2.5">
+                    {r.origemRecurso === 'NOSSO'
+                      ? 'Nosso'
+                      : r.origemRecurso === 'REU'
+                        ? 'Réu'
+                        : '—'}
+                  </td>
+                  <td className="px-4 py-2.5">{r.faseAtual ?? '—'}</td>
+                  <td className="px-4 py-2.5">{r.prazoManifestacao ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-right">
+                    {!readOnly ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDialogItem({
+                            processoId: r.processoId,
+                            numero: r.numero,
+                            origemRecurso: r.origemRecurso,
+                          })
+                        }
+                        className="text-xs text-[var(--color-brand)] hover:underline"
+                      >
+                        Registrar acórdão
+                      </button>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <RegistrarSegundoGrauDialog
+        open={!!dialogItem}
+        item={dialogItem}
+        onClose={() => setDialogItem(null)}
+        onSuccess={() => {
+          toast.success('Acórdão registrado.')
+          void load()
+        }}
+      />
     </div>
   )
 }

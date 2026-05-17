@@ -36,6 +36,10 @@ export type EscritorioConfig = {
   dropdowns_processo?: DropdownsProcessoConfig;
   /** Mapa fase_anterior → fases permitidas (edição manual). */
   transicoes_fase?: Record<string, string[]>;
+  /** Prazo do estado AVALIAR após sentença improcedente (default 7). */
+  prazo_avaliacao_recurso_dias?: number;
+  /** Prazo da pendência “elaborar recurso” ao optar RECORRER (default 10). */
+  prazo_elaborar_recurso_dias?: number;
   comunica_regras?: Record<string, unknown>;
   /** Token opcional para validar `POST /comunicacoes/webhook`. */
   comunica_webhook_token?: string;

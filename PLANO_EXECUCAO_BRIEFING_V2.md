@@ -283,10 +283,15 @@ flowchart LR
 
 **Arquivos principais:** `pos-audiencia-dialog.tsx`, `audiencias.service.ts` (`finalizar`), `fase-transicoes.ts`, `configuracoes/page.tsx` (JSON transições)
 
-### Sprint 3 — Improcedência e recursos
-- F1.3 (AVALIAR + pop-up improcedência)
-- F1.5 + F2.3 (Recursos operacional)
-- F2.4 (Improcedentes sucumbência)
+### Sprint 3 — Improcedência e recursos ✅ (implementado maio/2026)
+- [x] F1.3.1 → F1.3.4 (`PosImprocedenciaDialog`, `POST /processos/:id/pos-improcedencia`, AVALIAR JSON)
+- [ ] F1.3.5 (alertas D-2 / escalada — badge + filtro Intimações; cron/e-mail backlog)
+- [x] F1.5.1 → F1.5.2 (`RegistrarSegundoGrauDialog` na aba Recursos, cenários A–D)
+- [x] F2.3.1 → F2.3.3 (`GET /recursos`, cards resumo, acórdão por linha)
+- [x] F2.4.1 → F2.4.4 (`GET/PATCH /improcedentes`, cards passivo, justiça gratuita)
+- [x] F2.1.3 (badge AVALIAR + filtro “Em avaliação” em Intimações)
+
+**Arquivos principais:** `pos-improcedencia-dialog.tsx`, `pos-improcedencia.service.ts`, `recursos/page.tsx`, `improcedentes/page.tsx`, `registrar-segundo-grau-dialog.tsx`
 
 ### Sprint 4 — Intimações e Procedentes completos
 - F0.2 (cards + filtros Intimações)
@@ -322,7 +327,7 @@ Considerar o briefing V2 **executado** quando:
 - [x] Drawer/modal com timeline e observações funcionais *(Sprint 1)*
 - [x] Sentença cadastrável na UI com travas data+valor+favorável *(Sprint 1 — valor obrigatório para PROCEDENTE/PARCIAL/ACORDO)*
 - [x] Pop-up pós-audiência conforme §4.1.1 *(Sprint 2)*
-- [ ] Pop-up pós-improcedência conforme §4.1.6
+- [x] Pop-up pós-improcedência conforme §4.1.6 *(Sprint 3)*
 - [ ] Abas Recursos, Improcedentes, Procedentes, Pendências, Agenda com cards §5
 - [ ] Semáforo importação com regras §3.2 e “inserir verdes”
 - [ ] Relatório ausentes 6 meses na UI

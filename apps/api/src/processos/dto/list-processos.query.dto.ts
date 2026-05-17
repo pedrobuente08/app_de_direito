@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsIn,
   IsInt,
   IsOptional,
@@ -95,4 +96,10 @@ export class ListProcessosQueryDto {
   @IsString()
   @IsIn(['BOA', 'RUIM', 'SEM'])
   filterUltimaSentenca?: 'BOA' | 'RUIM' | 'SEM';
+
+  /** Processos com `avaliacao_recurso.ativa = true`. */
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  emAvaliacao?: boolean;
 }

@@ -56,6 +56,7 @@ export default function IntimacoesPage() {
   const [draftFilterUltimaSentenca, setDraftFilterUltimaSentenca] = useState<
     '' | 'BOA' | 'RUIM' | 'SEM'
   >('')
+  const [draftEmAvaliacao, setDraftEmAvaliacao] = useState(false)
   const [draftSortField, setDraftSortField] = useState<
     (typeof SORT_OPTIONS)[number]['value']
   >('createdAt')
@@ -68,6 +69,7 @@ export default function IntimacoesPage() {
   const [appliedFilterUltimaSentenca, setAppliedFilterUltimaSentenca] = useState<
     '' | 'BOA' | 'RUIM' | 'SEM'
   >('')
+  const [appliedEmAvaliacao, setAppliedEmAvaliacao] = useState(false)
   const [appliedSortField, setAppliedSortField] = useState<
     (typeof SORT_OPTIONS)[number]['value']
   >('createdAt')
@@ -147,6 +149,7 @@ export default function IntimacoesPage() {
         ...(appliedFilterUltimaSentenca && {
           filterUltimaSentenca: appliedFilterUltimaSentenca,
         }),
+        ...(appliedEmAvaliacao && { emAvaliacao: 'true' }),
       })
       setProcessos(data)
       setMeta(m)
@@ -161,6 +164,7 @@ export default function IntimacoesPage() {
     appliedVara,
     appliedQualidadeCaso,
     appliedFilterUltimaSentenca,
+    appliedEmAvaliacao,
     appliedSortField,
     appliedSortOrder,
     page,
@@ -178,6 +182,7 @@ export default function IntimacoesPage() {
     setAppliedVara(draftVara)
     setAppliedQualidadeCaso(draftQualidadeCaso)
     setAppliedFilterUltimaSentenca(draftFilterUltimaSentenca)
+    setAppliedEmAvaliacao(draftEmAvaliacao)
     setAppliedSortField(draftSortField)
     setAppliedSortOrder(draftSortOrder)
     setPage(1)
@@ -190,6 +195,7 @@ export default function IntimacoesPage() {
     setDraftVara(appliedVara)
     setDraftQualidadeCaso(appliedQualidadeCaso)
     setDraftFilterUltimaSentenca(appliedFilterUltimaSentenca)
+    setDraftEmAvaliacao(appliedEmAvaliacao)
     setDraftSortField(appliedSortField)
     setDraftSortOrder(appliedSortOrder)
     setFiltrosAbertos(true)
@@ -352,6 +358,14 @@ export default function IntimacoesPage() {
               <option value="RUIM">Favorável ao réu</option>
               <option value="SEM">Sem sentença</option>
             </select>
+          </label>
+          <label className="flex items-end gap-2 pb-1.5 text-xs text-[var(--color-text-secondary)]">
+            <input
+              type="checkbox"
+              checked={draftEmAvaliacao}
+              onChange={(e) => setDraftEmAvaliacao(e.target.checked)}
+            />
+            Em avaliação (recurso)
           </label>
           <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
             Ordenar por

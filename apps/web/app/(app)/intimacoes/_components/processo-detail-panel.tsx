@@ -255,6 +255,7 @@ export function ProcessoDetailPanel({
         <Section title="Sentenças">
           <RegistrarSentencaSection
             processoId={current.id}
+            processoNumero={current.numero}
             sentencas={sentencas}
             readOnly={ro}
             dropdowns={dropdowns}
