@@ -131,4 +131,8 @@ export class UpdateProcessoDto {
   @IsOptional()
   @IsBoolean()
   requerConferencia?: boolean;
+
+  @IsOptional()
+  @IsString()
+  observacoes?: string | null;
 }

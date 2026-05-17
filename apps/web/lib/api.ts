@@ -18,9 +18,12 @@ import type {
   Procedente,
   PatchProcessoPayload,
   PdfPreviewItem,
+  CreateSentencaPayload,
   Processo,
   ProcessoCampos,
+  ProcessoTimelineResponse,
   ProcessosListResponse,
+  Sentenca,
   Reu,
   Usuario,
 } from '@/lib/types'
@@ -182,6 +185,30 @@ export async function patchProcesso(
 ): Promise<Processo> {
   return apiFetch<Processo>(`/processos/${id}`, {
     method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function getProcessoTimeline(
+  processoId: string,
+): Promise<ProcessoTimelineResponse> {
+  return apiFetch<ProcessoTimelineResponse>(
+    `/processos/${processoId}/timeline`,
+  )
+}
+
+export async function getSentencas(processoId: string): Promise<Sentenca[]> {
+  return apiFetch<Sentenca[]>(
+    `/sentencas?processoId=${encodeURIComponent(processoId)}`,
+  )
+}
+
+export async function createSentenca(
+  payload: CreateSentencaPayload,
+): Promise<Sentenca> {
+  return apiFetch<Sentenca>('/sentencas', {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
@@ -390,12 +417,26 @@ export async function criarPendencia(payload: {
   })
 }
 
-export async function cumprirPendencia(id: string, status?: string): Promise<void> {
+export async function cumprirPendencia(
+  id: string,
+  payload: { status?: string; motivoCumprimento: string },
+): Promise<void> {
   await apiFetch<void>(`/pendencias/${id}/cumprir`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(status ? { status } : {}),
+    body: JSON.stringify({
+      ...(payload.status ? { status: payload.status } : {}),
+      motivoCumprimento: payload.motivoCumprimento,
+    }),
   })
+}
+
+export async function getEscritoriosAdversarios(): Promise<
+  import('@/lib/types').EscritorioAdversario[]
+> {
+  return apiFetch<import('@/lib/types').EscritorioAdversario[]>(
+    '/escritorios-adversarios',
+  )
 }
 
 // ─── Audiências ───────────────────────────────────────────────────────────────
@@ -427,6 +468,16 @@ export async function finalizarAudiencia(
     status?: string
     autorPresenca?: string
     motivoAusencia?: string
+    novaData?: string
+    novaHora?: string | null
+    houvePendencia?: boolean
+    pendencias?: Array<{
+      tipo: string
+      dataLimite?: string | null
+      responsavel?: string | null
+      observacao?: string | null
+    }>
+    escritorioAdversarioId?: string | null
   },
 ): Promise<void> {
   await apiFetch<void>(`/audiencias/${id}/finalizar`, {

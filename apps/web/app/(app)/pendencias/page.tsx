@@ -89,9 +89,15 @@ export default function PendenciasPage() {
   }
 
   async function handleCumprir(id: string) {
+    const motivo = window.prompt('Motivo do cumprimento (obrigatório):')
+    if (motivo == null) return
+    if (!motivo.trim()) {
+      toast.error('Informe o motivo do cumprimento.')
+      return
+    }
     setCumprindo(id)
     try {
-      await cumprirPendencia(id)
+      await cumprirPendencia(id, { motivoCumprimento: motivo.trim() })
       toast.success('Pendência cumprida.')
       load()
     } catch (e) {

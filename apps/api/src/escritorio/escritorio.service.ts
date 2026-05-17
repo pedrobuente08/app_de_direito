@@ -150,6 +150,9 @@ export class EscritorioService {
     if (dto.comunica_digest !== undefined) {
       merged.comunica_digest = dto.comunica_digest as EscritorioConfig['comunica_digest'];
     }
+    if (dto.transicoes_fase !== undefined) {
+      merged.transicoes_fase = dto.transicoes_fase;
+    }
 
     await this.drizzle.db
       .update(escritorio)

@@ -58,6 +58,7 @@ export const processo = pgTable(
       withTimezone: true,
     }),
     ultimaMovimentacaoTipo: varchar('ultima_movimentacao_tipo', { length: 50 }),
+    observacoes: text('observacoes'),
     requerConferencia: boolean('requer_conferencia').default(false).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()

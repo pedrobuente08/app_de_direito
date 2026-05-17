@@ -38,6 +38,7 @@ export const SISTEMAS_TRIBUNAL_SUGESTAO: readonly string[] = [
   'TRT4',
   'TRT12',
   'TRF4',
+  'PROJUDI',
   'PJE',
   'ESAJ',
   'DESCONHECIDO',

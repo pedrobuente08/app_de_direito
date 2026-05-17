@@ -11,6 +11,7 @@ export default function ConfiguracoesPage() {
   const [ddSituacao, setDdSituacao] = useState('')
   const [ddSentenca, setDdSentenca] = useState('')
   const [ddFase, setDdFase] = useState('')
+  const [transicoesFaseRaw, setTransicoesFaseRaw] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -26,6 +27,11 @@ export default function ConfiguracoesPage() {
         setDdSituacao((cfg.dropdowns_processo?.situacao ?? []).join('\n'))
         setDdSentenca((cfg.dropdowns_processo?.sentenca ?? []).join('\n'))
         setDdFase((cfg.dropdowns_processo?.fase_atual ?? []).join('\n'))
+        setTransicoesFaseRaw(
+          cfg.transicoes_fase && Object.keys(cfg.transicoes_fase).length > 0
+            ? JSON.stringify(cfg.transicoes_fase, null, 2)
+            : '',
+        )
       } catch (e) {
         setError((e as Error).message)
       } finally {
@@ -39,6 +45,28 @@ export default function ConfiguracoesPage() {
     e.preventDefault()
     setSaving(true)
     try {
+      let transicoes_fase: Record<string, string[]> | undefined
+      const tfTrim = transicoesFaseRaw.trim()
+      if (tfTrim) {
+        const parsed = JSON.parse(tfTrim) as unknown
+        if (
+          typeof parsed !== 'object' ||
+          parsed === null ||
+          Array.isArray(parsed)
+        ) {
+          throw new Error('Transições de fase: informe um objeto JSON válido.')
+        }
+        transicoes_fase = {}
+        for (const [de, destinos] of Object.entries(parsed)) {
+          if (!Array.isArray(destinos) || !destinos.every((d) => typeof d === 'string')) {
+            throw new Error(
+              `Transições de fase: "${de}" deve ser uma lista de strings (fases destino).`,
+            )
+          }
+          transicoes_fase[de] = destinos.map((d) => d.trim()).filter(Boolean)
+        }
+      }
+
       await salvarEscritorioConfig({
         materias_validas: materiasRaw
           .split('\n')
@@ -60,6 +88,7 @@ export default function ConfiguracoesPage() {
             .map((s) => s.trim())
             .filter(Boolean),
         },
+        ...(transicoes_fase !== undefined ? { transicoes_fase } : {}),
       })
       toast.success('Configurações salvas.')
     } catch (e) {
@@ -123,17 +152,17 @@ export default function ConfiguracoesPage() {
               Dropdowns — Intimações
             </h2>
             <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
-              Uma opção por linha. Se houver ao menos uma entrada, a coluna correspondente na grade passa a usar lista em vez de texto livre.
+              Uma opção por linha. Situação = qualidade do processo na grade Intimações; Sentença = valores extras para resultado; Fase atual = fase do processo.
             </p>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-              Situação
+              Situação (qualidade do processo)
               <textarea
                 rows={6}
                 value={ddSituacao}
                 onChange={(e) => setDdSituacao(e.target.value)}
-                placeholder={'ATIVO\nARQUIVADO'}
+                placeholder={'BOA — SEM NADA\nRUIM — CONTRATO ASSINADO\nMEEIRA'}
                 className="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
               />
             </label>
@@ -161,6 +190,26 @@ export default function ConfiguracoesPage() {
               />
             </label>
           </div>
+        </section>
+
+        <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
+          <div className="mb-3">
+            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+              Transições de fase (máquina de estados)
+            </h2>
+            <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+              JSON: chave = fase atual, valor = array de fases permitidas. Deixe vazio para usar o
+              padrão do sistema. Use <code className="font-mono">*</code> como chave para destinos
+              genéricos.
+            </p>
+          </div>
+          <textarea
+            rows={10}
+            value={transicoesFaseRaw}
+            onChange={(e) => setTransicoesFaseRaw(e.target.value)}
+            placeholder={`{\n  "AGUARDANDO AUDIÊNCIA": ["AGUARDANDO SENTENÇA", "EM RECURSO"],\n  "AGUARDANDO SENTENÇA": ["AGUARDANDO TRÂNSITO", "EM RECURSO"]\n}`}
+            className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
+          />
         </section>
 
         <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">

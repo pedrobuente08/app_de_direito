@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { and, desc, eq } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import { sentenca } from '../db/schema/sentenca';
 import { ProcessosService } from '../processos/processos.service';
 import type { CreateSentencaBodyDto } from './dto/create-sentenca-body.dto';
+import { validarValorSentenca } from './sentenca-validacao';
 
 @Injectable()
 export class SentencasService {
@@ -28,6 +29,18 @@ export class SentencasService {
 
   async criar(escritorioId: string, dto: CreateSentencaBodyDto) {
     await this.processos.obterPorId(escritorioId, dto.processoId);
+    const resultado = dto.resultado.trim();
+    const favoravel = dto.favoravelPara.trim().toUpperCase();
+    if (!['AUTOR', 'REU'].includes(favoravel)) {
+      throw new BadRequestException(
+        'favoravelPara deve ser AUTOR ou REU.',
+      );
+    }
+    try {
+      validarValorSentenca(resultado, dto.valor);
+    } catch (e) {
+      throw new BadRequestException((e as Error).message);
+    }
     const [row] = await this.drizzle.db
       .insert(sentenca)
       .values({

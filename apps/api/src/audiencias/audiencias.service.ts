@@ -14,6 +14,7 @@ import {
 } from '../db/schema/audiencia';
 import { audienciaAusente } from '../db/schema/audiencia-ausente';
 import { escritorioAdversario } from '../db/schema/escritorio-adversario';
+import { pendencia } from '../db/schema/pendencia';
 import { processo } from '../db/schema/processo';
 import { parseCsvSimple } from '../importacao/csv-parse';
 import type { CreateAudienciaDto } from './dto/create-audiencia.dto';
@@ -21,6 +22,10 @@ import type { FinalizarAudienciaDto } from './dto/finalizar-audiencia.dto';
 import type { UpdateAudienciaDto } from './dto/update-audiencia.dto';
 
 const LIXEIRA = new Set(['CANCELADA', 'ADIADA', 'REDESIGNADA']);
+
+function hojeIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 /** Normaliza `date` do Postgres / Drizzle para YYYY-MM-DD. */
 function formatDateYmdForAudSync(v: unknown): string | null {
@@ -337,6 +342,44 @@ export class AudienciasService {
     return out;
   }
 
+  private async registrarAusente(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx: any,
+    escritorioId: string,
+    current: {
+      id: string;
+      processoId: string;
+      data: string;
+    },
+    motivoAusencia: string,
+  ) {
+    const [proc] = await tx
+      .select()
+      .from(processo)
+      .where(
+        and(
+          eq(processo.escritorioId, escritorioId),
+          eq(processo.id, current.processoId),
+        ),
+      )
+      .limit(1);
+    if (proc) {
+      await tx.insert(audienciaAusente).values({
+        escritorioId,
+        audienciaId: current.id,
+        processoId: proc.id,
+        numeroProcesso: proc.numero,
+        clienteNome: proc.clienteNome,
+        reuId: proc.reuId,
+        materia: proc.materia,
+        vara: proc.vara,
+        qualidadeCaso: proc.qualidadeCaso,
+        dataAudiencia: current.data,
+        motivoAusencia: motivoAusencia.trim(),
+      });
+    }
+  }
+
   async finalizar(
     escritorioId: string,
     id: string,
@@ -349,43 +392,140 @@ export class AudienciasService {
     }
     const status = (dto.status ?? 'REALIZADA').trim().toUpperCase();
 
+    if (dto.houvePendencia === true) {
+      const lista = dto.pendencias ?? [];
+      if (!lista.length || !lista.some((p) => p.tipo?.trim())) {
+        throw new BadRequestException(
+          'Informe ao menos uma pendência quando houvePendencia for verdadeiro.',
+        );
+      }
+    }
+
+    const apRaw = dto.autorPresenca?.trim().toUpperCase();
+
+    if (status === 'REDESIGNADA') {
+      const novaData = dto.novaData?.trim();
+      if (!novaData || !/^\d{4}-\d{2}-\d{2}$/.test(novaData)) {
+        throw new BadRequestException(
+          'novaData (YYYY-MM-DD) é obrigatória para audiência REDESIGNADA.',
+        );
+      }
+      if (apRaw === 'AUSENTE' && !dto.motivoAusencia?.trim()) {
+        throw new BadRequestException(
+          'motivoAusencia é obrigatório quando autorPresenca é AUSENTE.',
+        );
+      }
+
+      await this.drizzle.db.transaction(async (tx) => {
+        if (dto.escritorioAdversarioId) {
+          await tx
+            .update(audiencia)
+            .set({ escritorioAdversarioId: dto.escritorioAdversarioId })
+            .where(eq(audiencia.id, id));
+        }
+        if (apRaw === 'AUSENTE') {
+          await this.registrarAusente(
+            tx,
+            escritorioId,
+            current,
+            dto.motivoAusencia!,
+          );
+        }
+        await tx.insert(audienciaLixeira).values({
+          audienciaIdOrigem: current.id,
+          escritorioId,
+          processoId: current.processoId,
+          tipo: current.tipo,
+          data: current.data,
+          hora: current.hora,
+          pautista: current.pautista,
+          status,
+          obsPre: current.obsPre,
+          obsPos: obs,
+          link: current.link,
+          createdAtOrigem: current.createdAt,
+        });
+        await tx
+          .delete(audiencia)
+          .where(
+            and(
+              eq(audiencia.escritorioId, escritorioId),
+              eq(audiencia.id, id),
+            ),
+          );
+        const horaNova =
+          dto.novaHora?.trim() ||
+          (current.hora ? String(current.hora).slice(0, 5) : null);
+        await tx.insert(audiencia).values({
+          escritorioId,
+          processoId: current.processoId,
+          escritorioAdversarioId: dto.escritorioAdversarioId ?? null,
+          tipo: current.tipo,
+          data: novaData,
+          hora: horaNova,
+          pautista: current.pautista,
+          status: 'AGENDADA',
+          obsPre: current.obsPre,
+          link: current.link,
+        });
+        await tx
+          .update(processo)
+          .set({
+            dataAudiencia: novaData,
+            horaAudiencia: horaNova,
+            updatedAt: new Date(),
+          })
+          .where(eq(processo.id, current.processoId));
+      });
+
+      await this.faseDerivacao.aplicarAposMutacao(
+        escritorioId,
+        current.processoId,
+      );
+      return { movidoPara: 'redesignada', novaData };
+    }
+
     if (status === 'REALIZADA') {
-      const ap = dto.autorPresenca?.trim().toUpperCase();
-      if (ap !== 'PRESENTE' && ap !== 'AUSENTE') {
+      if (apRaw !== 'PRESENTE' && apRaw !== 'AUSENTE') {
         throw new BadRequestException(
           'Para audiência REALIZADA informe autorPresenca: PRESENTE ou AUSENTE.',
         );
       }
-      if (ap === 'AUSENTE' && !dto.motivoAusencia?.trim()) {
+      if (apRaw === 'AUSENTE' && !dto.motivoAusencia?.trim()) {
         throw new BadRequestException(
           'motivoAusencia é obrigatório quando autorPresenca é AUSENTE.',
         );
       }
       await this.drizzle.db.transaction(async (tx) => {
-        if (ap === 'AUSENTE') {
-          const [proc] = await tx
-            .select()
-            .from(processo)
-            .where(
-              and(
-                eq(processo.escritorioId, escritorioId),
-                eq(processo.id, current.processoId),
-              ),
-            )
-            .limit(1);
-          if (proc) {
-            await tx.insert(audienciaAusente).values({
+        if (dto.escritorioAdversarioId) {
+          await tx
+            .update(audiencia)
+            .set({ escritorioAdversarioId: dto.escritorioAdversarioId })
+            .where(eq(audiencia.id, id));
+        }
+        if (apRaw === 'AUSENTE') {
+          await this.registrarAusente(
+            tx,
+            escritorioId,
+            current,
+            dto.motivoAusencia!,
+          );
+        }
+        if (dto.houvePendencia === true) {
+          const hoje = hojeIso();
+          for (const p of dto.pendencias ?? []) {
+            const tipo = p.tipo?.trim();
+            if (!tipo) continue;
+            await tx.insert(pendencia).values({
               escritorioId,
-              audienciaId: current.id,
-              processoId: proc.id,
-              numeroProcesso: proc.numero,
-              clienteNome: proc.clienteNome,
-              reuId: proc.reuId,
-              materia: proc.materia,
-              vara: proc.vara,
-              qualidadeCaso: proc.qualidadeCaso,
-              dataAudiencia: current.data,
-              motivoAusencia: dto.motivoAusencia!.trim(),
+              processoId: current.processoId,
+              tipo,
+              dataAbertura: hoje,
+              dataLimite: p.dataLimite ?? null,
+              responsavel: p.responsavel?.trim() || null,
+              status: 'ABERTA',
+              observacao: p.observacao?.trim() || null,
+              origem: 'POS_AUDIENCIA',
             });
           }
         }

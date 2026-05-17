@@ -36,6 +36,8 @@ import { reuAlias } from '../db/schema/reu-alias';
 import { AudienciasService } from '../audiencias/audiencias.service';
 import { EscritorioService } from '../escritorio/escritorio.service';
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
+import { transicaoFasePermitida } from '../fase-derivacao/fase-transicoes';
+import type { EscritorioConfig } from '../db/schema/escritorio';
 import { StorageService } from '../storage/storage.service';
 import type { SkillExtractResult } from '../skill/skill.service';
 import { SkillService } from '../skill/skill.service';
@@ -140,6 +142,11 @@ export class ProcessosService {
     if (query.faseAtual?.trim()) {
       filters.push(ilike(processo.faseAtual, `%${query.faseAtual.trim()}%`));
     }
+    if (query.qualidadeCaso?.trim()) {
+      filters.push(
+        ilike(processo.qualidadeCaso, `%${query.qualidadeCaso.trim()}%`),
+      );
+    }
     if (query.filterUltimaSentenca === 'BOA') {
       filters.push(
         sql`(select s.favoravel_para from sentenca s where s.processo_id = ${processo.id} order by s.data desc nulls last, s.created_at desc nulls last limit 1) = 'AUTOR'`,
@@ -183,12 +190,6 @@ export class ProcessosService {
            order by s.data desc nulls last, s.created_at desc nulls last
            limit 1)
         `.as('ultimaSentencaResultado'),
-        ultimaSentencaFavoravelPara: sql<string | null>`
-          (select s.favoravel_para from sentenca s
-           where s.processo_id = ${processo.id}
-           order by s.data desc nulls last, s.created_at desc nulls last
-           limit 1)
-        `.as('ultimaSentencaFavoravelPara'),
       })
       .from(processo)
       .where(whereClause)
@@ -222,6 +223,132 @@ export class ProcessosService {
     return row;
   }
 
+  async obterTimeline(escritorioId: string, id: string) {
+    const proc = await this.obterPorId(escritorioId, id);
+    const eventos: {
+      id: string;
+      tipo: 'distribuicao' | 'audiencia' | 'sentenca' | 'fase';
+      data: string;
+      titulo: string;
+      subtitulo: string | null;
+    }[] = [];
+
+    if (proc.dataDistribuicao) {
+      eventos.push({
+        id: `dist-${proc.id}`,
+        tipo: 'distribuicao',
+        data: String(proc.dataDistribuicao),
+        titulo: 'Distribuído',
+        subtitulo: proc.vara ? `Vara: ${proc.vara}` : null,
+      });
+    }
+
+    const auds = await this.drizzle.db
+      .select()
+      .from(audiencia)
+      .where(
+        and(
+          eq(audiencia.processoId, id),
+          eq(audiencia.escritorioId, escritorioId),
+        ),
+      )
+      .orderBy(asc(audiencia.data));
+
+    for (const a of auds) {
+      const st = (a.status ?? '').toUpperCase();
+      let titulo = 'Audiência agendada';
+      if (st === 'REALIZADA') titulo = 'Audiência realizada';
+      else if (st === 'CANCELADA') titulo = 'Audiência cancelada';
+      else if (st === 'ADIADA') titulo = 'Audiência adiada';
+      else if (st === 'REDESIGNADA') titulo = 'Audiência redesignada';
+      const hora = a.hora ? String(a.hora).slice(0, 5) : null;
+      const partes = [a.tipo, hora, a.autorPresenca].filter(Boolean);
+      eventos.push({
+        id: `aud-${a.id}`,
+        tipo: 'audiencia',
+        data: String(a.data),
+        titulo,
+        subtitulo: partes.length ? partes.join(' · ') : null,
+      });
+    }
+
+    const grauLabel: Record<string, string> = {
+      PRIMEIRO_GRAU: '1º grau',
+      SEGUNDO_GRAU: '2º grau',
+      EMBARGOS: 'Embargos',
+    };
+
+    const sents = await this.drizzle.db
+      .select()
+      .from(sentenca)
+      .where(
+        and(
+          eq(sentenca.processoId, id),
+          eq(sentenca.escritorioId, escritorioId),
+        ),
+      )
+      .orderBy(asc(sentenca.data));
+
+    for (const s of sents) {
+      const grau = grauLabel[s.grau] ?? s.grau;
+      const valorNum =
+        s.valor != null && String(s.valor).trim() !== ''
+          ? Number(s.valor)
+          : null;
+      const valorFmt =
+        valorNum != null && !Number.isNaN(valorNum)
+          ? `R$ ${valorNum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+          : null;
+      const fav =
+        s.favoravelPara === 'AUTOR'
+          ? 'Favorável ao autor'
+          : s.favoravelPara === 'REU'
+            ? 'Favorável ao réu'
+            : s.favoravelPara;
+      eventos.push({
+        id: `sent-${s.id}`,
+        tipo: 'sentenca',
+        data: String(s.data),
+        titulo: `Sentença (${grau}): ${s.resultado}`,
+        subtitulo: [valorFmt, fav].filter(Boolean).join(' — ') || null,
+      });
+    }
+
+    const fases = await this.drizzle.db
+      .select()
+      .from(faseHistorico)
+      .where(
+        and(
+          eq(faseHistorico.processoId, id),
+          eq(faseHistorico.escritorioId, escritorioId),
+        ),
+      )
+      .orderBy(asc(faseHistorico.createdAt));
+
+    for (const f of fases) {
+      eventos.push({
+        id: `fase-${f.id}`,
+        tipo: 'fase',
+        data: f.createdAt.toISOString(),
+        titulo: `Fase: ${f.faseNova}`,
+        subtitulo: f.faseAnterior
+          ? `${f.faseAnterior} → ${f.faseNova} (${f.origem})`
+          : `Origem: ${f.origem}`,
+      });
+    }
+
+    eventos.sort((a, b) => {
+      const da = new Date(a.data).getTime();
+      const db = new Date(b.data).getTime();
+      if (Number.isNaN(da) && Number.isNaN(db)) return 0;
+      if (Number.isNaN(da)) return 1;
+      if (Number.isNaN(db)) return -1;
+      return da - db;
+    });
+
+    return { processoId: id, eventos };
+  }
+
   async atualizarParcial(
     escritorioId: string,
     id: string,
@@ -240,6 +367,23 @@ export class ProcessosService {
         throw new BadRequestException(
           'Não é possível alterar a fase manualmente enquanto houver pendências abertas.',
         );
+      }
+      const novaFase =
+        dto.faseAtual === null ? null : dto.faseAtual.trim();
+      if (novaFase) {
+        const tenant = await this.escritorio.obterPerfilTenant(escritorioId);
+        const cfg = (tenant.config ?? {}) as EscritorioConfig;
+        if (
+          !transicaoFasePermitida(
+            faseAntes,
+            novaFase,
+            cfg.transicoes_fase ?? null,
+          )
+        ) {
+          throw new BadRequestException(
+            `Transição de fase não permitida: "${faseAntes ?? '(sem fase)'}" → "${novaFase}". Ajuste em Configurações ou escolha outra fase.`,
+          );
+        }
       }
     }
 
@@ -358,6 +502,10 @@ export class ProcessosService {
     }
     if (dto.requerConferencia !== undefined) {
       patch.requerConferencia = dto.requerConferencia;
+    }
+    if (dto.observacoes !== undefined) {
+      patch.observacoes =
+        dto.observacoes === null ? null : nullableTrim(dto.observacoes);
     }
 
     if (!Object.keys(patch).length) {

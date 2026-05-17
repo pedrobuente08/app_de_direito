@@ -52,6 +52,7 @@ export default function IntimacoesPage() {
   const [draftNumero, setDraftNumero] = useState('')
   const [draftCliente, setDraftCliente] = useState('')
   const [draftVara, setDraftVara] = useState('')
+  const [draftQualidadeCaso, setDraftQualidadeCaso] = useState('')
   const [draftFilterUltimaSentenca, setDraftFilterUltimaSentenca] = useState<
     '' | 'BOA' | 'RUIM' | 'SEM'
   >('')
@@ -63,6 +64,7 @@ export default function IntimacoesPage() {
   const [appliedNumero, setAppliedNumero] = useState('')
   const [appliedCliente, setAppliedCliente] = useState('')
   const [appliedVara, setAppliedVara] = useState('')
+  const [appliedQualidadeCaso, setAppliedQualidadeCaso] = useState('')
   const [appliedFilterUltimaSentenca, setAppliedFilterUltimaSentenca] = useState<
     '' | 'BOA' | 'RUIM' | 'SEM'
   >('')
@@ -139,6 +141,9 @@ export default function IntimacoesPage() {
         ...(appliedNumero.trim() && { numero: appliedNumero.trim() }),
         ...(appliedCliente.trim() && { clienteNome: appliedCliente.trim() }),
         ...(appliedVara.trim() && { vara: appliedVara.trim() }),
+        ...(appliedQualidadeCaso.trim() && {
+          qualidadeCaso: appliedQualidadeCaso.trim(),
+        }),
         ...(appliedFilterUltimaSentenca && {
           filterUltimaSentenca: appliedFilterUltimaSentenca,
         }),
@@ -154,6 +159,7 @@ export default function IntimacoesPage() {
     appliedNumero,
     appliedCliente,
     appliedVara,
+    appliedQualidadeCaso,
     appliedFilterUltimaSentenca,
     appliedSortField,
     appliedSortOrder,
@@ -170,6 +176,7 @@ export default function IntimacoesPage() {
     setAppliedNumero(draftNumero)
     setAppliedCliente(draftCliente)
     setAppliedVara(draftVara)
+    setAppliedQualidadeCaso(draftQualidadeCaso)
     setAppliedFilterUltimaSentenca(draftFilterUltimaSentenca)
     setAppliedSortField(draftSortField)
     setAppliedSortOrder(draftSortOrder)
@@ -181,6 +188,7 @@ export default function IntimacoesPage() {
     setDraftNumero(appliedNumero)
     setDraftCliente(appliedCliente)
     setDraftVara(appliedVara)
+    setDraftQualidadeCaso(appliedQualidadeCaso)
     setDraftFilterUltimaSentenca(appliedFilterUltimaSentenca)
     setDraftSortField(appliedSortField)
     setDraftSortOrder(appliedSortOrder)
@@ -321,8 +329,17 @@ export default function IntimacoesPage() {
               className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
             />
           </label>
+          <label className="flex min-w-[140px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+            Situação
+            <input
+              value={draftQualidadeCaso}
+              onChange={(e) => setDraftQualidadeCaso(e.target.value)}
+              placeholder="Ex.: BOA, RUIM…"
+              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+            />
+          </label>
           <label className="flex min-w-[160px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-            Última sentença
+            Sentença
             <select
               value={draftFilterUltimaSentenca}
               onChange={(e) =>
@@ -331,8 +348,8 @@ export default function IntimacoesPage() {
               className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
             >
               <option value="">Todos</option>
-              <option value="BOA">Bom (autor)</option>
-              <option value="RUIM">Ruim (réu)</option>
+              <option value="BOA">Favorável ao autor</option>
+              <option value="RUIM">Favorável ao réu</option>
               <option value="SEM">Sem sentença</option>
             </select>
           </label>

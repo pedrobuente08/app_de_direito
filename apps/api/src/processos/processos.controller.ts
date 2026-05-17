@@ -181,6 +181,15 @@ export class ProcessosController {
     );
   }
 
+  @Get(':id/timeline')
+  @Throttle(ThrottlePresets.processoGet)
+  timeline(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.processos.obterTimeline(user.escritorioId, id);
+  }
+
   @Get(':id')
   @Throttle(ThrottlePresets.processoGet)
   obter(

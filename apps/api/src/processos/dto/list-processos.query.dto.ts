@@ -84,7 +84,13 @@ export class ListProcessosQueryDto {
   @MaxLength(50)
   faseAtual?: string;
 
-  /** Última sentença: AUTOR (bom), REU (ruim), sem registro. */
+  /** Qualidade do processo (`qualidade_caso`); coluna “Situação” na grid. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  qualidadeCaso?: string;
+
+  /** Última sentença: favorável ao autor, ao réu ou sem registro. */
   @IsOptional()
   @IsString()
   @IsIn(['BOA', 'RUIM', 'SEM'])

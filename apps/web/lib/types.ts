@@ -19,10 +19,9 @@ export type Processo = {
   statusProcesso?: string
   /** Resultado da sentença mais recente (1º/2º grau, etc.), só na listagem. */
   ultimaSentencaResultado?: string | null
-  /** AUTOR | REU conforme última sentença; define “Situação” Boa/Ruim na grid. */
-  ultimaSentencaFavoravelPara?: string | null
-  faseAtual?: string | null
+  /** Qualidade do processo (BOA, RUIM, MEEIRA…); exibida como “Situação” na grid. */
   qualidadeCaso?: string | null
+  faseAtual?: string | null
   avaliacaoRecurso?: Record<string, unknown> | null
   justicaGratuita?: boolean
   situacaoFinal?: string | null
@@ -30,6 +29,7 @@ export type Processo = {
   statusAudiencia?: string | null
   ultimaMovimentacaoDt?: string | null
   ultimaMovimentacaoTipo?: string | null
+  observacoes?: string | null
   requerConferencia: boolean
   createdAt: string
   updatedAt?: string
@@ -60,7 +60,48 @@ export type PatchProcessoPayload = Partial<{
   ultimaMovimentacaoDt: string | null
   ultimaMovimentacaoTipo: string | null
   requerConferencia: boolean
+  observacoes: string | null
 }>
+
+export type Sentenca = {
+  id: string
+  processoId: string
+  escritorioId: string
+  grau: string
+  data: string
+  valor: string | null
+  resultado: string
+  favoravelPara: string
+  turma?: string | null
+  assessorJulgador?: string | null
+  turnoJulgamento?: string | null
+  observacoes?: string | null
+  createdAt?: string | null
+}
+
+export type CreateSentencaPayload = {
+  processoId: string
+  grau: string
+  data: string
+  valor?: string | null
+  resultado: string
+  favoravelPara: string
+  turma?: string | null
+  observacoes?: string | null
+}
+
+export type ProcessoTimelineEvento = {
+  id: string
+  tipo: 'distribuicao' | 'audiencia' | 'sentenca' | 'fase'
+  data: string
+  titulo: string
+  subtitulo: string | null
+}
+
+export type ProcessoTimelineResponse = {
+  processoId: string
+  eventos: ProcessoTimelineEvento[]
+}
 
 export type ProcessoCampos = {
   numero: string
@@ -129,7 +170,9 @@ export type Reu = {
 
 /** Opções de dropdown na grid Intimações (Configurações → salvar). */
 export type DropdownsProcessoConfig = {
+  /** Valores de `qualidade_caso` (coluna Situação na grade). */
   situacao?: string[]
+  /** ATIVO | SOBRESTADO | ARQUIVADO — campo Status do processo no modal. */
   status_processo?: string[]
   sentenca?: string[]
   fase_atual?: string[]
@@ -141,6 +184,15 @@ export type EscritorioConfig = {
   situacao_inicial?: string
   status_processo_inicial?: string
   dropdowns_processo?: DropdownsProcessoConfig
+  transicoes_fase?: Record<string, string[]>
+}
+
+export type EscritorioAdversario = {
+  id: string
+  escritorioId: string
+  nomeCanonico: string
+  cnpj?: string | null
+  createdAt?: string
 }
 
 export type PdfSemaforoCor = 'VERDE' | 'AMARELO' | 'VERMELHO'

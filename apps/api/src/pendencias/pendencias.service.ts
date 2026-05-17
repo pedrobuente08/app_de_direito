@@ -270,8 +270,19 @@ export class PendenciasService {
         'Status inválido para cumprir. Use CUMPRIDO ou AUTOR FALECIDO.',
       );
     }
+    const motivo = dto.motivoCumprimento.trim();
+    if (!motivo) {
+      throw new BadRequestException(
+        'motivoCumprimento é obrigatório ao encerrar a pendência.',
+      );
+    }
+    const obsAnterior = current.observacao?.trim() ?? '';
+    const observacao = obsAnterior
+      ? `${obsAnterior}\n[Cumprimento] ${motivo}`
+      : `[Cumprimento] ${motivo}`;
     return this.moverParaHistorico(escritorioId, current, status, {
       dataCumprimento: hojeIso(),
+      observacao,
     });
   }
 

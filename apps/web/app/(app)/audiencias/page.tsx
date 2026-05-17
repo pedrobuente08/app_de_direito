@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { criarAudiencia, finalizarAudiencia, getAudiencias } from '@/lib/api'
+import { PosAudienciaDialog } from '@/components/audiencias/pos-audiencia-dialog'
+import { criarAudiencia, getAudiencias } from '@/lib/api'
 import { ToastContainer, useToast } from '@/lib/toast'
 import type { Audiencia } from '@/lib/types'
 
@@ -15,11 +16,6 @@ const STATUS_CLASS: Record<string, string> = {
 type CriarForm = { processoId: string; data: string; tipo: string; hora: string; pautista: string; link: string; obsPre: string }
 const CRIAR_VAZIO: CriarForm = { processoId: '', data: '', tipo: '', hora: '', pautista: '', link: '', obsPre: '' }
 
-type FinalizarForm = { obsPos: string; status: string; autorPresenca: string; motivoAusencia: string }
-const FINALIZAR_VAZIO: FinalizarForm = { obsPos: '', status: 'REALIZADA', autorPresenca: 'PRESENTE', motivoAusencia: '' }
-
-const STATUS_FINALIZAR = ['REALIZADA', 'CANCELADA', 'ADIADA', 'REDESIGNADA']
-
 export default function AudienciasPage() {
   const [audiencias, setAudiencias] = useState<Audiencia[]>([])
   const [loading, setLoading] = useState(true)
@@ -27,9 +23,7 @@ export default function AudienciasPage() {
   const [showCriar, setShowCriar] = useState(false)
   const [criarForm, setCriarForm] = useState<CriarForm>(CRIAR_VAZIO)
   const [saving, setSaving] = useState(false)
-  const [finalizandoId, setFinalizandoId] = useState<string | null>(null)
-  const [finalizarForm, setFinalizarForm] = useState<FinalizarForm>(FINALIZAR_VAZIO)
-  const [submittingFinalizar, setSubmittingFinalizar] = useState(false)
+  const [finalizandoAud, setFinalizandoAud] = useState<Audiencia | null>(null)
   const toast = useToast()
 
   async function load() {
@@ -71,35 +65,6 @@ export default function AudienciasPage() {
       toast.error((e as Error).message)
     } finally {
       setSaving(false)
-    }
-  }
-
-  async function handleFinalizar(e: React.FormEvent) {
-    e.preventDefault()
-    if (!finalizandoId) return
-    setSubmittingFinalizar(true)
-    try {
-      const body: {
-        obsPos: string
-        status?: string
-        autorPresenca?: string
-        motivoAusencia?: string
-      } = { obsPos: finalizarForm.obsPos, status: finalizarForm.status }
-      if (finalizarForm.status === 'REALIZADA') {
-        body.autorPresenca = finalizarForm.autorPresenca
-        if (finalizarForm.autorPresenca === 'AUSENTE') {
-          body.motivoAusencia = finalizarForm.motivoAusencia
-        }
-      }
-      await finalizarAudiencia(finalizandoId, body)
-      toast.success('Audiência finalizada.')
-      setFinalizandoId(null)
-      setFinalizarForm(FINALIZAR_VAZIO)
-      load()
-    } catch (e) {
-      toast.error((e as Error).message)
-    } finally {
-      setSubmittingFinalizar(false)
     }
   }
 
@@ -208,68 +173,33 @@ export default function AudienciasPage() {
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       {a.status === 'AGENDADA' && (
-                        <button onClick={() => { setFinalizandoId(a.id); setFinalizarForm(FINALIZAR_VAZIO) }}
-                          className="text-xs text-[var(--color-brand)] hover:underline">
+                        <button
+                          type="button"
+                          onClick={() => setFinalizandoAud(a)}
+                          className="text-xs text-[var(--color-brand)] hover:underline"
+                        >
                           Finalizar
                         </button>
                       )}
                     </td>
                   </tr>
 
-                  {finalizandoId === a.id && (
-                    <tr key={`${a.id}-finalizar`}>
-                      <td colSpan={6} className="bg-[var(--color-bg-subtle)] px-4 py-3">
-                        <form onSubmit={handleFinalizar} className="flex flex-wrap items-end gap-3">
-                          <div className="flex-1 min-w-48">
-                            <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">Observações pós-audiência</label>
-                            <textarea required rows={2} value={finalizarForm.obsPos}
-                              onChange={e => setFinalizarForm(prev => ({ ...prev, obsPos: e.target.value }))}
-                              className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none" />
-                          </div>
-                          {finalizarForm.status === 'REALIZADA' && (
-                            <>
-                              <div>
-                                <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">Autor</label>
-                                <select value={finalizarForm.autorPresenca} onChange={e => setFinalizarForm(prev => ({ ...prev, autorPresenca: e.target.value }))}
-                                  className="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none">
-                                  <option value="PRESENTE">Presente</option>
-                                  <option value="AUSENTE">Ausente</option>
-                                </select>
-                              </div>
-                              {finalizarForm.autorPresenca === 'AUSENTE' && (
-                                <div className="min-w-48 flex-1">
-                                  <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">Motivo da ausência</label>
-                                  <input required value={finalizarForm.motivoAusencia} onChange={e => setFinalizarForm(prev => ({ ...prev, motivoAusencia: e.target.value }))}
-                                    className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none" />
-                                </div>
-                              )}
-                            </>
-                          )}
-                          <div>
-                            <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">Resultado</label>
-                            <select value={finalizarForm.status} onChange={e => setFinalizarForm(prev => ({ ...prev, status: e.target.value }))}
-                              className="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none">
-                              {STATUS_FINALIZAR.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                          </div>
-                          <button type="submit" disabled={submittingFinalizar}
-                            className="rounded-[var(--radius-sm)] bg-[var(--color-brand)] px-4 py-1.5 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-50">
-                            {submittingFinalizar ? 'Salvando…' : 'Confirmar'}
-                          </button>
-                          <button type="button" onClick={() => setFinalizandoId(null)}
-                            className="text-sm text-[var(--color-text-secondary)] hover:underline">
-                            Cancelar
-                          </button>
-                        </form>
-                      </td>
-                    </tr>
-                  )}
                 </React.Fragment>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      <PosAudienciaDialog
+        open={!!finalizandoAud}
+        audiencia={finalizandoAud}
+        onClose={() => setFinalizandoAud(null)}
+        onSuccess={() => {
+          toast.success('Audiência finalizada.')
+          load()
+        }}
+      />
 
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
     </div>

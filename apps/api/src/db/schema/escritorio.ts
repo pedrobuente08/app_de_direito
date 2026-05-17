@@ -18,7 +18,7 @@ export type ComunicaDigestConfig = {
 
 /** Listas opcionais para dropdowns na grid de processos (Intimações). */
 export type DropdownsProcessoConfig = {
-  /** @deprecated usar `status_processo` (3 valores fixos no produto). */
+  /** Valores de `qualidade_caso` (coluna Situação na grade Intimações). */
   situacao?: string[];
   /** ATIVO | SOBRESTADO | ARQUIVADO — opções exibidas na UI. */
   status_processo?: string[];
@@ -34,6 +34,8 @@ export type EscritorioConfig = {
   status_processo_inicial?: string;
   /** Opções de edição rápida na web (uma lista por campo). */
   dropdowns_processo?: DropdownsProcessoConfig;
+  /** Mapa fase_anterior → fases permitidas (edição manual). */
+  transicoes_fase?: Record<string, string[]>;
   comunica_regras?: Record<string, unknown>;
   /** Token opcional para validar `POST /comunicacoes/webhook`. */
   comunica_webhook_token?: string;

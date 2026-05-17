@@ -1,6 +1,7 @@
 'use client'
 
-/** D2 — drawer lateral do processo (stub). */
-export function ProcessoDrawer() {
-  return null
-}
+/**
+ * Reexport do drawer de processo (implementação em Intimações).
+ * Use `ProcessoModal` de `intimacoes/_components/processo-modal`.
+ */
+export { ProcessoModal as ProcessoDrawer } from '@/app/(app)/intimacoes/_components/processo-modal'
