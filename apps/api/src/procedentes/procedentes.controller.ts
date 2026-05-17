@@ -25,6 +25,12 @@ export class ProcedentesController {
     return this.procedentes.listar(user.escritorioId);
   }
 
+  @Get('resumo')
+  @Throttle(ThrottlePresets.procedentesList)
+  resumo(@CurrentUser() user: AuthUser) {
+    return this.procedentes.resumo(user.escritorioId);
+  }
+
   /** Cria linhas em `processo_procedente` para processos já com sentença procedente/parcial/acordo. */
   @Post('sincronizar-em-falta')
   @Roles('admin', 'adm', 'advogado')

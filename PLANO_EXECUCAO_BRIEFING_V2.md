@@ -293,10 +293,13 @@ flowchart LR
 
 **Arquivos principais:** `pos-improcedencia-dialog.tsx`, `pos-improcedencia.service.ts`, `recursos/page.tsx`, `improcedentes/page.tsx`, `registrar-segundo-grau-dialog.tsx`
 
-### Sprint 4 — Intimações e Procedentes completos
-- F0.2 (cards + filtros Intimações)
-- F2.1, F2.2 (pendência na linha + procedentes cards)
-- F2.5 (Pendências cards)
+### Sprint 4 — Intimações e Procedentes completos ✅ (implementado maio/2026)
+- [x] F0.2.2 → F0.2.3 (cards Intimações + filtros status/fase/ação imediata/arquivados)
+- [x] F2.1.1 → F2.1.2 (`NovaPendenciaDialog` na linha; cards ação imediata)
+- [x] F2.2.1 → F2.2.2 (cards Procedentes + filtro por família)
+- [x] F2.5.1 → F2.5.2 (cards Pendências + filtro por origem)
+
+**Arquivos principais:** `GET /processos/resumo`, `nova-pendencia-dialog.tsx`, `intimacoes/page.tsx`, `procedentes/page.tsx`, `pendencias/page.tsx`
 
 ### Sprint 5 — Importação e cadastros
 - F3.1, F3.3, F3.4

@@ -165,6 +165,28 @@ export class ProcessosService {
         sql`coalesce((${processo.avaliacaoRecurso}->>'ativa')::boolean, false) = true`,
       );
     }
+    if (query.acaoImediata === true) {
+      filters.push(
+        sql`exists (
+          select 1 from pendencia pend
+          where pend.processo_id = ${processo.id}
+            and pend.escritorio_id = ${escritorioId}
+            and pend.status = 'ABERTA'
+            and (
+              pend.data_limite is null
+              or pend.data_limite <= (current_date + interval '2 days')::date
+            )
+        )`,
+      );
+    }
+    if (query.arquivados30d === true) {
+      filters.push(eq(processo.statusProcesso, 'ARQUIVADO'));
+      filters.push(
+        sql`${processo.updatedAt} >= (current_timestamp - interval '30 days')`,
+      );
+    } else if (!statusFiltro) {
+      filters.push(sql`${processo.statusProcesso} <> 'ARQUIVADO'`);
+    }
 
     const whereClause = and(...filters);
 
@@ -210,6 +232,65 @@ export class ProcessosService {
         total: totalRow?.c ?? 0,
         totalPages: Math.ceil((totalRow?.c ?? 0) / limit) || 1,
       },
+    };
+  }
+
+  /** Cards §5.1 — aba Intimações. */
+  async resumoIntimacoes(escritorioId: string) {
+    const db = this.drizzle.db;
+    const base = eq(processo.escritorioId, escritorioId);
+
+    const [ativosRow] = await db
+      .select({ c: count() })
+      .from(processo)
+      .where(and(base, sql`${processo.statusProcesso} <> 'ARQUIVADO'`));
+
+    const [acaoRow] = await db
+      .select({ c: count() })
+      .from(processo)
+      .where(
+        and(
+          base,
+          sql`${processo.statusProcesso} <> 'ARQUIVADO'`,
+          sql`exists (
+            select 1 from pendencia pend
+            where pend.processo_id = ${processo.id}
+              and pend.escritorio_id = ${escritorioId}
+              and pend.status = 'ABERTA'
+              and (
+                pend.data_limite is null
+                or pend.data_limite <= (current_date + interval '2 days')::date
+              )
+          )`,
+        ),
+      );
+
+    const [avaliarRow] = await db
+      .select({ c: count() })
+      .from(processo)
+      .where(
+        and(
+          base,
+          sql`coalesce((${processo.avaliacaoRecurso}->>'ativa')::boolean, false) = true`,
+        ),
+      );
+
+    const [arqRow] = await db
+      .select({ c: count() })
+      .from(processo)
+      .where(
+        and(
+          base,
+          eq(processo.statusProcesso, 'ARQUIVADO'),
+          sql`${processo.updatedAt} >= (current_timestamp - interval '30 days')`,
+        ),
+      );
+
+    return {
+      totalAtivos: ativosRow?.c ?? 0,
+      acaoImediata: acaoRow?.c ?? 0,
+      emAvaliacao: avaliarRow?.c ?? 0,
+      arquivados30d: arqRow?.c ?? 0,
     };
   }
 

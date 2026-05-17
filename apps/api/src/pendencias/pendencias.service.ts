@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import {
@@ -16,6 +16,7 @@ import { processo } from '../db/schema/processo';
 import { parseCsvSimple } from '../importacao/csv-parse';
 import type { CreatePendenciaDto } from './dto/create-pendencia.dto';
 import type { CumprirPendenciaDto } from './dto/cumprir-pendencia.dto';
+import type { ListPendenciasQueryDto } from './dto/list-pendencias.query.dto';
 import type { UpdatePendenciaDto } from './dto/update-pendencia.dto';
 
 const HISTORICO = new Set(['CUMPRIDO', 'AUTOR FALECIDO']);
@@ -36,13 +37,91 @@ export class PendenciasService {
     private readonly faseDerivacao: FaseDerivacaoService,
   ) {}
 
-  async listar(escritorioId: string, limit = 500) {
+  async listar(
+    escritorioId: string,
+    query?: ListPendenciasQueryDto,
+    limit = 500,
+  ) {
+    const filters = [eq(pendencia.escritorioId, escritorioId)];
+    const status = query?.status?.trim();
+    if (status) {
+      filters.push(eq(pendencia.status, status));
+    } else {
+      filters.push(eq(pendencia.status, 'ABERTA'));
+    }
+    if (query?.origem?.trim()) {
+      filters.push(eq(pendencia.origem, query.origem.trim()));
+    }
+
     return this.drizzle.db
-      .select()
+      .select({
+        id: pendencia.id,
+        escritorioId: pendencia.escritorioId,
+        processoId: pendencia.processoId,
+        tipo: pendencia.tipo,
+        dataAbertura: pendencia.dataAbertura,
+        dataLimite: pendencia.dataLimite,
+        solicitante: pendencia.solicitante,
+        responsavel: pendencia.responsavel,
+        status: pendencia.status,
+        observacao: pendencia.observacao,
+        origem: pendencia.origem,
+        createdAt: pendencia.createdAt,
+        processo: {
+          numero: processo.numero,
+          clienteNome: processo.clienteNome,
+        },
+      })
       .from(pendencia)
-      .where(eq(pendencia.escritorioId, escritorioId))
-      .orderBy(desc(pendencia.createdAt))
+      .innerJoin(processo, eq(pendencia.processoId, processo.id))
+      .where(and(...filters))
+      .orderBy(desc(pendencia.dataLimite), desc(pendencia.createdAt))
       .limit(limit);
+  }
+
+  async resumo(escritorioId: string) {
+    const rows = await this.listar(escritorioId, {}, 5000);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    let vencidos = 0;
+    let urgente = 0;
+    let atencao = 0;
+    let normal = 0;
+    let semPrazo = 0;
+
+    for (const p of rows) {
+      if (!p.dataLimite) {
+        semPrazo += 1;
+        continue;
+      }
+      const limite = new Date(`${p.dataLimite}T00:00:00`);
+      const dias = Math.floor((limite.getTime() - hoje.getTime()) / 86_400_000);
+      if (dias < 0) vencidos += 1;
+      else if (dias <= 3) urgente += 1;
+      else if (dias <= 7) atencao += 1;
+      else normal += 1;
+    }
+
+    const [cumpridosRow] = await this.drizzle.db
+      .select({ c: sql<number>`count(*)::int` })
+      .from(pendenciaHistorico)
+      .where(
+        and(
+          eq(pendenciaHistorico.escritorioId, escritorioId),
+          sql`${pendenciaHistorico.archivedAt} >= (current_timestamp - interval '30 days')`,
+        ),
+      );
+
+    return {
+      total: rows.length,
+      vencidos,
+      urgente,
+      atencao,
+      normal,
+      semPrazo,
+      cumpridos30d: Number(cumpridosRow?.c ?? 0),
+    };
   }
 
   private async assertProcessoDoEscritorio(

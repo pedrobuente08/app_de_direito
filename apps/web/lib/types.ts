@@ -237,6 +237,32 @@ export type RecursosResumo = {
   comDecisao: number
 }
 
+export type ProcessosResumo = {
+  totalAtivos: number
+  acaoImediata: number
+  emAvaliacao: number
+  arquivados30d: number
+}
+
+export type ProcedentesResumo = {
+  totalAtivos: number
+  acaoImediata: number
+  aguardando: number
+  encerrado30d: number
+  semVisto30d: number
+  alvara60d: number
+}
+
+export type PendenciasResumo = {
+  total: number
+  vencidos: number
+  urgente: number
+  atencao: number
+  normal: number
+  semPrazo: number
+  cumpridos30d: number
+}
+
 export type PosImprocedenciaPayload = {
   sentencaId: string
   decisao: 'RECORRER' | 'NAO_RECORRER' | 'AVALIAR'

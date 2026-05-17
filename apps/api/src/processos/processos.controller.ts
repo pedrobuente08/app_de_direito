@@ -70,6 +70,12 @@ export class ProcessosController {
     return this.processos.listar(user.escritorioId, query);
   }
 
+  @Get('resumo')
+  @Throttle(ThrottlePresets.processosList)
+  resumo(@CurrentUser() user: AuthUser) {
+    return this.processos.resumoIntimacoes(user.escritorioId);
+  }
+
   @Post()
   @Roles('admin', 'adm', 'advogado')
   @Throttle(ThrottlePresets.processoPostManual)

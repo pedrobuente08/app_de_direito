@@ -12,9 +12,16 @@ import type { Processo } from '@/lib/types'
 type Props = {
   data: Processo[]
   onRowClick: (processo: Processo) => void
+  readOnly?: boolean
+  onAddPendencia?: (processo: Processo) => void
 }
 
-export function ProcessosGrid({ data, onRowClick }: Props) {
+export function ProcessosGrid({
+  data,
+  onRowClick,
+  readOnly,
+  onAddPendencia,
+}: Props) {
   const columns = useMemo<ColumnDef<Processo>[]>(() => [
     {
       id: 'flags',
@@ -107,7 +114,28 @@ export function ProcessosGrid({ data, onRowClick }: Props) {
         </span>
       ),
     },
-  ], [])
+    ...(onAddPendencia && !readOnly
+      ? [
+          {
+            id: 'acoes',
+            header: '',
+            size: 88,
+            cell: ({ row }: { row: { original: Processo } }) => (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onAddPendencia(row.original)
+                }}
+                className="text-xs text-[var(--color-brand)] hover:underline"
+              >
+                + Pendência
+              </button>
+            ),
+          } as ColumnDef<Processo>,
+        ]
+      : []),
+  ], [onAddPendencia, readOnly])
 
   const table = useReactTable({ data, columns, getCoreRowModel: getCoreRowModel() })
 

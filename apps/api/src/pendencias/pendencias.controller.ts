@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
@@ -14,6 +15,7 @@ import { ThrottlePresets } from '../common/throttle-presets';
 import { Roles } from '../common/metadata';
 import { CumprirPendenciaDto } from './dto/cumprir-pendencia.dto';
 import { CreatePendenciaDto } from './dto/create-pendencia.dto';
+import { ListPendenciasQueryDto } from './dto/list-pendencias.query.dto';
 import { UpdatePendenciaDto } from './dto/update-pendencia.dto';
 import { PendenciasService } from './pendencias.service';
 
@@ -23,8 +25,17 @@ export class PendenciasController {
 
   @Get()
   @Throttle(ThrottlePresets.pendenciasList)
-  listar(@CurrentUser() user: AuthUser) {
-    return this.pendencias.listar(user.escritorioId);
+  listar(
+    @CurrentUser() user: AuthUser,
+    @Query() query: ListPendenciasQueryDto,
+  ) {
+    return this.pendencias.listar(user.escritorioId, query);
+  }
+
+  @Get('resumo')
+  @Throttle(ThrottlePresets.pendenciasList)
+  resumo(@CurrentUser() user: AuthUser) {
+    return this.pendencias.resumo(user.escritorioId);
   }
 
   @Post()

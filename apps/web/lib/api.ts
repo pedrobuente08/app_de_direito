@@ -457,8 +457,36 @@ export async function salvarEscritorioConfig(
 
 // ─── Pendências ───────────────────────────────────────────────────────────────
 
-export async function getPendencias(): Promise<Pendencia[]> {
-  return apiFetch<Pendencia[]>('/pendencias')
+export async function getProcessosResumo(): Promise<
+  import('@/lib/types').ProcessosResumo
+> {
+  return apiFetch<import('@/lib/types').ProcessosResumo>('/processos/resumo')
+}
+
+export async function getProcedentesResumo(): Promise<
+  import('@/lib/types').ProcedentesResumo
+> {
+  return apiFetch<import('@/lib/types').ProcedentesResumo>('/procedentes/resumo')
+}
+
+export async function getPendencias(
+  query?: Record<string, string | undefined>,
+): Promise<Pendencia[]> {
+  const qs = query
+    ? `?${new URLSearchParams(
+        Object.entries(query).filter(([, v]) => v != null && v !== '') as [
+          string,
+          string,
+        ][],
+      ).toString()}`
+    : ''
+  return apiFetch<Pendencia[]>(`/pendencias${qs}`)
+}
+
+export async function getPendenciasResumo(): Promise<
+  import('@/lib/types').PendenciasResumo
+> {
+  return apiFetch<import('@/lib/types').PendenciasResumo>('/pendencias/resumo')
 }
 
 export async function criarPendencia(payload: {
@@ -467,6 +495,7 @@ export async function criarPendencia(payload: {
   dataLimite?: string | null
   responsavel?: string | null
   observacao?: string | null
+  origem?: string
 }): Promise<Pendencia> {
   return apiFetch<Pendencia>('/pendencias', {
     method: 'POST',

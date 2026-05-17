@@ -8,6 +8,7 @@ import {
   getEscritorioConfig,
   getProcesso,
   getProcessos,
+  getProcessosResumo,
   getUsuarios,
   previewPdfBatch,
 } from '@/lib/api'
@@ -19,8 +20,10 @@ import type {
   PdfPreviewItem,
   Processo,
   ProcessosListMeta,
+  ProcessosResumo,
   Usuario,
 } from '@/lib/types'
+import { NovaPendenciaDialog } from '@/components/pendencias/nova-pendencia-dialog'
 import { PdfRevisaoModal, type PdfRevisaoCatalogo } from './_components/pdf-revisao-modal'
 import { ProcessosGrid } from './_components/processos-grid'
 import { ProcessoModal } from './_components/processo-modal'
@@ -70,6 +73,14 @@ export default function IntimacoesPage() {
     '' | 'BOA' | 'RUIM' | 'SEM'
   >('')
   const [appliedEmAvaliacao, setAppliedEmAvaliacao] = useState(false)
+  const [appliedAcaoImediata, setAppliedAcaoImediata] = useState(false)
+  const [appliedArquivados30d, setAppliedArquivados30d] = useState(false)
+  const [draftStatusProcesso, setDraftStatusProcesso] = useState('')
+  const [draftFaseAtual, setDraftFaseAtual] = useState('')
+  const [appliedStatusProcesso, setAppliedStatusProcesso] = useState('')
+  const [appliedFaseAtual, setAppliedFaseAtual] = useState('')
+  const [resumo, setResumo] = useState<ProcessosResumo | null>(null)
+  const [pendenciaProcesso, setPendenciaProcesso] = useState<Processo | null>(null)
   const [appliedSortField, setAppliedSortField] = useState<
     (typeof SORT_OPTIONS)[number]['value']
   >('createdAt')
@@ -150,6 +161,12 @@ export default function IntimacoesPage() {
           filterUltimaSentenca: appliedFilterUltimaSentenca,
         }),
         ...(appliedEmAvaliacao && { emAvaliacao: 'true' }),
+        ...(appliedAcaoImediata && { acaoImediata: 'true' }),
+        ...(appliedArquivados30d && { arquivados30d: 'true' }),
+        ...(appliedStatusProcesso.trim() && {
+          statusProcesso: appliedStatusProcesso.trim(),
+        }),
+        ...(appliedFaseAtual.trim() && { faseAtual: appliedFaseAtual.trim() }),
       })
       setProcessos(data)
       setMeta(m)
@@ -165,12 +182,22 @@ export default function IntimacoesPage() {
     appliedQualidadeCaso,
     appliedFilterUltimaSentenca,
     appliedEmAvaliacao,
+    appliedAcaoImediata,
+    appliedArquivados30d,
+    appliedStatusProcesso,
+    appliedFaseAtual,
     appliedSortField,
     appliedSortOrder,
     page,
   ])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    getProcessosResumo()
+      .then(setResumo)
+      .catch(() => setResumo(null))
+  }, [])
 
   const onRowUpdated = useCallback((row: Processo) => {
     setProcessos((prev) => prev.map((p) => (p.id === row.id ? row : p)))
@@ -183,6 +210,14 @@ export default function IntimacoesPage() {
     setAppliedQualidadeCaso(draftQualidadeCaso)
     setAppliedFilterUltimaSentenca(draftFilterUltimaSentenca)
     setAppliedEmAvaliacao(draftEmAvaliacao)
+    setAppliedAcaoImediata(false)
+    setAppliedArquivados30d(false)
+    if (draftEmAvaliacao) {
+      setAppliedAcaoImediata(false)
+      setAppliedArquivados30d(false)
+    }
+    setAppliedStatusProcesso(draftStatusProcesso)
+    setAppliedFaseAtual(draftFaseAtual)
     setAppliedSortField(draftSortField)
     setAppliedSortOrder(draftSortOrder)
     setPage(1)
@@ -196,6 +231,8 @@ export default function IntimacoesPage() {
     setDraftQualidadeCaso(appliedQualidadeCaso)
     setDraftFilterUltimaSentenca(appliedFilterUltimaSentenca)
     setDraftEmAvaliacao(appliedEmAvaliacao)
+    setDraftStatusProcesso(appliedStatusProcesso)
+    setDraftFaseAtual(appliedFaseAtual)
     setDraftSortField(appliedSortField)
     setDraftSortOrder(appliedSortOrder)
     setFiltrosAbertos(true)
@@ -257,6 +294,35 @@ export default function IntimacoesPage() {
 
   const totalPages = meta?.totalPages ?? 1
 
+  function aplicarCard(
+    preset: 'ativos' | 'acao' | 'avaliar' | 'arquivados',
+  ) {
+    setAppliedNumero('')
+    setAppliedCliente('')
+    setAppliedVara('')
+    setAppliedQualidadeCaso('')
+    setAppliedFilterUltimaSentenca('')
+    setAppliedStatusProcesso('')
+    setAppliedFaseAtual('')
+    setAppliedEmAvaliacao(false)
+    setAppliedAcaoImediata(false)
+    setAppliedArquivados30d(false)
+    if (preset === 'acao') setAppliedAcaoImediata(true)
+    if (preset === 'avaliar') setAppliedEmAvaliacao(true)
+    if (preset === 'arquivados') setAppliedArquivados30d(true)
+    setPage(1)
+    setDraftEmAvaliacao(preset === 'avaliar')
+    setDraftStatusProcesso('')
+    setDraftFaseAtual('')
+  }
+
+  const cards = [
+    { id: 'ativos' as const, label: 'Total ativos', value: resumo?.totalAtivos },
+    { id: 'acao' as const, label: 'Ação imediata', value: resumo?.acaoImediata },
+    { id: 'avaliar' as const, label: 'Em avaliação', value: resumo?.emAvaliacao },
+    { id: 'arquivados' as const, label: 'Arquivados 30d', value: resumo?.arquivados30d },
+  ]
+
   return (
     <div className="animate-fade-in-up">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -304,6 +370,24 @@ export default function IntimacoesPage() {
             </>
           )}
         </div>
+      </div>
+
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {cards.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => aplicarCard(c.id)}
+            className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-3 py-2.5 text-left hover:border-[var(--color-brand)] hover:bg-[var(--color-bg-hover)]"
+          >
+            <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-secondary)]">
+              {c.label}
+            </p>
+            <p className="mt-1 text-xl font-semibold text-[var(--color-text-primary)]">
+              {c.value ?? '—'}
+            </p>
+          </button>
+        ))}
       </div>
 
       {filtrosAbertos && (
@@ -358,6 +442,28 @@ export default function IntimacoesPage() {
               <option value="RUIM">Favorável ao réu</option>
               <option value="SEM">Sem sentença</option>
             </select>
+          </label>
+          <label className="flex min-w-[120px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+            Status
+            <select
+              value={draftStatusProcesso}
+              onChange={(e) => setDraftStatusProcesso(e.target.value)}
+              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
+            >
+              <option value="">Ativos (padrão)</option>
+              <option value="ATIVO">ATIVO</option>
+              <option value="SOBRESTADO">SOBRESTADO</option>
+              <option value="ARQUIVADO">ARQUIVADO</option>
+            </select>
+          </label>
+          <label className="flex min-w-[140px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+            Fase
+            <input
+              value={draftFaseAtual}
+              onChange={(e) => setDraftFaseAtual(e.target.value)}
+              placeholder="Contém…"
+              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
+            />
           </label>
           <label className="flex items-end gap-2 pb-1.5 text-xs text-[var(--color-text-secondary)]">
             <input
@@ -438,7 +544,12 @@ export default function IntimacoesPage() {
           <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
             Clique em um processo para ver detalhes{readOnly ? '.' : ' e editar.'}
           </p>
-          <ProcessosGrid data={processos} onRowClick={setSelectedProcesso} />
+          <ProcessosGrid
+            data={processos}
+            onRowClick={setSelectedProcesso}
+            readOnly={readOnly}
+            onAddPendencia={readOnly ? undefined : setPendenciaProcesso}
+          />
 
           {totalPages > 1 ? (
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
@@ -488,6 +599,17 @@ export default function IntimacoesPage() {
         }}
         onConfirm={handleConfirmarPdf}
         onAbrirProcessoExistente={handleAbrirProcessoDuplicado}
+      />
+
+      <NovaPendenciaDialog
+        open={!!pendenciaProcesso}
+        processo={pendenciaProcesso}
+        onClose={() => setPendenciaProcesso(null)}
+        onSuccess={() => {
+          toast.success('Pendência criada.')
+          getProcessosResumo().then(setResumo).catch(() => {})
+          load()
+        }}
       />
 
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />

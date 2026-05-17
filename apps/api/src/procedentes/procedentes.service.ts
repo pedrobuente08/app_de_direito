@@ -170,6 +170,53 @@ export class ProcedentesService {
     );
   }
 
+  /** Cards §5.2 — funil de procedentes. */
+  async resumo(escritorioId: string) {
+    const lista = await this.listar(escritorioId, 2000);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const ms30 = 30 * 86_400_000;
+    const ms60 = 60 * 86_400_000;
+
+    let acaoImediata = 0;
+    let aguardando = 0;
+    let encerrado30d = 0;
+    let semVisto30d = 0;
+    let alvara60d = 0;
+
+    for (const p of lista) {
+      const fam = (p.familiaSituacao ?? '').toUpperCase();
+      if (fam === 'PEND_INTERNA' || fam === 'EXEC_ATIVA') {
+        acaoImediata += 1;
+      }
+      if (fam === 'AGUARDAR_TRANSITO' || fam === 'AGUARDAR_PAGTO') {
+        aguardando += 1;
+      }
+      if (fam === 'ENCERRADO') {
+        const created = new Date(p.createdAt).getTime();
+        if (hoje.getTime() - created <= ms30) {
+          encerrado30d += 1;
+        }
+      }
+      const sit = (p.situacao ?? '').toUpperCase();
+      if (sit.includes('ALVARA') || fam.includes('ALVARA')) {
+        const created = new Date(p.createdAt).getTime();
+        if (hoje.getTime() - created >= ms60 && !p.valorRecebido) {
+          alvara60d += 1;
+        }
+      }
+    }
+
+    return {
+      totalAtivos: lista.filter((p) => p.familiaSituacao !== 'ENCERRADO').length,
+      acaoImediata,
+      aguardando,
+      encerrado30d,
+      semVisto30d,
+      alvara60d,
+    };
+  }
+
   async obter(
     escritorioId: string,
     processoId: string,

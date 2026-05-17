@@ -6,8 +6,10 @@ import {
   atualizarProcedente,
   getAuthMe,
   getProcedentes,
+  getProcedentesResumo,
   sincronizarProcedentesEmFalta,
 } from '@/lib/api'
+import type { ProcedentesResumo } from '@/lib/types'
 import { ToastContainer, useToast } from '@/lib/toast'
 import type { Procedente } from '@/lib/types'
 
@@ -59,6 +61,8 @@ export default function ProcedentesPage() {
   const [saving, setSaving] = useState(false)
   const [readOnly, setReadOnly] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const [resumo, setResumo] = useState<ProcedentesResumo | null>(null)
+  const [filtroFamilia, setFiltroFamilia] = useState('')
   const toast = useToast()
 
   useEffect(() => {
@@ -79,7 +83,14 @@ export default function ProcedentesPage() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    getProcedentesResumo().then(setResumo).catch(() => setResumo(null))
+  }, [])
+
+  const listaFiltrada = filtroFamilia
+    ? procedentes.filter((p) => p.familiaSituacao === filtroFamilia)
+    : procedentes
 
   function startEdit(p: Procedente) {
     setEditandoId(p.processoId)
@@ -153,13 +164,34 @@ export default function ProcedentesPage() {
         )}
       </div>
 
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {[
+          { label: 'Total ativos', value: resumo?.totalAtivos, fam: '' },
+          { label: 'Ação imediata', value: resumo?.acaoImediata, fam: 'PEND_INTERNA' },
+          { label: 'Aguardando', value: resumo?.aguardando, fam: 'AGUARDAR_TRANSITO' },
+          { label: 'Encerrado 30d', value: resumo?.encerrado30d, fam: 'ENCERRADO' },
+          { label: 'Sem visto 30d', value: resumo?.semVisto30d, fam: '' },
+          { label: 'Alvará >60d', value: resumo?.alvara60d, fam: '' },
+        ].map((c) => (
+          <button
+            key={c.label}
+            type="button"
+            onClick={() => setFiltroFamilia(c.fam)}
+            className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-2 py-2 text-left text-xs hover:bg-[var(--color-bg-hover)]"
+          >
+            <p className="text-[var(--color-text-secondary)]">{c.label}</p>
+            <p className="text-lg font-semibold">{c.value ?? '—'}</p>
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-9 animate-pulse rounded bg-[var(--color-bg-subtle)]" />)}</div>
       ) : error ? (
         <div className="rounded-[var(--radius-md)] border border-[var(--urgencia-vencida-border)] bg-[var(--urgencia-vencida-bg)] px-4 py-3 text-sm text-[var(--urgencia-vencida-text)]">
           {error} <button onClick={load} className="underline">Tentar novamente</button>
         </div>
-      ) : procedentes.length === 0 ? (
+      ) : listaFiltrada.length === 0 ? (
         <div className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-6 py-12 text-center text-sm text-[var(--color-text-secondary)]">
           <p>Nenhum processo com sentença procedente / parcial / acordo.</p>
           <p className="mt-2">
@@ -180,7 +212,7 @@ export default function ProcedentesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border-default)]">
-              {procedentes.map(p => (
+              {listaFiltrada.map(p => (
                 <React.Fragment key={p.processoId}>
                   <tr className="hover:bg-[var(--color-bg-hover)]">
                     <td className="px-4 py-2.5">

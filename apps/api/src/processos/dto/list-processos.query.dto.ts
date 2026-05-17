@@ -102,4 +102,16 @@ export class ListProcessosQueryDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   emAvaliacao?: boolean;
+
+  /** Pendência aberta ou prazo vencendo (≤2 dias). */
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  acaoImediata?: boolean;
+
+  /** `status_processo = ARQUIVADO` alterados nos últimos 30 dias. */
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  arquivados30d?: boolean;
 }

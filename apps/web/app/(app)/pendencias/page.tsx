@@ -1,7 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { criarPendencia, cumprirPendencia, getPendencias } from '@/lib/api'
+import {
+  criarPendencia,
+  cumprirPendencia,
+  getPendencias,
+  getPendenciasResumo,
+} from '@/lib/api'
+import type { PendenciasResumo } from '@/lib/types'
 import { ToastContainer, useToast } from '@/lib/toast'
 import type { Pendencia } from '@/lib/types'
 
@@ -46,13 +52,23 @@ export default function PendenciasPage() {
   const [form, setForm] = useState<Form>(FORM_VAZIO)
   const [saving, setSaving] = useState(false)
   const [cumprindo, setCumprindo] = useState<string | null>(null)
+  const [resumo, setResumo] = useState<PendenciasResumo | null>(null)
+  const [filtroOrigem, setFiltroOrigem] = useState('')
   const toast = useToast()
 
   async function load() {
     setLoading(true)
     setError(null)
     try {
-      setPendencias(await getPendencias())
+      const [list, r] = await Promise.all([
+        getPendencias({
+          status: 'ABERTA',
+          ...(filtroOrigem ? { origem: filtroOrigem } : {}),
+        }),
+        getPendenciasResumo(),
+      ])
+      setPendencias(list)
+      setResumo(r)
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -60,7 +76,7 @@ export default function PendenciasPage() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [filtroOrigem])
 
   function setField<K extends keyof Form>(k: K, v: string) {
     setForm((prev) => ({ ...prev, [k]: v }))
@@ -117,6 +133,42 @@ export default function PendenciasPage() {
         >
           Nova pendência
         </button>
+      </div>
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+        {[
+          { label: 'Total', value: resumo?.total },
+          { label: 'Vencidos', value: resumo?.vencidos },
+          { label: 'Urgente ≤3d', value: resumo?.urgente },
+          { label: 'Atenção 4–7d', value: resumo?.atencao },
+          { label: 'Normal', value: resumo?.normal },
+          { label: 'Sem prazo', value: resumo?.semPrazo },
+          { label: 'Cumpridos 30d', value: resumo?.cumpridos30d },
+        ].map((c) => (
+          <div
+            key={c.label}
+            className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-2 py-2 text-left text-xs"
+          >
+            <p className="text-[var(--color-text-secondary)]">{c.label}</p>
+            <p className="font-semibold">{c.value ?? '—'}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mb-3 flex flex-wrap gap-2">
+        {['', 'MANUAL_INTIMACOES', 'POS_AUDIENCIA', 'COMUNICA', 'MANUAL'].map((o) => (
+          <button
+            key={o || 'todas'}
+            type="button"
+            onClick={() => setFiltroOrigem(o)}
+            className={`rounded-full px-3 py-1 text-xs ${
+              filtroOrigem === o
+                ? 'bg-[var(--color-brand)] text-white'
+                : 'border border-[var(--color-border-default)]'
+            }`}
+          >
+            {o || 'Todas origens'}
+          </button>
+        ))}
       </div>
 
       {showForm && (
