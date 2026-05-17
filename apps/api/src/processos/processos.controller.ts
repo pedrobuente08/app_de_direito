@@ -58,7 +58,7 @@ function pdfMulterFileFilter(
 export class ProcessosController {
   constructor(
     private readonly processos: ProcessosService,
-    private readonly posImprocedencia: PosImprocedenciaService,
+    private readonly posImprocedenciaService: PosImprocedenciaService,
   ) {}
 
   @Get()
@@ -200,7 +200,7 @@ export class ProcessosController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: PosImprocedenciaDto,
   ) {
-    return this.posImprocedencia.aplicar(
+    return this.posImprocedenciaService.aplicar(
       user.escritorioId,
       id,
       dto,
