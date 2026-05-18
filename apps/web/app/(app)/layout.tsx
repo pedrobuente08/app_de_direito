@@ -8,7 +8,11 @@ import { PopUpHabilitacaoAdversaria } from '@/components/popups'
 import { Btn } from '@/components/ui/btn'
 import { getAuthMe } from '@/lib/api'
 import { LogoutButton } from './logout-button'
-import { labelForPath, NAV_SECTIONS } from './_config/nav'
+import {
+  labelForPath,
+  navSectionsForPerfil,
+  telemarketingAllowedPath,
+} from './_config/nav'
 
 function iniciaisDeEmail(email: string): string {
   const local = email.split('@')[0] ?? ''
@@ -23,8 +27,11 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const [email, setEmail] = useState<string | null>(null)
+  const [perfil, setPerfil] = useState<string | null>(null)
   const [escritorioNome, setEscritorioNome] = useState('Escritório')
   const [habilitacaoOpen, setHabilitacaoOpen] = useState(false)
+
+  const navSections = navSectionsForPerfil(perfil ?? undefined)
 
   useEffect(() => {
     let cancelled = false
@@ -32,6 +39,7 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
       .then((me) => {
         if (!cancelled) {
           setEmail(me.email)
+          setPerfil(me.perfil)
           setEscritorioNome('CONECTAR')
         }
       })
@@ -42,6 +50,12 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (perfil === 'telemarketing' && !telemarketingAllowedPath(pathname)) {
+      router.replace('/telemarketing')
+    }
+  }, [perfil, pathname, router])
 
   const pageLabel = labelForPath(pathname)
 
@@ -73,7 +87,7 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2">
-          {NAV_SECTIONS.map((section) => (
+          {navSections.map((section) => (
             <div key={section.label} className="mb-1">
               <p className="px-4 pb-1 pt-3 text-[10px] font-bold uppercase tracking-widest text-white/40">
                 {section.label}

@@ -593,6 +593,37 @@ export type Comunicacao = {
   createdAt: string
 }
 
+export type ResolverComunicacaoPayload = {
+  decisao: 'VINCULAR' | 'NAO_E_NOSSO' | 'ERRO'
+  processoId?: string
+  dadosNovoProcesso?: {
+    numero: string
+    sistema: string
+    clienteNome?: string | null
+    clienteCpf?: string | null
+    reuTexto?: string | null
+    vara?: string | null
+    materia?: string | null
+  }
+}
+
+export type TelemarketingResumo = {
+  abertas: number
+  vencendo: number
+  naFila: number
+  cumpridas30d: number
+}
+
+export type TelemarketingLinha = {
+  pendencia: Pendencia
+  processo: {
+    id: string
+    numero: string
+    clienteNome: string | null
+    telefone: string | null
+  }
+}
+
 export type OabEscuta = {
   id: string
   oab: string

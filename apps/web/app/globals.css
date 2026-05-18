@@ -169,3 +169,25 @@
 .animate-toast-in {
   animation: toastSlideIn 0.28s ease both;
 }
+
+.tlm-item {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  padding: 0.875rem 1rem;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.tlm-item:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.tlm-item--urgente {
+  border-color: var(--urgencia-urgente-border);
+  background: var(--urgencia-urgente-bg);
+}
+
+.tlm-item--vencida {
+  border-color: var(--urgencia-vencida-border);
+  background: var(--urgencia-vencida-bg);
+}

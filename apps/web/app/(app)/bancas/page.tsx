@@ -7,6 +7,7 @@ import {
   editarEscritorioAdversario,
   getEscritoriosAdversarios,
 } from '@/lib/api'
+import { KpiCard } from '@/components/ui/kpi-card'
 import { ToastContainer, useToast } from '@/lib/toast'
 import type { EscritorioAdversario } from '@/lib/types'
 
@@ -115,6 +116,20 @@ export default function EscritoriosAdversariosPage() {
         </button>
       </div>
 
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <KpiCard label="Total bancas" value={rows.length} variant="default" />
+        <KpiCard
+          label="Com aliases"
+          value={rows.filter((r) => (r.aliases ?? []).length > 0).length}
+          variant="accent"
+        />
+        <KpiCard
+          label="Com CNPJ"
+          value={rows.filter((r) => r.cnpj?.trim()).length}
+          variant="default"
+        />
+      </div>
+
       {showForm && (
         <form
           onSubmit={handleSave}
@@ -175,6 +190,7 @@ export default function EscritoriosAdversariosPage() {
             <thead className="bg-[var(--color-bg-muted)] text-xs uppercase text-[var(--color-text-secondary)]">
               <tr>
                 <th className="px-3 py-2 text-left">Canônico</th>
+                <th className="px-3 py-2 text-left">CNPJ</th>
                 <th className="px-3 py-2 text-left">Aliases</th>
                 <th className="px-3 py-2" />
               </tr>
@@ -183,6 +199,7 @@ export default function EscritoriosAdversariosPage() {
               {rows.map((r) => (
                 <tr key={r.id}>
                   <td className="px-3 py-2 font-medium">{r.nomeCanonico}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{r.cnpj ?? '—'}</td>
                   <td className="px-3 py-2 text-xs text-[var(--color-text-secondary)]">
                     {(r.aliases ?? []).join(' · ') || '—'}
                   </td>

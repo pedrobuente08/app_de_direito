@@ -1,10 +1,27 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { FamiliaTabs } from '@/components/ui/familia-tabs'
 import { getEscritorioConfig, salvarEscritorioConfig } from '@/lib/api'
 import { ToastContainer, useToast } from '@/lib/toast'
 
+const CONFIG_TABS = [
+  { id: 'geral', label: 'Geral' },
+  { id: 'materias', label: 'Matérias' },
+  { id: 'dropdowns', label: 'Dropdowns' },
+  { id: 'prazos', label: 'Prazos' },
+  { id: 'transicoes', label: 'Transições' },
+  { id: 'pendencias', label: 'Pendências' },
+  { id: 'provisao', label: 'Provisão' },
+  { id: 'comunica', label: 'Comunica' },
+  { id: 'links', label: 'Cadastros' },
+] as const
+
+type ConfigTab = (typeof CONFIG_TABS)[number]['id']
+
 export default function ConfiguracoesPage() {
+  const [aba, setAba] = useState<ConfigTab>('geral')
   const [materiasRaw, setMateriasRaw] = useState('')
   const [faseInicial, setFaseInicial] = useState('')
   const [situacaoInicial, setSituacaoInicial] = useState('')
@@ -159,7 +176,14 @@ export default function ConfiguracoesPage() {
         </p>
       </div>
 
+      <FamiliaTabs
+        tabs={[...CONFIG_TABS]}
+        activeId={aba}
+        onChange={(id) => setAba(id as ConfigTab)}
+      />
+
       <form onSubmit={handleSave} className="space-y-4">
+        {aba === 'materias' && (
         <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -195,7 +219,9 @@ export default function ConfiguracoesPage() {
             className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
           />
         </section>
+        )}
 
+        {aba === 'dropdowns' && (
         <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
           <div className="mb-3">
             <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
@@ -241,7 +267,9 @@ export default function ConfiguracoesPage() {
             </label>
           </div>
         </section>
+        )}
 
+        {aba === 'prazos' && (
         <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
           <h2 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">
             Prazos — recurso pós-improcedência
@@ -269,7 +297,9 @@ export default function ConfiguracoesPage() {
             </label>
           </div>
         </section>
+        )}
 
+        {aba === 'transicoes' && (
         <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
           <div className="mb-3">
             <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
@@ -289,7 +319,9 @@ export default function ConfiguracoesPage() {
             className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
           />
         </section>
+        )}
 
+        {aba === 'pendencias' && (
         <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
           <h2 className="mb-2 text-sm font-semibold">Tipos de pendência (manual)</h2>
           <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
@@ -303,7 +335,9 @@ export default function ConfiguracoesPage() {
             className="w-full rounded border px-2 py-1.5 font-mono text-sm"
           />
         </section>
+        )}
 
+        {aba === 'provisao' && (
         <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
           <h2 className="mb-2 text-sm font-semibold">Fatores de provisão (%)</h2>
           <textarea
@@ -313,7 +347,9 @@ export default function ConfiguracoesPage() {
             className="w-full rounded border px-2 py-1.5 font-mono text-sm"
           />
         </section>
+        )}
 
+        {aba === 'comunica' && (
         <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
           <h2 className="mb-2 text-sm font-semibold">Comunica — digest por e-mail</h2>
           <label className="mb-2 flex items-center gap-2 text-sm">
@@ -342,7 +378,9 @@ export default function ConfiguracoesPage() {
             />
           </label>
         </section>
+        )}
 
+        {aba === 'geral' && (
         <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
           <h2 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">
             Valores padrão da skill
@@ -372,6 +410,25 @@ export default function ConfiguracoesPage() {
             </div>
           </div>
         </section>
+        )}
+
+        {aba === 'links' && (
+          <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
+            <h2 className="mb-3 text-sm font-semibold">Cadastros auxiliares</h2>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link href="/usuarios" className="text-[var(--color-brand)] hover:underline">
+                  Usuários
+                </Link>
+              </li>
+              <li>
+                <Link href="/comarcas" className="text-[var(--color-brand)] hover:underline">
+                  Comarcas
+                </Link>
+              </li>
+            </ul>
+          </section>
+        )}
 
         <div className="flex justify-end">
           <button

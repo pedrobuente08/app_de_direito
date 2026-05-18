@@ -918,6 +918,47 @@ export async function cadastrarOab(oab: string): Promise<OabEscuta> {
   })
 }
 
+export async function resolverComunicacao(
+  id: string,
+  payload: import('@/lib/types').ResolverComunicacaoPayload,
+): Promise<Comunicacao> {
+  return apiFetch<Comunicacao>(`/comunicacoes/${id}/resolver`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+// ─── Telemarketing ────────────────────────────────────────────────────────────
+
+export async function getTelemarketingResumo(): Promise<
+  import('@/lib/types').TelemarketingResumo
+> {
+  return apiFetch<import('@/lib/types').TelemarketingResumo>('/telemarketing/resumo')
+}
+
+export async function getTelemarketingLista(
+  minhas?: boolean,
+): Promise<import('@/lib/types').TelemarketingLinha[]> {
+  const qs = minhas ? '?minhas=1' : ''
+  return apiFetch<import('@/lib/types').TelemarketingLinha[]>(`/telemarketing${qs}`)
+}
+
+export async function puxarTelemarketingFila(): Promise<Pendencia> {
+  return apiFetch<Pendencia>('/telemarketing/puxar', { method: 'POST' })
+}
+
+export async function cumprirTelemarketingPendencia(
+  id: string,
+  payload: { motivoCumprimento: string; status?: string },
+): Promise<Pendencia> {
+  return apiFetch<Pendencia>(`/telemarketing/pendencias/${id}/cumprir`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
 // ─── Importação ───────────────────────────────────────────────────────────────
 
 export async function importarProcessosCsv(csv: string): Promise<ImportResult> {

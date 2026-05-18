@@ -65,6 +65,31 @@ export const ROUTE_LABELS: Record<string, string> = {
   '/migracao-procedentes': 'Migração planilha',
 }
 
+const TELEMARKETING_HREFS = new Set(['/telemarketing', '/pendencias'])
+
+export function navSectionsForPerfil(perfil: string | undefined): NavSection[] {
+  if (perfil === 'telemarketing') {
+    return [
+      {
+        label: 'Operacional',
+        items: NAV_SECTIONS.flatMap((s) => s.items).filter((i) =>
+          TELEMARKETING_HREFS.has(i.href),
+        ),
+      },
+    ]
+  }
+  return NAV_SECTIONS
+}
+
+export function telemarketingAllowedPath(pathname: string): boolean {
+  return (
+    pathname === '/telemarketing' ||
+    pathname.startsWith('/telemarketing/') ||
+    pathname === '/pendencias' ||
+    pathname.startsWith('/pendencias/')
+  )
+}
+
 export function labelForPath(pathname: string): string {
   if (ROUTE_LABELS[pathname]) return ROUTE_LABELS[pathname]
   const match = Object.keys(ROUTE_LABELS)

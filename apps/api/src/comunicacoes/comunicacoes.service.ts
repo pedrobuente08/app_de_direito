@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -12,8 +13,10 @@ import { processo } from '../db/schema/processo';
 import { DrizzleService } from '../db/drizzle.service';
 import { AudienciasService } from '../audiencias/audiencias.service';
 import { PendenciasService } from '../pendencias/pendencias.service';
+import { ProcessosService } from '../processos/processos.service';
 import type { CadastrarOabDto } from './dto/cadastrar-oab.dto';
 import type { ComunicacaoWebhookDto } from './dto/comunicacao-webhook.dto';
+import type { ResolverComunicacaoDto } from './dto/resolver-comunicacao.dto';
 
 function normNumero(raw: string | null | undefined): string | null {
   if (!raw) {
@@ -46,6 +49,7 @@ export class ComunicacoesService {
     private readonly drizzle: DrizzleService,
     private readonly pendencias: PendenciasService,
     private readonly audiencias: AudienciasService,
+    private readonly processos: ProcessosService,
   ) {}
 
   private async validarTokenEscritorio(
@@ -271,5 +275,99 @@ export class ComunicacoesService {
       .from(oabEscuta)
       .where(eq(oabEscuta.escritorioId, escritorioId))
       .orderBy(oabEscuta.oab);
+  }
+
+  async resolver(
+    escritorioId: string,
+    comunicacaoId: string,
+    dto: ResolverComunicacaoDto,
+  ) {
+    const [row] = await this.drizzle.db
+      .select()
+      .from(comunicacao)
+      .where(
+        and(
+          eq(comunicacao.id, comunicacaoId),
+          eq(comunicacao.escritorioId, escritorioId),
+        ),
+      )
+      .limit(1);
+
+    if (!row) {
+      throw new NotFoundException('Comunicação não encontrada.');
+    }
+
+    if (dto.decisao === 'NAO_E_NOSSO') {
+      const [updated] = await this.drizzle.db
+        .update(comunicacao)
+        .set({ status: 'DESCARTADA', processoId: null })
+        .where(eq(comunicacao.id, comunicacaoId))
+        .returning();
+      return updated;
+    }
+
+    if (dto.decisao === 'ERRO') {
+      const [updated] = await this.drizzle.db
+        .update(comunicacao)
+        .set({ status: 'ERRO', processoId: null })
+        .where(eq(comunicacao.id, comunicacaoId))
+        .returning();
+      return updated;
+    }
+
+    let processoId = dto.processoId?.trim() || null;
+
+    if (!processoId && dto.dadosNovoProcesso) {
+      const novo = await this.processos.criarManual(
+        escritorioId,
+        dto.dadosNovoProcesso,
+      );
+      processoId = novo.id;
+    }
+
+    if (!processoId && row.numeroProcessoBruto) {
+      const digits = normNumero(row.numeroProcessoBruto);
+      if (digits) {
+        const [found] = await this.drizzle.db
+          .select({ id: processo.id })
+          .from(processo)
+          .where(
+            and(
+              eq(processo.escritorioId, escritorioId),
+              sql`regexp_replace(${processo.numero}, '[^0-9]', '', 'g') = ${digits}`,
+            ),
+          )
+          .limit(1);
+        processoId = found?.id ?? null;
+      }
+    }
+
+    if (!processoId) {
+      throw new BadRequestException(
+        'Informe processoId ou dadosNovoProcesso para vincular.',
+      );
+    }
+
+    const [proc] = await this.drizzle.db
+      .select({ id: processo.id })
+      .from(processo)
+      .where(
+        and(eq(processo.id, processoId), eq(processo.escritorioId, escritorioId)),
+      )
+      .limit(1);
+
+    if (!proc) {
+      throw new NotFoundException('Processo não encontrado.');
+    }
+
+    const [updated] = await this.drizzle.db
+      .update(comunicacao)
+      .set({ processoId, status: 'LIDA' })
+      .where(eq(comunicacao.id, comunicacaoId))
+      .returning();
+
+    await this.aplicarRegras(escritorioId, updated, updated.tipo);
+
+    return updated;
   }
 }

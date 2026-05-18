@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -8,6 +8,7 @@ import { ComunicacoesService } from './comunicacoes.service';
 import { CadastrarOabDto } from './dto/cadastrar-oab.dto';
 import { ComunicacaoWebhookDto } from './dto/comunicacao-webhook.dto';
 import { ComunicacoesDigestQueryDto } from './dto/comunicacoes-digest.query.dto';
+import { ResolverComunicacaoDto } from './dto/resolver-comunicacao.dto';
 
 @Controller('comunicacoes')
 export class ComunicacoesController {
@@ -47,5 +48,16 @@ export class ComunicacoesController {
   @Throttle(ThrottlePresets.comunicaWrite)
   cadastrarOab(@CurrentUser() user: AuthUser, @Body() dto: CadastrarOabDto) {
     return this.comunicacoes.cadastrarOab(user.escritorioId, dto);
+  }
+
+  @Post(':id/resolver')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.comunicaWrite)
+  resolver(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ResolverComunicacaoDto,
+  ) {
+    return this.comunicacoes.resolver(user.escritorioId, id, dto);
   }
 }

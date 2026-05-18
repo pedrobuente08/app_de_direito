@@ -613,11 +613,11 @@ Cada job cria notificações em `notificacao` (canal IN_APP) + dispara email (ca
 - [x] 9.x AGENDA: aplicar design system + integrar PopUpPosAudiencia + WhatsApp link
 
 ### Sprint 6 — Gestão + Admin
-- [ ] 10.1 Importação PDF (semaforo completo)
-- [ ] 10.2 Telemarketing (nova página)
-- [ ] 10.3 Comunicações Órfãs (revamp)
-- [ ] 11.1 Bancas adversárias (nova página)
-- [ ] 11.3 Configurações (reorganizar em abas)
+- [x] 10.1 Importação PDF (semaforo completo)
+- [x] 10.2 Telemarketing (nova página)
+- [x] 10.3 Comunicações Órfãs (revamp)
+- [x] 11.1 Bancas adversárias (nova página)
+- [x] 11.3 Configurações (reorganizar em abas)
 
 ### Sprint 7 — Automação
 - [ ] 12.x Encadeamentos automáticos (BullMQ)

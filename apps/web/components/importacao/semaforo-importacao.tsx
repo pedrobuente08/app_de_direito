@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
+import { ImportZone } from '@/components/ui/import-zone'
 import { confirmarBatchPdf, previewPdfBatch } from '@/lib/api'
 import { PDF_PREVIEW_LABELS, corBadgeClass, previewItemToConfirmBatchItem } from '@/lib/pdf-preview'
 import { ToastContainer, useToast } from '@/lib/toast'
@@ -234,34 +235,14 @@ export function SemaforoImportacao() {
     <div className="space-y-4">
       {estado === 'idle' && (
         <>
-          <div
-            className="rounded-[var(--radius-md)] border-2 border-dashed border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-4 py-8 text-center"
-            onDragOver={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-            }}
-            onDrop={(e) => {
-              e.preventDefault()
-              onPickFiles(e.dataTransfer.files)
-            }}
-          >
+          <ImportZone accept="application/pdf,.pdf" onFiles={onPickFiles}>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              Arraste PDFs aqui ou{' '}
-              <label className="cursor-pointer font-medium text-[var(--color-brand)] hover:underline">
-                selecionar ficheiros
-                <input
-                  type="file"
-                  accept="application/pdf,.pdf"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => onPickFiles(e.target.files)}
-                />
-              </label>
+              Arraste PDFs aqui ou clique para selecionar
             </p>
             <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
               Até 30 ficheiros · 15 MB cada
             </p>
-          </div>
+          </ImportZone>
 
           {files.length > 0 && (
             <ul className="max-h-40 space-y-1 overflow-y-auto rounded border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-2 text-sm">
