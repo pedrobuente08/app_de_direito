@@ -624,7 +624,7 @@ Cada job cria notificações em `notificacao` (canal IN_APP) + dispara email (ca
 - [x] 13.x Jobs de alertas
 
 ### Sprint 8 — Dashboards
-- [ ] 14.x 7 dashboards
+- [x] 14.x 7 dashboards
 
 ---
 

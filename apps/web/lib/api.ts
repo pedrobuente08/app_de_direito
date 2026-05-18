@@ -4,8 +4,6 @@ import type {
   Comunicacao,
   ConfirmarBatchItem,
   ConfirmarBatchResult,
-  DashAudiencias,
-  DashPendenciaStatus,
   DashTeseReuVara,
   DashVara,
   EscritorioConfig,
@@ -805,16 +803,32 @@ export async function getDashVaras(): Promise<DashVara[]> {
   return apiFetch<DashVara[]>('/dashboards/varas')
 }
 
-export async function getDashPendencias(): Promise<DashPendenciaStatus[]> {
-  return apiFetch<DashPendenciaStatus[]>('/dashboards/pendencias')
+export async function getDashGeral(): Promise<import('@/lib/types').DashGeral> {
+  return apiFetch('/dashboards/geral')
 }
 
-export async function getDashAudiencias(): Promise<DashAudiencias> {
-  const r = await apiFetch<{
-    audienciasFuturas: number
-    audienciasCadastradas: number
-  }>('/dashboards/audiencias')
-  return { futuras: r.audienciasFuturas, total: r.audienciasCadastradas }
+export async function getDashPendencias(): Promise<import('@/lib/types').DashPendencias> {
+  return apiFetch('/dashboards/pendencias')
+}
+
+export async function getDashAudiencias(): Promise<import('@/lib/types').DashAudiencias> {
+  return apiFetch('/dashboards/audiencias')
+}
+
+export async function getDashRecursos(): Promise<import('@/lib/types').DashRecursos> {
+  return apiFetch('/dashboards/recursos')
+}
+
+export async function getDashImprocedentes(): Promise<
+  import('@/lib/types').DashImprocedentes
+> {
+  return apiFetch('/dashboards/improcedentes')
+}
+
+export async function getDashFinanceiro(): Promise<
+  import('@/lib/types').DashFinanceiro
+> {
+  return apiFetch('/dashboards/financeiro')
 }
 
 export async function getDashTeseReuVara(filters?: {

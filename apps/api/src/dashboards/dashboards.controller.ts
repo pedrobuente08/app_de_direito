@@ -21,13 +21,19 @@ export class DashboardsController {
   @Get('pendencias')
   @Throttle(ThrottlePresets.dashboardRead)
   pendencias(@CurrentUser() user: AuthUser) {
-    return this.dashboards.pendenciasPorStatus(user.escritorioId);
+    return this.dashboards.pendenciasDashboard(user.escritorioId);
+  }
+
+  @Get('geral')
+  @Throttle(ThrottlePresets.dashboardRead)
+  geral(@CurrentUser() user: AuthUser) {
+    return this.dashboards.geral(user.escritorioId);
   }
 
   @Get('audiencias')
   @Throttle(ThrottlePresets.dashboardRead)
   audiencias(@CurrentUser() user: AuthUser) {
-    return this.dashboards.audienciasResumo(user.escritorioId);
+    return this.dashboards.audienciasDashboard(user.escritorioId);
   }
 
   @Get('tese-reu-vara')
@@ -74,5 +80,23 @@ export class DashboardsController {
   @Throttle(ThrottlePresets.dashboardRead)
   pendenciasOrigem(@CurrentUser() user: AuthUser) {
     return this.dashboards.pendenciasPorOrigem(user.escritorioId);
+  }
+
+  @Get('recursos')
+  @Throttle(ThrottlePresets.dashboardRead)
+  recursos(@CurrentUser() user: AuthUser) {
+    return this.dashboards.recursos(user.escritorioId);
+  }
+
+  @Get('improcedentes')
+  @Throttle(ThrottlePresets.dashboardRead)
+  improcedentes(@CurrentUser() user: AuthUser) {
+    return this.dashboards.improcedentes(user.escritorioId);
+  }
+
+  @Get('financeiro')
+  @Throttle(ThrottlePresets.dashboardRead)
+  financeiro(@CurrentUser() user: AuthUser) {
+    return this.dashboards.financeiro(user.escritorioId);
   }
 }

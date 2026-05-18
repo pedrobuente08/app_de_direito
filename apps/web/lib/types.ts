@@ -512,9 +512,83 @@ export type Procedente = {
   processo?: { numero: string; clienteNome: string; reuTexto: string; sentenca?: string | null }
 }
 
-export type DashVara = { vara: string; total: number }
+export type DashVara = { vara: string | null; total: number }
 export type DashPendenciaStatus = { status: string; total: number }
-export type DashAudiencias = { futuras: number; total: number }
+
+export type DashGeral = {
+  totalProcessos: number
+  comunicacoesOrfas: number
+  processosSemMovimento30d: number
+  funilPorFase: { fase: string; total: number }[]
+  funilPorQualidade: { qualidade: string; total: number }[]
+}
+
+export type DashAudiencias = {
+  audienciasFuturas: number
+  audienciasCadastradas: number
+  obsPrePendentes: number
+  proximos7d: {
+    id: string
+    data: string
+    hora: string | null
+    tipo: string | null
+    pautista: string | null
+    status: string
+    processoNumero: string
+    clienteNome: string | null
+  }[]
+  heatmapPautista: { pautista: string; data: string; total: number }[]
+}
+
+export type DashPendencias = {
+  porStatus: DashPendenciaStatus[]
+  porResponsavel: { responsavel: string; total: number }[]
+  porTipo: { tipo: string; total: number }[]
+  sla: {
+    abertas: number
+    vencidas: number
+    comPrazo: number
+    semPrazo: number
+    pctVencidas: number
+  }
+}
+
+export type DashRecursos = {
+  totalAcordaos: number
+  taxaProvimentoPct: number
+  tempoMedioDiasAcordao: number
+  porTurma: { turma: string; total: number }[]
+  recentes: {
+    data: string
+    resultado: string
+    favoravelPara: string
+    turma: string | null
+  }[]
+}
+
+export type DashImprocedentes = {
+  passivo: DashPassivoSucumbencia
+  porStatusPagamento: { status: string; total: number; valor: string }[]
+  avaliar: {
+    ativos: number
+    vencidos: number
+    lista: {
+      processoId: string
+      numero: string
+      prazo: string | null
+      vencido: boolean
+    }[]
+  }
+}
+
+export type DashFinanceiro = {
+  fase: string
+  mensagem: string
+  fatoresProvisaoPct: number[]
+  recebimentos: { linhasComValor: number; valorTotalRecebido: string }
+  provisaoEscalonada: { fatorPct: number; valorEstimado: string | null }[]
+  carteiraAguardandoRecebimento: string
+}
 export type DashTeseReuVara = {
   materia: string
   vara: string

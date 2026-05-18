@@ -1,12 +1,37 @@
 import { Injectable } from '@nestjs/common';
-import { and, count, desc, eq, gte, ilike, sql } from 'drizzle-orm';
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  ilike,
+  isNull,
+  lte,
+  or,
+  sql,
+} from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import { audiencia } from '../db/schema/audiencia';
+import { comunicacao } from '../db/schema/comunicacao';
+import type { EscritorioConfig } from '../db/schema/escritorio';
+import { escritorio } from '../db/schema/escritorio';
 import { escritorioAdversario } from '../db/schema/escritorio-adversario';
 import { improcedente } from '../db/schema/improcedente';
 import { pendencia } from '../db/schema/pendencia';
 import { processo } from '../db/schema/processo';
+import { processoProcedente } from '../db/schema/processo-procedente';
 import { sentenca } from '../db/schema/sentenca';
+
+function hojeYmd(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function addDaysYmd(base: string, days: number): string {
+  const d = new Date(`${base.slice(0, 10)}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 @Injectable()
 export class DashboardsService {
@@ -27,7 +52,15 @@ export class DashboardsService {
   }
 
   async pendenciasPorStatus(escritorioId: string) {
-    return this.drizzle.db
+    const dash = await this.pendenciasDashboard(escritorioId);
+    return dash.porStatus;
+  }
+
+  /** Dashboard PENDÊNCIAS — responsável, tipo, SLA. */
+  async pendenciasDashboard(escritorioId: string) {
+    const hoje = hojeYmd();
+
+    const porStatus = await this.drizzle.db
       .select({
         status: pendencia.status,
         total: count(),
@@ -35,11 +68,320 @@ export class DashboardsService {
       .from(pendencia)
       .where(eq(pendencia.escritorioId, escritorioId))
       .groupBy(pendencia.status);
+
+    const porResponsavel = await this.drizzle.db
+      .select({
+        responsavel: sql<string>`coalesce(nullif(trim(${pendencia.responsavel}), ''), '(sem responsável)')`,
+        total: count(),
+      })
+      .from(pendencia)
+      .where(
+        and(
+          eq(pendencia.escritorioId, escritorioId),
+          eq(pendencia.status, 'ABERTA'),
+        ),
+      )
+      .groupBy(
+        sql`coalesce(nullif(trim(${pendencia.responsavel}), ''), '(sem responsável)')`,
+      )
+      .orderBy(desc(count()))
+      .limit(20);
+
+    const porTipo = await this.drizzle.db
+      .select({
+        tipo: pendencia.tipo,
+        total: count(),
+      })
+      .from(pendencia)
+      .where(
+        and(
+          eq(pendencia.escritorioId, escritorioId),
+          eq(pendencia.status, 'ABERTA'),
+        ),
+      )
+      .groupBy(pendencia.tipo)
+      .orderBy(desc(count()))
+      .limit(25);
+
+    const [vencidasRow] = await this.drizzle.db
+      .select({ total: count() })
+      .from(pendencia)
+      .where(
+        and(
+          eq(pendencia.escritorioId, escritorioId),
+          eq(pendencia.status, 'ABERTA'),
+          sql`${pendencia.dataLimite} is not null`,
+          lte(pendencia.dataLimite, hoje),
+        ),
+      );
+
+    const [comPrazoRow] = await this.drizzle.db
+      .select({ total: count() })
+      .from(pendencia)
+      .where(
+        and(
+          eq(pendencia.escritorioId, escritorioId),
+          eq(pendencia.status, 'ABERTA'),
+          sql`${pendencia.dataLimite} is not null`,
+        ),
+      );
+
+    const [semPrazoRow] = await this.drizzle.db
+      .select({ total: count() })
+      .from(pendencia)
+      .where(
+        and(
+          eq(pendencia.escritorioId, escritorioId),
+          eq(pendencia.status, 'ABERTA'),
+          isNull(pendencia.dataLimite),
+        ),
+      );
+
+    const [abertasRow] = await this.drizzle.db
+      .select({ total: count() })
+      .from(pendencia)
+      .where(
+        and(
+          eq(pendencia.escritorioId, escritorioId),
+          eq(pendencia.status, 'ABERTA'),
+        ),
+      );
+
+    const abertas = Number(abertasRow?.total ?? 0);
+    const vencidas = Number(vencidasRow?.total ?? 0);
+
+    return {
+      porStatus: porStatus.map((r) => ({
+        status: r.status,
+        total: Number(r.total ?? 0),
+      })),
+      porResponsavel: porResponsavel.map((r) => ({
+        responsavel: r.responsavel,
+        total: Number(r.total ?? 0),
+      })),
+      porTipo: porTipo.map((r) => ({
+        tipo: r.tipo,
+        total: Number(r.total ?? 0),
+      })),
+      sla: {
+        abertas,
+        vencidas,
+        comPrazo: Number(comPrazoRow?.total ?? 0),
+        semPrazo: Number(semPrazoRow?.total ?? 0),
+        pctVencidas:
+          abertas > 0 ? Math.round((vencidas / abertas) * 1000) / 10 : 0,
+      },
+    };
+  }
+
+  /** Dashboard RECURSOS — provimento 2º grau, turmas. */
+  async recursos(escritorioId: string) {
+    const acordaos = await this.drizzle.db
+      .select({
+        id: sentenca.id,
+        data: sentenca.data,
+        resultado: sentenca.resultado,
+        favoravelPara: sentenca.favoravelPara,
+        turma: sentenca.turma,
+        processoId: sentenca.processoId,
+      })
+      .from(sentenca)
+      .where(
+        and(
+          eq(sentenca.escritorioId, escritorioId),
+          eq(sentenca.grau, 'SEGUNDO_GRAU'),
+        ),
+      )
+      .orderBy(desc(sentenca.data));
+
+    const total = acordaos.length;
+    const providos = acordaos.filter(
+      (s) =>
+        ['PROCEDENTE', 'PARCIAL'].includes(
+          (s.resultado ?? '').trim().toUpperCase(),
+        ) && (s.favoravelPara ?? '').trim().toUpperCase() === 'AUTOR',
+    ).length;
+
+    const porTurmaMap = new Map<string, number>();
+    for (const s of acordaos) {
+      const t = (s.turma ?? '').trim() || '(sem turma)';
+      porTurmaMap.set(t, (porTurmaMap.get(t) ?? 0) + 1);
+    }
+
+    const tempos: number[] = [];
+    for (const ac of acordaos.slice(0, 80)) {
+      const [s1] = await this.drizzle.db
+        .select({ data: sentenca.data })
+        .from(sentenca)
+        .where(
+          and(
+            eq(sentenca.processoId, ac.processoId),
+            eq(sentenca.escritorioId, escritorioId),
+            eq(sentenca.grau, 'PRIMEIRO_GRAU'),
+          ),
+        )
+        .orderBy(desc(sentenca.data))
+        .limit(1);
+      if (s1?.data && ac.data) {
+        const d1 = new Date(String(s1.data)).getTime();
+        const d2 = new Date(String(ac.data)).getTime();
+        if (!Number.isNaN(d1) && !Number.isNaN(d2) && d2 >= d1) {
+          tempos.push(Math.round((d2 - d1) / 86_400_000));
+        }
+      }
+    }
+
+    const tempoMedioDiasAcordao =
+      tempos.length > 0
+        ? Math.round(tempos.reduce((a, b) => a + b, 0) / tempos.length)
+        : 0;
+
+    return {
+      totalAcordaos: total,
+      taxaProvimentoPct:
+        total > 0 ? Math.round((providos / total) * 1000) / 10 : 0,
+      tempoMedioDiasAcordao,
+      porTurma: [...porTurmaMap.entries()]
+        .map(([turma, n]) => ({ turma, total: n }))
+        .sort((a, b) => b.total - a.total),
+      recentes: acordaos.slice(0, 15).map((s) => ({
+        data: String(s.data),
+        resultado: s.resultado,
+        favoravelPara: s.favoravelPara,
+        turma: s.turma,
+      })),
+    };
+  }
+
+  /** Dashboard IMPROCEDENTES — sucumbência, AVALIAR, status pagamento. */
+  async improcedentes(escritorioId: string) {
+    const passivo = await this.passivoSucumbencia(escritorioId);
+
+    const porStatus = await this.drizzle.db
+      .select({
+        status: improcedente.statusPagamento,
+        total: count(),
+        valor: sql<string>`coalesce(sum(${improcedente.valorSucumbencia}), 0)`,
+      })
+      .from(improcedente)
+      .where(eq(improcedente.escritorioId, escritorioId))
+      .groupBy(improcedente.statusPagamento);
+
+    const processos = await this.drizzle.db
+      .select({
+        id: processo.id,
+        numero: processo.numero,
+        avaliacaoRecurso: processo.avaliacaoRecurso,
+      })
+      .from(processo)
+      .where(eq(processo.escritorioId, escritorioId))
+      .limit(2000);
+
+    const hoje = hojeYmd();
+    const avaliarLista: {
+      processoId: string;
+      numero: string;
+      prazo: string | null;
+      vencido: boolean;
+    }[] = [];
+
+    for (const p of processos) {
+      const av = p.avaliacaoRecurso as { ativa?: boolean; prazo?: string } | null;
+      if (!av?.ativa) continue;
+      const prazo = av.prazo ?? null;
+      avaliarLista.push({
+        processoId: p.id,
+        numero: p.numero,
+        prazo,
+        vencido: Boolean(prazo && prazo <= hoje),
+      });
+    }
+
+    return {
+      passivo,
+      porStatusPagamento: porStatus.map((r) => ({
+        status: r.status ?? '—',
+        total: Number(r.total ?? 0),
+        valor: r.valor ?? '0',
+      })),
+      avaliar: {
+        ativos: avaliarLista.length,
+        vencidos: avaliarLista.filter((a) => a.vencido).length,
+        lista: avaliarLista
+          .sort((a, b) => (a.prazo ?? '9999').localeCompare(b.prazo ?? '9999'))
+          .slice(0, 20),
+      },
+    };
+  }
+
+  /** Dashboard FINANCEIRO — provisão (M2 parcial: recebidos + fatores config). */
+  async financeiro(escritorioId: string) {
+    const [esc] = await this.drizzle.db
+      .select({ config: escritorio.config })
+      .from(escritorio)
+      .where(eq(escritorio.id, escritorioId))
+      .limit(1);
+
+    const cfg = (esc?.config ?? {}) as EscritorioConfig;
+    const fatores = cfg.fatores_provisao_pct ?? [60, 85, 100];
+
+    const [recvRow] = await this.drizzle.db
+      .select({
+        total: count(),
+        valor: sql<string>`coalesce(sum(${processoProcedente.valorRecebido}), 0)`,
+      })
+      .from(processoProcedente)
+      .where(
+        and(
+          eq(processoProcedente.escritorioId, escritorioId),
+          sql`${processoProcedente.valorRecebido} is not null`,
+        ),
+      );
+
+    const [pendRow] = await this.drizzle.db
+      .select({
+        valor: sql<string>`coalesce(sum(${processoProcedente.valorRecebido}), 0)`,
+      })
+      .from(processoProcedente)
+      .where(
+        and(
+          eq(processoProcedente.escritorioId, escritorioId),
+          sql`${processoProcedente.familiaSituacao} in ('AGUARDAR_PAGTO', 'EXEC_ATIVA', 'PEND_INTERNA')`,
+          isNull(processoProcedente.dataRecebimento),
+        ),
+      );
+
+    return {
+      fase: 'M1',
+      mensagem:
+        'Forecast trimestral completo previsto para M2. Valores abaixo usam recebimentos registrados e fatores de provisão do escritório.',
+      fatoresProvisaoPct: fatores,
+      recebimentos: {
+        linhasComValor: Number(recvRow?.total ?? 0),
+        valorTotalRecebido: recvRow?.valor ?? '0',
+      },
+      provisaoEscalonada: fatores.map((pct) => ({
+        fatorPct: pct,
+        valorEstimado: null as string | null,
+      })),
+      carteiraAguardandoRecebimento: pendRow?.valor ?? '0',
+    };
   }
 
   async audienciasResumo(escritorioId: string) {
-    const hoje = new Date().toISOString().slice(0, 10);
-    const [ativas] = await this.drizzle.db
+    const dash = await this.audienciasDashboard(escritorioId);
+    return {
+      audienciasFuturas: dash.audienciasFuturas,
+      audienciasCadastradas: dash.audienciasCadastradas,
+    };
+  }
+
+  /** Dashboard AUDIÊNCIAS — próximos 7d, heatmap pautista, OBS pré. */
+  async audienciasDashboard(escritorioId: string) {
+    const hoje = hojeYmd();
+    const ate7 = addDaysYmd(hoje, 7);
+
+    const [futurasRow] = await this.drizzle.db
       .select({ total: count() })
       .from(audiencia)
       .where(
@@ -49,14 +391,158 @@ export class DashboardsService {
         ),
       );
 
-    const [total] = await this.drizzle.db
+    const [totalRow] = await this.drizzle.db
       .select({ total: count() })
       .from(audiencia)
       .where(eq(audiencia.escritorioId, escritorioId));
 
+    const proximos7d = await this.drizzle.db
+      .select({
+        id: audiencia.id,
+        data: audiencia.data,
+        hora: audiencia.hora,
+        tipo: audiencia.tipo,
+        pautista: audiencia.pautista,
+        status: audiencia.status,
+        processoNumero: processo.numero,
+        clienteNome: processo.clienteNome,
+      })
+      .from(audiencia)
+      .innerJoin(processo, eq(audiencia.processoId, processo.id))
+      .where(
+        and(
+          eq(audiencia.escritorioId, escritorioId),
+          gte(audiencia.data, hoje),
+          lte(audiencia.data, ate7),
+        ),
+      )
+      .orderBy(audiencia.data, audiencia.hora);
+
+    const heatmapRows = await this.drizzle.db
+      .select({
+        pautista: sql<string>`coalesce(nullif(trim(${audiencia.pautista}), ''), '(sem pautista)')`,
+        data: audiencia.data,
+        total: count(),
+      })
+      .from(audiencia)
+      .where(
+        and(
+          eq(audiencia.escritorioId, escritorioId),
+          gte(audiencia.data, hoje),
+          lte(audiencia.data, ate7),
+        ),
+      )
+      .groupBy(
+        sql`coalesce(nullif(trim(${audiencia.pautista}), ''), '(sem pautista)')`,
+        audiencia.data,
+      )
+      .orderBy(audiencia.data);
+
+    const [obsPreRow] = await this.drizzle.db
+      .select({ total: count() })
+      .from(audiencia)
+      .where(
+        and(
+          eq(audiencia.escritorioId, escritorioId),
+          gte(audiencia.data, hoje),
+          lte(audiencia.data, ate7),
+          eq(audiencia.status, 'AGENDADA'),
+          or(isNull(audiencia.obsPre), sql`trim(${audiencia.obsPre}) = ''`),
+        ),
+      );
+
     return {
-      audienciasFuturas: ativas?.total ?? 0,
-      audienciasCadastradas: total?.total ?? 0,
+      audienciasFuturas: Number(futurasRow?.total ?? 0),
+      audienciasCadastradas: Number(totalRow?.total ?? 0),
+      obsPrePendentes: Number(obsPreRow?.total ?? 0),
+      proximos7d: proximos7d.map((r) => ({
+        id: r.id,
+        data: String(r.data),
+        hora: r.hora ? String(r.hora).slice(0, 5) : null,
+        tipo: r.tipo,
+        pautista: r.pautista,
+        status: r.status,
+        processoNumero: r.processoNumero,
+        clienteNome: r.clienteNome,
+      })),
+      heatmapPautista: heatmapRows.map((r) => ({
+        pautista: r.pautista,
+        data: String(r.data),
+        total: Number(r.total ?? 0),
+      })),
+    };
+  }
+
+  /** Dashboard GERAL — funil, órfãs, sem movimento. */
+  async geral(escritorioId: string) {
+    const funilPorFase = await this.drizzle.db
+      .select({
+        fase: sql<string>`coalesce(nullif(trim(${processo.faseAtual}), ''), '(sem fase)')`,
+        total: count(),
+      })
+      .from(processo)
+      .where(eq(processo.escritorioId, escritorioId))
+      .groupBy(
+        sql`coalesce(nullif(trim(${processo.faseAtual}), ''), '(sem fase)')`,
+      )
+      .orderBy(desc(count()));
+
+    const funilPorQualidade = await this.drizzle.db
+      .select({
+        qualidade: sql<string>`coalesce(nullif(trim(${processo.qualidadeCaso}), ''), '(sem situação)')`,
+        total: count(),
+      })
+      .from(processo)
+      .where(eq(processo.escritorioId, escritorioId))
+      .groupBy(
+        sql`coalesce(nullif(trim(${processo.qualidadeCaso}), ''), '(sem situação)')`,
+      )
+      .orderBy(desc(count()));
+
+    const [orfasRow] = await this.drizzle.db
+      .select({ total: count() })
+      .from(comunicacao)
+      .where(
+        and(
+          eq(comunicacao.escritorioId, escritorioId),
+          eq(comunicacao.status, 'ORFA'),
+        ),
+      );
+
+    const limite = new Date();
+    limite.setDate(limite.getDate() - 30);
+
+    const [semMovRow] = await this.drizzle.db
+      .select({ total: count() })
+      .from(processo)
+      .where(
+        and(
+          eq(processo.escritorioId, escritorioId),
+          eq(processo.statusProcesso, 'ATIVO'),
+          or(
+            isNull(processo.ultimaMovimentacaoDt),
+            lte(processo.ultimaMovimentacaoDt, limite),
+          ),
+        ),
+      );
+
+    const totalProcessos = funilPorFase.reduce(
+      (s, r) => s + Number(r.total ?? 0),
+      0,
+    );
+
+    return {
+      totalProcessos,
+      comunicacoesOrfas: Number(orfasRow?.total ?? 0),
+      processosSemMovimento30d: Number(semMovRow?.total ?? 0),
+      funilPorFase: funilPorFase.map((r) => ({
+        fase: r.fase,
+        total: Number(r.total ?? 0),
+      })),
+      funilPorQualidade: funilPorQualidade.map((r) => ({
+        qualidade: r.qualidade,
+        total: Number(r.total ?? 0),
+      })),
     };
   }
 
