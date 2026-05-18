@@ -597,6 +597,7 @@ export async function criarPendencia(payload: {
   responsavel?: string | null
   observacao?: string | null
   origem?: string
+  fila?: string | null
 }): Promise<Pendencia> {
   return apiFetch<Pendencia>('/pendencias', {
     method: 'POST',

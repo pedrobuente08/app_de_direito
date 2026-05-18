@@ -67,6 +67,7 @@ export class PendenciasService {
         status: pendencia.status,
         observacao: pendencia.observacao,
         origem: pendencia.origem,
+        fila: pendencia.fila,
         createdAt: pendencia.createdAt,
         processo: {
           numero: processo.numero,

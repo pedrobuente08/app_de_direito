@@ -1,62 +1,49 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { NovaPendenciaManualDialog } from '@/components/pendencias/nova-pendencia-manual-dialog'
 import { PopUpPosPendencia } from '@/components/popups'
-import {
-  criarPendencia,
-  getPendencias,
-  getPendenciasResumo,
-} from '@/lib/api'
-import type { PendenciasResumo } from '@/lib/types'
+import { FilterBar, FilterField, filterControlClass } from '@/components/ui/filter-bar'
+import { FamiliaTabs } from '@/components/ui/familia-tabs'
+import { KpiCard } from '@/components/ui/kpi-card'
+import { getPendencias, getPendenciasResumo } from '@/lib/api'
+import { labelOrigemPendencia, urgenciaPendencia } from '@/lib/pendencia-urgencia'
+import type { Pendencia, PendenciasResumo } from '@/lib/types'
 import { ToastContainer, useToast } from '@/lib/toast'
-import type { Pendencia } from '@/lib/types'
 
-type UrgClass = { bg: string; text: string; border: string; label: string }
+type FiltroUrgencia = '' | 'vencidos' | 'urgente' | 'atencao' | 'normal' | 'semPrazo'
 
-function urgencia(dataLimite?: string | null): UrgClass {
-  if (!dataLimite) {
-    return {
-      bg: 'var(--urgencia-sem-prazo-bg)',
-      text: 'var(--urgencia-sem-prazo-text)',
-      border: 'var(--urgencia-sem-prazo-border)',
-      label: 'Sem prazo',
-    }
-  }
-  const hoje = new Date()
-  hoje.setHours(0, 0, 0, 0)
-  const limite = new Date(dataLimite + 'T00:00:00')
-  const dias = Math.floor((limite.getTime() - hoje.getTime()) / 86_400_000)
-  if (dias < 0)
-    return { bg: 'var(--urgencia-vencida-bg)', text: 'var(--urgencia-vencida-text)', border: 'var(--urgencia-vencida-border)', label: 'Vencida' }
-  if (dias <= 2)
-    return { bg: 'var(--urgencia-urgente-bg)', text: 'var(--urgencia-urgente-text)', border: 'var(--urgencia-urgente-border)', label: `${dias}d` }
-  if (dias <= 7)
-    return { bg: 'var(--urgencia-atencao-bg)', text: 'var(--urgencia-atencao-text)', border: 'var(--urgencia-atencao-border)', label: `${dias}d` }
-  return { bg: 'var(--urgencia-normal-bg)', text: 'var(--urgencia-normal-text)', border: 'var(--urgencia-normal-border)', label: `${dias}d` }
-}
+const ORIGENS = [
+  { id: '', label: 'Todas origens' },
+  { id: 'MANUAL_INTIMACOES', label: 'Intimações' },
+  { id: 'POS_AUDIENCIA', label: 'Pós-audiência' },
+  { id: 'COMUNICA', label: 'Comunica' },
+  { id: 'MANUAL', label: 'Manual' },
+]
 
-type Form = {
-  processoId: string
-  tipo: string
-  dataLimite: string
-  responsavel: string
-  observacao: string
-}
-const FORM_VAZIO: Form = { processoId: '', tipo: '', dataLimite: '', responsavel: '', observacao: '' }
+const URGENCIA_TABS = [
+  { id: '', label: 'Todos' },
+  { id: 'vencidos', label: 'Vencidos' },
+  { id: 'urgente', label: 'Urgente ≤3d' },
+  { id: 'atencao', label: 'Atenção 4–7d' },
+  { id: 'normal', label: 'Normal >7d' },
+  { id: 'semPrazo', label: 'Sem prazo' },
+]
 
 export default function PendenciasPage() {
   const [pendencias, setPendencias] = useState<Pendencia[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState<Form>(FORM_VAZIO)
-  const [saving, setSaving] = useState(false)
+  const [showNova, setShowNova] = useState(false)
   const [pendenciaEncerrar, setPendenciaEncerrar] = useState<Pendencia | null>(null)
   const [resumo, setResumo] = useState<PendenciasResumo | null>(null)
   const [filtroOrigem, setFiltroOrigem] = useState('')
+  const [filtroUrgencia, setFiltroUrgencia] = useState<FiltroUrgencia>('')
+  const [filtroResponsavel, setFiltroResponsavel] = useState('')
+  const [filtroFila, setFiltroFila] = useState('')
   const toast = useToast()
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -74,181 +61,218 @@ export default function PendenciasPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filtroOrigem])
 
-  useEffect(() => { load() }, [filtroOrigem])
+  useEffect(() => {
+    void load()
+  }, [load])
 
-  function setField<K extends keyof Form>(k: K, v: string) {
-    setForm((prev) => ({ ...prev, [k]: v }))
-  }
-
-  async function handleCriar(e: React.FormEvent) {
-    e.preventDefault()
-    setSaving(true)
-    try {
-      await criarPendencia({
-        processoId: form.processoId,
-        tipo: form.tipo,
-        dataLimite: form.dataLimite || null,
-        responsavel: form.responsavel || null,
-        observacao: form.observacao || null,
-      })
-      toast.success('Pendência criada.')
-      setShowForm(false)
-      setForm(FORM_VAZIO)
-      load()
-    } catch (e) {
-      toast.error((e as Error).message)
-    } finally {
-      setSaving(false)
-    }
-  }
-
+  const listaFiltrada = useMemo(() => {
+    return pendencias.filter((p) => {
+      if (filtroUrgencia) {
+        const bucket = urgenciaPendencia(p.dataLimite).bucket
+        if (bucket !== filtroUrgencia) return false
+      }
+      if (filtroResponsavel.trim()) {
+        const r = (p.responsavel ?? '').toLowerCase()
+        if (!r.includes(filtroResponsavel.trim().toLowerCase())) return false
+      }
+      if (filtroFila.trim()) {
+        const f = (p.fila ?? '').toLowerCase()
+        if (!f.includes(filtroFila.trim().toLowerCase())) return false
+      }
+      return true
+    })
+  }, [pendencias, filtroUrgencia, filtroResponsavel, filtroFila])
 
   return (
-    <div className="animate-fade-in-up">
-      <div className="mb-5 flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Pendências</h1>
+    <div className="animate-fade-in-up space-y-4">
+      <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Pendências</h1>
+          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+            Tarefas abertas por processo — cumpra pela ação na linha.
+          </p>
+        </div>
         <button
-          onClick={() => { setShowForm(true); setForm(FORM_VAZIO) }}
+          type="button"
+          onClick={() => setShowNova(true)}
           className="rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)]"
         >
           Nova pendência
         </button>
       </div>
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {[
-          { label: 'Total', value: resumo?.total },
-          { label: 'Vencidos', value: resumo?.vencidos },
-          { label: 'Urgente ≤3d', value: resumo?.urgente },
-          { label: 'Atenção 4–7d', value: resumo?.atencao },
-          { label: 'Normal', value: resumo?.normal },
-          { label: 'Sem prazo', value: resumo?.semPrazo },
-          { label: 'Cumpridos 30d', value: resumo?.cumpridos30d },
+          { label: 'Total', value: resumo?.total, urg: '' as FiltroUrgencia, variant: 'default' as const },
+          { label: 'Vencidos', value: resumo?.vencidos, urg: 'vencidos' as const, variant: 'danger' as const },
+          { label: 'Urgente ≤3d', value: resumo?.urgente, urg: 'urgente' as const, variant: 'danger' as const },
+          { label: 'Atenção 4–7d', value: resumo?.atencao, urg: 'atencao' as const, variant: 'warning' as const },
+          { label: 'Normal >7d', value: resumo?.normal, urg: 'normal' as const, variant: 'success' as const },
+          { label: 'Sem prazo', value: resumo?.semPrazo, urg: 'semPrazo' as const, variant: 'accent' as const },
+          {
+            label: 'Cumpridos 30d',
+            value: resumo?.cumpridos30d,
+            urg: '' as FiltroUrgencia,
+            variant: 'default' as const,
+          },
         ].map((c) => (
-          <div
+          <KpiCard
             key={c.label}
-            className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-2 py-2 text-left text-xs"
-          >
-            <p className="text-[var(--color-text-secondary)]">{c.label}</p>
-            <p className="font-semibold">{c.value ?? '—'}</p>
-          </div>
+            label={c.label}
+            value={c.value ?? '—'}
+            variant={c.variant}
+            onClick={
+              c.label === 'Cumpridos 30d'
+                ? undefined
+                : () => setFiltroUrgencia((prev) => (prev === c.urg ? '' : c.urg))
+            }
+          />
         ))}
       </div>
 
-      <div className="mb-3 flex flex-wrap gap-2">
-        {['', 'MANUAL_INTIMACOES', 'POS_AUDIENCIA', 'COMUNICA', 'MANUAL'].map((o) => (
-          <button
-            key={o || 'todas'}
-            type="button"
-            onClick={() => setFiltroOrigem(o)}
-            className={`rounded-full px-3 py-1 text-xs ${
-              filtroOrigem === o
-                ? 'bg-[var(--color-brand)] text-white'
-                : 'border border-[var(--color-border-default)]'
-            }`}
-          >
-            {o || 'Todas origens'}
-          </button>
-        ))}
-      </div>
+      <FamiliaTabs
+        tabs={URGENCIA_TABS.map((t) => ({
+          ...t,
+          count:
+            t.id === ''
+              ? pendencias.length
+              : pendencias.filter((p) => urgenciaPendencia(p.dataLimite).bucket === t.id).length,
+        }))}
+        activeId={filtroUrgencia}
+        onChange={(id) => setFiltroUrgencia(id as FiltroUrgencia)}
+      />
 
-      {showForm && (
-        <form onSubmit={handleCriar} className="mb-5 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
-          <h2 className="mb-4 text-sm font-semibold text-[var(--color-text-primary)]">Nova pendência</h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">ID do processo</label>
-              <input required value={form.processoId} onChange={e => setField('processoId', e.target.value)}
-                placeholder="UUID do processo"
-                className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm font-mono focus:border-[var(--color-brand)] focus:outline-none" />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">Tipo</label>
-              <input required value={form.tipo} onChange={e => setField('tipo', e.target.value)}
-                placeholder="Ex: MANIFESTAR, PETICIONAR..."
-                className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none" />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">Data limite</label>
-              <input type="date" value={form.dataLimite} onChange={e => setField('dataLimite', e.target.value)}
-                className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none" />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">Responsável</label>
-              <input value={form.responsavel} onChange={e => setField('responsavel', e.target.value)}
-                className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">Observação</label>
-              <input value={form.observacao} onChange={e => setField('observacao', e.target.value)}
-                className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none" />
-            </div>
-          </div>
-          <div className="mt-3 flex gap-2">
-            <button type="submit" disabled={saving}
-              className="rounded-[var(--radius-sm)] bg-[var(--color-brand)] px-4 py-1.5 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-50">
-              {saving ? 'Salvando…' : 'Criar'}
-            </button>
-            <button type="button" onClick={() => setShowForm(false)}
-              className="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-4 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]">
-              Cancelar
-            </button>
-          </div>
-        </form>
-      )}
+      <FilterBar>
+        <FilterField label="Responsável" className="min-w-[140px]">
+          <input
+            value={filtroResponsavel}
+            onChange={(e) => setFiltroResponsavel(e.target.value)}
+            placeholder="Contém…"
+            className={filterControlClass}
+          />
+        </FilterField>
+        <FilterField label="Fila" className="min-w-[120px]">
+          <input
+            value={filtroFila}
+            onChange={(e) => setFiltroFila(e.target.value)}
+            placeholder="Ex.: TELEMARKETING"
+            className={filterControlClass}
+          />
+        </FilterField>
+        <FilterField label="Origem" className="min-w-[160px]">
+          <select
+            value={filtroOrigem}
+            onChange={(e) => setFiltroOrigem(e.target.value)}
+            className={filterControlClass}
+          >
+            {ORIGENS.map((o) => (
+              <option key={o.id || 'todas'} value={o.id}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+      </FilterBar>
 
       {loading ? (
-        <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-9 animate-pulse rounded bg-[var(--color-bg-subtle)]" />)}</div>
+        <div className="space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-9 animate-pulse rounded bg-[var(--color-bg-subtle)]" />
+          ))}
+        </div>
       ) : error ? (
         <div className="rounded-[var(--radius-md)] border border-[var(--urgencia-vencida-border)] bg-[var(--urgencia-vencida-bg)] px-4 py-3 text-sm text-[var(--urgencia-vencida-text)]">
-          {error} <button onClick={load} className="underline">Tentar novamente</button>
+          {error}{' '}
+          <button type="button" onClick={() => void load()} className="underline">
+            Tentar novamente
+          </button>
         </div>
-      ) : pendencias.length === 0 ? (
+      ) : listaFiltrada.length === 0 ? (
         <div className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-6 py-12 text-center text-sm text-[var(--color-text-secondary)]">
-          Nenhuma pendência aberta.
+          Nenhuma pendência aberta com estes filtros.
         </div>
       ) : (
         <div className="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)]">
           <table className="w-full text-sm">
             <thead className="bg-[var(--color-bg-muted)]">
               <tr>
-                {['Prazo', 'Processo', 'Tipo', 'Responsável', 'Status', ''].map(col => (
-                  <th key={col} className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">{col}</th>
+                {[
+                  'Nº processo',
+                  'Tipo',
+                  'Origem',
+                  'Prazo',
+                  'Dias',
+                  'Responsável / Fila',
+                  'Status',
+                  '',
+                ].map((col) => (
+                  <th
+                    key={col}
+                    className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]"
+                  >
+                    {col}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border-default)]">
-              {pendencias.map(p => {
-                const urg = urgencia(p.dataLimite)
+              {listaFiltrada.map((p) => {
+                const urg = urgenciaPendencia(p.dataLimite)
                 return (
                   <tr key={p.id} className="hover:bg-[var(--color-bg-hover)]">
-                    <td className="px-4 py-2.5">
-                      <span className="rounded-full px-2 py-0.5 text-xs font-medium"
-                        style={{ background: urg.bg, color: urg.text, border: `1px solid ${urg.border}` }}>
-                        {p.dataLimite ? `${urg.label} · ${p.dataLimite.slice(5).replace('-', '/')}` : 'Sem prazo'}
-                      </span>
-                    </td>
                     <td className="px-4 py-2.5">
                       <span className="font-mono text-xs text-[var(--color-text-primary)]">
                         {p.processo?.numero ?? p.processoId.slice(0, 8) + '…'}
                       </span>
-                      {p.processo?.clienteNome && (
-                        <p className="text-xs text-[var(--color-text-secondary)]">{p.processo.clienteNome}</p>
-                      )}
+                      {p.processo?.clienteNome ? (
+                        <p className="text-xs text-[var(--color-text-secondary)]">
+                          {p.processo.clienteNome}
+                        </p>
+                      ) : null}
                     </td>
-                    <td className="px-4 py-2.5 font-medium text-[var(--color-text-primary)]">{p.tipo}</td>
-                    <td className="px-4 py-2.5 text-[var(--color-text-secondary)]">{p.responsavel ?? '—'}</td>
+                    <td className="px-4 py-2.5 font-medium">{p.tipo}</td>
+                    <td className="px-4 py-2.5 text-xs text-[var(--color-text-secondary)]">
+                      {labelOrigemPendencia(p.origem)}
+                    </td>
+                    <td className="px-4 py-2.5 text-xs">
+                      {p.dataLimite
+                        ? p.dataLimite.slice(5).replace('-', '/')
+                        : '—'}
+                    </td>
                     <td className="px-4 py-2.5">
-                      <span className="rounded-full bg-[var(--urgencia-normal-bg)] px-2 py-0.5 text-xs text-[var(--urgencia-normal-text)]">{p.status}</span>
+                      <span
+                        className="rounded-full px-2 py-0.5 text-xs font-medium"
+                        style={{
+                          background: urg.bg,
+                          color: urg.text,
+                          border: `1px solid ${urg.border}`,
+                        }}
+                      >
+                        {urg.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-xs">
+                      <p>{p.responsavel ?? '—'}</p>
+                      {p.fila ? (
+                        <p className="text-[var(--color-text-tertiary)]">Fila: {p.fila}</p>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span className="rounded-full bg-[var(--urgencia-normal-bg)] px-2 py-0.5 text-xs text-[var(--urgencia-normal-text)]">
+                        {p.status}
+                      </span>
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       <button
                         type="button"
                         onClick={() => setPendenciaEncerrar(p)}
-                        className="text-xs text-[var(--color-brand)] hover:underline"
+                        className="text-xs font-medium text-[var(--color-brand)] hover:underline"
                       >
-                        Encerrar
+                        Cumprir
                       </button>
                     </td>
                   </tr>
@@ -259,17 +283,24 @@ export default function PendenciasPage() {
         </div>
       )}
 
+      <NovaPendenciaManualDialog
+        open={showNova}
+        onClose={() => setShowNova(false)}
+        onSuccess={() => {
+          toast.success('Pendência criada.')
+          void load()
+        }}
+      />
+
       <PopUpPosPendencia
         open={!!pendenciaEncerrar}
         pendencia={pendenciaEncerrar}
         onClose={() => setPendenciaEncerrar(null)}
         onSuccess={() => {
           toast.success('Pendência encerrada.')
-          load()
+          void load()
         }}
       />
-
-      <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
     </div>
   )
 }

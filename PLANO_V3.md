@@ -609,8 +609,8 @@ Cada job cria notificações em `notificacao` (canal IN_APP) + dispara email (ca
 - [x] 7.x REPROTOCOLO: página nova completa
 
 ### Sprint 5 — Pendências + Agenda
-- [ ] 8.x PENDÊNCIAS: KPI cards + grid + PopUpPosPendencia integrado
-- [ ] 9.x AGENDA: aplicar design system + integrar PopUpPosAudiencia + WhatsApp link
+- [x] 8.x PENDÊNCIAS: KPI cards + grid + PopUpPosPendencia integrado
+- [x] 9.x AGENDA: aplicar design system + integrar PopUpPosAudiencia + WhatsApp link
 
 ### Sprint 6 — Gestão + Admin
 - [ ] 10.1 Importação PDF (semaforo completo)

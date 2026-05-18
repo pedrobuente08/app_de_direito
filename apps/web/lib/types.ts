@@ -461,6 +461,7 @@ export type Pendencia = {
   responsavel?: string | null
   observacao?: string | null
   origem: string
+  fila?: string | null
   createdAt: string
   processo?: { numero: string; clienteNome: string }
 }
