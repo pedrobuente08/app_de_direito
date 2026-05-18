@@ -17,6 +17,12 @@ import { NotificacoesService } from './notificacoes.service';
 export class NotificacoesController {
   constructor(private readonly service: NotificacoesService) {}
 
+  @Get('resumo')
+  @Throttle(ThrottlePresets.processosList)
+  resumo(@CurrentUser() user: AuthUser) {
+    return this.service.contarNaoLidas(user.escritorioId, user.userId);
+  }
+
   @Get()
   @Throttle(ThrottlePresets.processosList)
   listar(

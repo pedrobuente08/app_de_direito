@@ -704,6 +704,22 @@ export type OabEscuta = {
   createdAt: string
 }
 
+export type Notificacao = {
+  id: string
+  tipoGatilho: string | null
+  prioridade: string | null
+  titulo: string
+  mensagem: string
+  lidaEm: string | null
+  createdAt: string
+  entidade: string | null
+  entidadeId: string | null
+}
+
+export type NotificacoesResumo = {
+  naoLidas: number
+}
+
 export type ImportResult = {
   importados: number
   totalLinhas: number

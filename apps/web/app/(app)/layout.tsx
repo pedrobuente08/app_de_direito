@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { PopUpHabilitacaoAdversaria } from '@/components/popups'
 import { Btn } from '@/components/ui/btn'
-import { IconBell } from '@/components/ui/icon-bell'
+import { NotificacoesBell } from '@/components/notificacoes/notificacoes-bell'
 import { getAuthMe } from '@/lib/api'
 import { LogoutButton } from './logout-button'
 import {
@@ -151,15 +151,7 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
           + Importar PDF
         </Btn>
 
-        <button
-          type="button"
-          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
-          title="Notificações"
-          aria-label="Notificações"
-        >
-          <IconBell />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[var(--urgencia-vencida-text)] ring-2 ring-[var(--color-bg-surface)]" />
-        </button>
+        <NotificacoesBell />
 
         <span
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)] text-xs font-bold text-[var(--color-brand)]"

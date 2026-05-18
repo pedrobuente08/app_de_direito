@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull, or, sql } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import { notificacao } from '../db/schema/notificacao';
 import { MailService } from '../mail/mail.service';
@@ -72,9 +72,17 @@ export class NotificacoesService {
     escritorioId: string,
     opts?: { usuarioId?: string; apenasNaoLidas?: boolean },
   ) {
-    const conds = [eq(notificacao.escritorioId, escritorioId)];
+    const conds = [
+      eq(notificacao.escritorioId, escritorioId),
+      eq(notificacao.canal, 'IN_APP'),
+    ];
     if (opts?.usuarioId) {
-      conds.push(eq(notificacao.usuarioId, opts.usuarioId));
+      conds.push(
+        or(
+          isNull(notificacao.usuarioId),
+          eq(notificacao.usuarioId, opts.usuarioId),
+        )!,
+      );
     }
     if (opts?.apenasNaoLidas) {
       conds.push(isNull(notificacao.lidaEm));
@@ -86,6 +94,24 @@ export class NotificacoesService {
       .where(and(...conds))
       .orderBy(desc(notificacao.createdAt))
       .limit(200);
+  }
+
+  async contarNaoLidas(escritorioId: string, usuarioId: string) {
+    const [row] = await this.drizzle.db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(notificacao)
+      .where(
+        and(
+          eq(notificacao.escritorioId, escritorioId),
+          eq(notificacao.canal, 'IN_APP'),
+          isNull(notificacao.lidaEm),
+          or(
+            isNull(notificacao.usuarioId),
+            eq(notificacao.usuarioId, usuarioId),
+          )!,
+        ),
+      );
+    return { naoLidas: Number(row?.total ?? 0) };
   }
 
   async marcarLida(escritorioId: string, id: string) {
@@ -109,8 +135,12 @@ export class NotificacoesService {
       .where(
         and(
           eq(notificacao.escritorioId, escritorioId),
-          eq(notificacao.usuarioId, usuarioId),
+          eq(notificacao.canal, 'IN_APP'),
           isNull(notificacao.lidaEm),
+          or(
+            isNull(notificacao.usuarioId),
+            eq(notificacao.usuarioId, usuarioId),
+          )!,
         ),
       );
     return { ok: true };

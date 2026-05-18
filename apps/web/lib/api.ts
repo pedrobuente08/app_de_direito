@@ -943,6 +943,61 @@ export async function resolverComunicacao(
   })
 }
 
+// ─── Notificações ─────────────────────────────────────────────────────────────
+
+type NotificacaoRow = {
+  id: string
+  tipoGatilho?: string | null
+  prioridade?: string | null
+  conteudo?: { titulo?: string; mensagem?: string } | null
+  lidaEm?: string | Date | null
+  createdAt: string | Date
+  entidade?: string | null
+  entidadeId?: string | null
+}
+
+function mapNotificacao(row: NotificacaoRow): import('@/lib/types').Notificacao {
+  const c = row.conteudo ?? {}
+  return {
+    id: row.id,
+    tipoGatilho: row.tipoGatilho ?? null,
+    prioridade: row.prioridade ?? null,
+    titulo: c.titulo?.trim() || 'Notificação',
+    mensagem: c.mensagem?.trim() || '',
+    lidaEm: row.lidaEm ? String(row.lidaEm) : null,
+    createdAt: String(row.createdAt),
+    entidade: row.entidade ?? null,
+    entidadeId: row.entidadeId ?? null,
+  }
+}
+
+export async function getNotificacoesResumo(): Promise<
+  import('@/lib/types').NotificacoesResumo
+> {
+  return apiFetch('/notificacoes/resumo')
+}
+
+export async function getNotificacoes(
+  apenasNaoLidas?: boolean,
+): Promise<import('@/lib/types').Notificacao[]> {
+  const q = apenasNaoLidas ? '?apenasNaoLidas=1' : ''
+  const rows = await apiFetch<NotificacaoRow[]>(`/notificacoes${q}`)
+  return rows.map(mapNotificacao)
+}
+
+export async function marcarNotificacaoLida(
+  id: string,
+): Promise<import('@/lib/types').Notificacao> {
+  const row = await apiFetch<NotificacaoRow>(`/notificacoes/${id}/lida`, {
+    method: 'PATCH',
+  })
+  return mapNotificacao(row)
+}
+
+export async function marcarTodasNotificacoesLidas(): Promise<void> {
+  await apiFetch('/notificacoes/marcar-todas-lidas', { method: 'POST' })
+}
+
 // ─── Telemarketing ────────────────────────────────────────────────────────────
 
 export async function getTelemarketingResumo(): Promise<
