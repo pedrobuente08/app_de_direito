@@ -29,6 +29,8 @@ export const sentenca = pgTable(
     turma: varchar('turma', { length: 50 }),
     assessorJulgador: varchar('assessor_julgador', { length: 100 }),
     turnoJulgamento: varchar('turno_julgamento', { length: 20 }),
+    extincaoModalidade: varchar('extincao_modalidade', { length: 20 }),
+    motivoExtincao: varchar('motivo_extincao', { length: 100 }),
     observacoes: text('observacoes'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },

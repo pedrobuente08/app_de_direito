@@ -25,8 +25,12 @@ import { CreateProcessoDto } from './dto/create-processo.dto';
 import { ListProcessosQueryDto } from './dto/list-processos.query.dto';
 import { PosImprocedenciaDto } from './dto/pos-improcedencia.dto';
 import { UpdateProcessoDto } from './dto/update-processo.dto';
+import { JusticaGratuitaProcessoDto } from './dto/justica-gratuita-processo.dto';
+import { PatchAvaliacaoRecursoDto } from './dto/patch-avaliacao-recurso.dto';
+import { SobrestarProcessoDto } from './dto/sobrestar-processo.dto';
 import { PosImprocedenciaService } from './pos-improcedencia.service';
 import { ProcessosService } from './processos.service';
+import { ProcessosWorkflowService } from './processos-workflow.service';
 
 function sanitizePdfFilename(name: string): string {
   const base = name.replace(/^.*[/\\]/g, '').replace(/\0/g, '');
@@ -59,6 +63,7 @@ export class ProcessosController {
   constructor(
     private readonly processos: ProcessosService,
     private readonly posImprocedenciaService: PosImprocedenciaService,
+    private readonly workflow: ProcessosWorkflowService,
   ) {}
 
   @Get()
@@ -215,6 +220,58 @@ export class ProcessosController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.processos.obterTimeline(user.escritorioId, id);
+  }
+
+  @Get(':id/observacoes')
+  @Throttle(ThrottlePresets.processoGet)
+  observacoes(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.workflow.listarObservacoes(user.escritorioId, id);
+  }
+
+  @Post(':id/sobrestar')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.processoPostManual)
+  sobrestar(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SobrestarProcessoDto,
+  ) {
+    return this.workflow.sobrestar(user.escritorioId, id, dto);
+  }
+
+  @Post(':id/dessobrestar')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.processoPostManual)
+  dessobrestar(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.workflow.dessobrestar(user.escritorioId, id);
+  }
+
+  @Post(':id/justica-gratuita')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.processoPostManual)
+  justicaGratuita(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: JusticaGratuitaProcessoDto,
+  ) {
+    return this.workflow.justicaGratuita(user.escritorioId, id, dto);
+  }
+
+  @Patch(':id/avaliacao-recurso')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.processoPatch)
+  avaliacaoRecurso(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PatchAvaliacaoRecursoDto,
+  ) {
+    return this.workflow.patchAvaliacaoRecurso(user.escritorioId, id, dto);
   }
 
   @Get(':id')

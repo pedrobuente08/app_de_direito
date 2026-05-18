@@ -10,6 +10,7 @@ import { ExtracaoPendenteController } from './extracao-pendente.controller';
 import { PosImprocedenciaService } from './pos-improcedencia.service';
 import { ProcessosController } from './processos.controller';
 import { ProcessosService } from './processos.service';
+import { ProcessosWorkflowService } from './processos-workflow.service';
 
 @Module({
   imports: [
@@ -22,7 +23,11 @@ import { ProcessosService } from './processos.service';
     EscritoriosAdversariosModule,
   ],
   controllers: [ProcessosController, ExtracaoPendenteController],
-  providers: [ProcessosService, PosImprocedenciaService],
-  exports: [ProcessosService],
+  providers: [
+    ProcessosService,
+    PosImprocedenciaService,
+    ProcessosWorkflowService,
+  ],
+  exports: [ProcessosService, ProcessosWorkflowService],
 })
 export class ProcessosModule {}

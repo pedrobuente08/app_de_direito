@@ -9,6 +9,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 import { escritorio } from './escritorio';
+import { advogadoAdversario } from './advogado-adversario';
 import { escritorioAdversario } from './escritorio-adversario';
 import { processo } from './processo';
 
@@ -24,6 +25,10 @@ export const audiencia = pgTable(
       .references(() => processo.id, { onDelete: 'restrict' }),
     escritorioAdversarioId: uuid('escritorio_adversario_id').references(
       () => escritorioAdversario.id,
+      { onDelete: 'set null' },
+    ),
+    advogadoAdversarioId: uuid('advogado_adversario_id').references(
+      () => advogadoAdversario.id,
       { onDelete: 'set null' },
     ),
     tipo: varchar('tipo', { length: 50 }),

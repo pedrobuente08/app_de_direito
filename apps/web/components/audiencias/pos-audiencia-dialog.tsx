@@ -8,8 +8,8 @@ import type { Audiencia, EscritorioAdversario } from '@/lib/types'
 export type PendenciaPosAudienciaInput = {
   tipo: string
   dataLimite: string
-  responsavel: string
-  observacao: string
+  responsavel?: string | null
+  observacao?: string | null
 }
 
 export type FinalizarAudienciaPayload = {
@@ -110,6 +110,7 @@ export function PosAudienciaDialog({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!audiencia) return
     setErro(null)
     const obs = obsPos.trim()
     if (!obs) {
@@ -152,9 +153,9 @@ export function PosAudienciaDialog({
         if (houvePendencia) {
           body.pendencias = pendenciasValidas.map((p) => ({
             tipo: p.tipo.trim(),
-            dataLimite: p.dataLimite.trim() || undefined,
-            responsavel: p.responsavel.trim() || null,
-            observacao: p.observacao.trim() || null,
+            dataLimite: p.dataLimite.trim(),
+            responsavel: p.responsavel?.trim() || null,
+            observacao: p.observacao?.trim() || null,
           }))
         }
       }
@@ -359,7 +360,7 @@ export function PosAudienciaDialog({
                       <input
                         placeholder="Responsável"
                         disabled={readOnly || salvando}
-                        value={p.responsavel}
+                        value={p.responsavel ?? ''}
                         onChange={(e) => {
                           const next = [...pendencias]
                           next[i] = { ...next[i]!, responsavel: e.target.value }

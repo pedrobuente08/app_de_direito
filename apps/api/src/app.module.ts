@@ -7,6 +7,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AdvogadosAdversariosModule } from './advogados-adversarios/advogados-adversarios.module';
 import { AdminModule } from './admin/admin.module';
 import { AuditModule } from './audit/audit.module';
 import { AudienciasModule } from './audiencias/audiencias.module';
@@ -24,14 +25,18 @@ import { ImprocedentesModule } from './improcedentes/improcedentes.module';
 import { HealthController } from './health.controller';
 import { ImportacaoModule } from './importacao/importacao.module';
 import { MigracaoModule } from './migracao/migracao.module';
+import { NotificacoesModule } from './notificacoes/notificacoes.module';
 import { MailModule } from './mail/mail.module';
 import { PendenciasModule } from './pendencias/pendencias.module';
 import { ProcessosModule } from './processos/processos.module';
 import { ProcedentesModule } from './procedentes/procedentes.module';
 import { RecursosModule } from './recursos/recursos.module';
+import { ReprotocoloModule } from './reprotocolo/reprotocolo.module';
 import { ReusModule } from './reus/reus.module';
 import { SentencasModule } from './sentencas/sentencas.module';
 import { StorageModule } from './storage/storage.module';
+import { TelemarketingModule } from './telemarketing/telemarketing.module';
+import { VaraDocumentoRegrasModule } from './vara-documento-regras/vara-documento-regras.module';
 import { TenantInterceptor } from './tenant/tenant.interceptor';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { WorkersModule } from './workers/workers.module';
@@ -86,6 +91,11 @@ const adminImports = process.env.PLATFORM_JWT_SECRET?.trim()
     SentencasModule,
     ImprocedentesModule,
     EscritoriosAdversariosModule,
+    AdvogadosAdversariosModule,
+    VaraDocumentoRegrasModule,
+    ReprotocoloModule,
+    NotificacoesModule,
+    TelemarketingModule,
     RecursosModule,
   ],
   controllers: [HealthController],

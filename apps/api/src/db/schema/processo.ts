@@ -48,9 +48,26 @@ export const processo = pgTable(
       .notNull()
       .default('ATIVO'),
     faseAtual: varchar('fase_atual', { length: 50 }),
+    tipoCr: varchar('tipo_cr', { length: 50 }),
+    dataTransito: date('data_transito'),
     qualidadeCaso: varchar('qualidade_caso', { length: 60 }),
     avaliacaoRecurso: jsonb('avaliacao_recurso').$type<AvaliacaoRecursoJson | null>(),
     justicaGratuita: boolean('justica_gratuita').default(false),
+    justicaGratuitaConcedidaEm: date('justica_gratuita_concedida_em'),
+    justicaGratuitaExpiraEm: date('justica_gratuita_expira_em'),
+    justicaGratuitaRevisadaEm: date('justica_gratuita_revisada_em'),
+    sucumbenciaDevida: boolean('sucumbencia_devida').default(false),
+    honorarioSucumbencialValor: varchar('honorario_sucumbencial_valor', {
+      length: 30,
+    }),
+    honorarioSucumbencialStatus: varchar('honorario_sucumbencial_status', {
+      length: 20,
+    }),
+    honorarioSucumbencialPagoEm: date('honorario_sucumbencial_pago_em'),
+    sobrestamentoMotivo: text('sobrestamento_motivo'),
+    sobrestadoDesde: date('sobrestado_desde'),
+    recursoAdversario: boolean('recurso_adversario').default(false),
+    parceiroEscritorio: varchar('parceiro_escritorio', { length: 200 }),
     situacaoFinal: varchar('situacao_final', { length: 50 }),
     telefone: varchar('telefone', { length: 20 }),
     statusAudiencia: varchar('status_audiencia', { length: 30 }),
@@ -58,7 +75,9 @@ export const processo = pgTable(
       withTimezone: true,
     }),
     ultimaMovimentacaoTipo: varchar('ultima_movimentacao_tipo', { length: 50 }),
+    /** @deprecated Preferir `observacaoGeral`. */
     observacoes: text('observacoes'),
+    observacaoGeral: text('observacao_geral'),
     requerConferencia: boolean('requer_conferencia').default(false).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()

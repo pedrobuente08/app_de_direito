@@ -601,6 +601,16 @@ export class ProcessosService {
       patch.observacoes =
         dto.observacoes === null ? null : nullableTrim(dto.observacoes);
     }
+    if (dto.observacaoGeral !== undefined) {
+      patch.observacaoGeral =
+        dto.observacaoGeral === null ? null : nullableTrim(dto.observacaoGeral);
+    }
+    if (dto.tipoCr !== undefined) {
+      patch.tipoCr = dto.tipoCr === null ? null : nullableTrim(dto.tipoCr);
+    }
+    if (dto.dataTransito !== undefined) {
+      patch.dataTransito = dto.dataTransito;
+    }
 
     if (!Object.keys(patch).length) {
       throw new BadRequestException('Informe ao menos um campo para atualizar.');

@@ -135,4 +135,19 @@ export class UpdateProcessoDto {
   @IsOptional()
   @IsString()
   observacoes?: string | null;
+
+  @IsOptional()
+  @IsString()
+  observacaoGeral?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  tipoCr?: string | null;
+
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'dataTransito deve estar em YYYY-MM-DD',
+  })
+  dataTransito?: string | null;
 }

@@ -59,6 +59,7 @@ export function PosImprocedenciaDialog({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!sentenca) return
     setErro(null)
     setSalvando(true)
     try {

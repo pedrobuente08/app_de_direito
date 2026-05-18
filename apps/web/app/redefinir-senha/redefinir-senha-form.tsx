@@ -95,7 +95,7 @@ export function RedefinirSenhaForm() {
             value={novaSenha}
             onChange={(ev) => setNovaSenha(ev.target.value)}
             minLength={MIN_SENHA}
-            className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none ring-[hsl(var(--ring))] focus:ring-2"
+            className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
             required
           />
         </div>
@@ -113,7 +113,7 @@ export function RedefinirSenhaForm() {
             value={confirmar}
             onChange={(ev) => setConfirmar(ev.target.value)}
             minLength={MIN_SENHA}
-            className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none ring-[hsl(var(--ring))] focus:ring-2"
+            className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
             required
           />
         </div>

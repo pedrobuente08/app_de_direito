@@ -417,6 +417,7 @@ export type Audiencia = {
     qualidadeCaso?: string | null
     login?: string | null
   }
+  escritorioAdversarioId?: string | null
   /** Nome canónico do escritório adversário (tabela `escritorio_adversario`). */
   escritorioAdversarioNome?: string | null
 }

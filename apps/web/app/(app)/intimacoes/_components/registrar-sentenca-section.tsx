@@ -31,7 +31,7 @@ type Props = {
 }
 
 function normResultado(r: string): string {
-  return r.normalize('NFD').replace(/\p{M}/gu, '').trim().toUpperCase()
+  return r.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
 }
 
 function isPrimeiroGrau(grau: string): boolean {

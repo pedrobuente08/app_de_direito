@@ -42,6 +42,7 @@ export function NovaPendenciaDialog({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!processo) return
     if (!tipo.trim()) {
       setErro('Informe o tipo da pendência.')
       return

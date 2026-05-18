@@ -31,6 +31,8 @@ export const pendencia = pgTable(
     origem: varchar('origem', { length: 20 })
       .notNull()
       .default('MANUAL_INTIMACOES'),
+    fila: varchar('fila', { length: 30 }),
+    resultado: varchar('resultado', { length: 30 }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),

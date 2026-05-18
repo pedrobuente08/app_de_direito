@@ -57,7 +57,7 @@ export function CadastroEscritorioForm() {
           autoComplete="organization"
           value={nomeEscritorio}
           onChange={(ev) => setNomeEscritorio(ev.target.value)}
-          className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none ring-[hsl(var(--ring))] focus:ring-2"
+          className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
           required
           minLength={2}
           maxLength={200}
@@ -79,7 +79,7 @@ export function CadastroEscritorioForm() {
           autoComplete="off"
           value={cnpj}
           onChange={(ev) => setCnpj(ev.target.value)}
-          className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none ring-[hsl(var(--ring))] focus:ring-2"
+          className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
           placeholder="Somente números ou com pontuação"
         />
       </div>
@@ -102,7 +102,7 @@ export function CadastroEscritorioForm() {
               autoComplete="name"
               value={nomeAdmin}
               onChange={(ev) => setNomeAdmin(ev.target.value)}
-              className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none ring-[hsl(var(--ring))] focus:ring-2"
+              className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
               required
               minLength={2}
               maxLength={200}
@@ -121,7 +121,7 @@ export function CadastroEscritorioForm() {
               autoComplete="email"
               value={email}
               onChange={(ev) => setEmail(ev.target.value)}
-              className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none ring-[hsl(var(--ring))] focus:ring-2"
+              className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
               required
             />
           </div>
@@ -138,7 +138,7 @@ export function CadastroEscritorioForm() {
               autoComplete="new-password"
               value={senha}
               onChange={(ev) => setSenha(ev.target.value)}
-              className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none ring-[hsl(var(--ring))] focus:ring-2"
+              className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
               required
               minLength={8}
             />
@@ -156,7 +156,7 @@ export function CadastroEscritorioForm() {
               autoComplete="new-password"
               value={senhaConfirm}
               onChange={(ev) => setSenhaConfirm(ev.target.value)}
-              className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none ring-[hsl(var(--ring))] focus:ring-2"
+              className="mt-1 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
               required
               minLength={8}
             />

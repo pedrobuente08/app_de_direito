@@ -8,6 +8,11 @@ export * from './processo';
 export * from './extracao-pendente';
 export * from './pendencia';
 export * from './escritorio-adversario';
+export * from './advogado-adversario';
+export * from './vara-documento-regra';
+export * from './processo-reprotocolo';
+export * from './notificacao';
+export * from './feriado';
 export * from './audiencia';
 export * from './audiencia-ausente';
 export * from './comunicacao';
@@ -26,6 +31,14 @@ import { audienciaAusente } from './audiencia-ausente';
 import { comarca } from './comarca';
 import { comunicacao } from './comunicacao';
 import { escritorio } from './escritorio';
+import {
+  advogadoAdversario,
+  advogadoAdversarioAlias,
+} from './advogado-adversario';
+import { feriado } from './feriado';
+import { notificacao } from './notificacao';
+import { processoReprotocolo } from './processo-reprotocolo';
+import { varaDocumentoRegra } from './vara-documento-regra';
 import { escritorioAdversario, escritorioAdversarioAlias } from './escritorio-adversario';
 import { extracaoPendente } from './extracao-pendente';
 import { faseHistorico } from './fase-historico';
@@ -60,6 +73,12 @@ export const schema = {
   pendenciaProblema,
   escritorioAdversario,
   escritorioAdversarioAlias,
+  advogadoAdversario,
+  advogadoAdversarioAlias,
+  varaDocumentoRegra,
+  processoReprotocolo,
+  notificacao,
+  feriado,
   audiencia,
   audienciaHistorico,
   audienciaLixeira,

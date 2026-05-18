@@ -25,7 +25,7 @@ type Props = {
 }
 
 function norm(s: string): string {
-  return s.normalize('NFD').replace(/\p{M}/gu, '').trim().toUpperCase()
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
 }
 
 export function RegistrarSegundoGrauDialog({
@@ -89,6 +89,7 @@ export function RegistrarSegundoGrauDialog({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!item) return
     setSalvando(true)
     setErro(null)
     try {

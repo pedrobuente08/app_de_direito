@@ -35,6 +35,13 @@ export const processoProcedente = pgTable('processo_procedente', {
   dataEstimadaRecebimento: date('data_estimada_recebimento'),
   valorRecebido: numeric('valor_recebido', { precision: 12, scale: 2 }),
   dataRecebimento: date('data_recebimento'),
+  dataProtocoloAlvara: date('data_protocolo_alvara'),
+  dataAlvaraExpedido: date('data_alvara_expedido'),
+  dataPeticaoCumprimento: date('data_peticao_cumprimento'),
+  dataPenhoraRealizada: date('data_penhora_realizada'),
+  valorPenhorado: numeric('valor_penhorado', { precision: 12, scale: 2 }),
+  penhoraOrigem: varchar('penhora_origem', { length: 50 }),
+  observacoesExecucao: text('observacoes_execucao'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),
