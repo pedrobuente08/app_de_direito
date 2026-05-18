@@ -26,7 +26,6 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Gestão',
     items: [
       { href: '/importacao', label: 'Importação PDF' },
-      { href: '/telemarketing', label: 'Telemarketing' },
       { href: '/comunicacoes', label: 'Comunicações Órfãs' },
     ],
   },
@@ -54,7 +53,6 @@ export const ROUTE_LABELS: Record<string, string> = {
   '/agenda': 'Agenda',
   '/pendencias': 'Pendências',
   '/importacao': 'Importação PDF',
-  '/telemarketing': 'Telemarketing',
   '/comunicacoes': 'Comunicações Órfãs',
   '/dashboards': 'Dashboards',
   '/dashboards/varas': 'Varas & Teses',
@@ -71,7 +69,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   '/migracao-procedentes': 'Migração planilha',
 }
 
-const TELEMARKETING_HREFS = new Set(['/telemarketing', '/pendencias'])
+const TELEMARKETING_HREFS = new Set(['/pendencias'])
 
 export function navSectionsForPerfil(perfil: string | undefined): NavSection[] {
   if (perfil === 'telemarketing') {
@@ -89,10 +87,7 @@ export function navSectionsForPerfil(perfil: string | undefined): NavSection[] {
 
 export function telemarketingAllowedPath(pathname: string): boolean {
   return (
-    pathname === '/telemarketing' ||
-    pathname.startsWith('/telemarketing/') ||
-    pathname === '/pendencias' ||
-    pathname.startsWith('/pendencias/')
+    pathname === '/pendencias' || pathname.startsWith('/pendencias/')
   )
 }
 

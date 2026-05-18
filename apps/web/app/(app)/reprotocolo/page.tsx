@@ -50,7 +50,7 @@ export default function ReprotocoloPage() {
     } finally {
       setLoading(false)
     }
-  }, [filtro, toast])
+  }, [filtro])
 
   useEffect(() => {
     void load()
@@ -138,9 +138,9 @@ export default function ReprotocoloPage() {
         onChange={setFiltro}
       />
 
-      {loading ? (
+      {loading && lista.length === 0 ? (
         <p className="text-sm text-[var(--color-text-secondary)]">Carregando…</p>
-      ) : lista.length === 0 ? (
+      ) : !loading && lista.length === 0 ? (
         <p className="text-sm text-[var(--color-text-secondary)]">
           Nenhum processo em reprotocolo. Registre extinção sem mérito em{' '}
           <Link href="/intimacoes" className="text-[var(--color-brand)] hover:underline">

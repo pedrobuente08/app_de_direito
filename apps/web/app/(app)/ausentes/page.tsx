@@ -30,7 +30,7 @@ export default function Ausentes6mPage() {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [])
 
   useEffect(() => {
     load()

@@ -192,12 +192,6 @@ export function AgendaCard({ audiencia: a, readOnly, onUpdated }: Props) {
               Marcar como REALIZADA
             </Btn>
           )}
-          <a
-            href="/audiencias"
-            className="inline-flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
-          >
-            Ver em Audiências
-          </a>
         </div>
       </article>
 

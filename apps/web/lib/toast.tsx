@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning'
 
@@ -40,7 +40,10 @@ export function useToast() {
   const info = useCallback((msg: string) => add(msg, 'info'), [add])
   const warning = useCallback((msg: string) => add(msg, 'warning'), [add])
 
-  return { toasts, success, error, info, warning, dismiss }
+  return useMemo(
+    () => ({ toasts, success, error, info, warning, dismiss }),
+    [toasts, success, error, info, warning, dismiss],
+  )
 }
 
 export function ToastContainer({

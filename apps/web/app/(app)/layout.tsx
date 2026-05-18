@@ -6,6 +6,7 @@ import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { PopUpHabilitacaoAdversaria } from '@/components/popups'
 import { Btn } from '@/components/ui/btn'
+import { IconBell } from '@/components/ui/icon-bell'
 import { getAuthMe } from '@/lib/api'
 import { LogoutButton } from './logout-button'
 import {
@@ -53,7 +54,7 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (perfil === 'telemarketing' && !telemarketingAllowedPath(pathname)) {
-      router.replace('/telemarketing')
+      router.replace('/pendencias')
     }
   }, [perfil, pathname, router])
 
@@ -78,12 +79,7 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
           >
             C
           </span>
-          <div className="min-w-0">
-            <p className="truncate text-base font-extrabold tracking-tight">CONECTAR</p>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)]">
-              LEAN · M0
-            </p>
-          </div>
+          <p className="min-w-0 truncate text-base font-extrabold tracking-tight">CONECTAR</p>
         </div>
 
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2">
@@ -157,14 +153,12 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
 
         <button
           type="button"
-          className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-[var(--color-bg-hover)]"
+          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
           title="Notificações"
           aria-label="Notificações"
         >
-          <span className="text-lg" aria-hidden>
-            🔔
-          </span>
-          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[var(--color-bg-surface)]" />
+          <IconBell />
+          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[var(--urgencia-vencida-text)] ring-2 ring-[var(--color-bg-surface)]" />
         </button>
 
         <span
