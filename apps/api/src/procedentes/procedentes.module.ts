@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
+import { EncadeamentosModule } from '../encadeamentos/encadeamentos.module';
 import { FaseDerivacaoModule } from '../fase-derivacao/fase-derivacao.module';
 import { ProcedentesController } from './procedentes.controller';
 import { ProcedentesService } from './procedentes.service';
 
 @Module({
-  imports: [FaseDerivacaoModule],
+  imports: [FaseDerivacaoModule, EncadeamentosModule],
   controllers: [ProcedentesController],
   providers: [ProcedentesService],
   exports: [ProcedentesService],

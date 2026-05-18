@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { and, desc, eq } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import { sentenca } from '../db/schema/sentenca';
+import { EncadeamentosQueueService } from '../encadeamentos/encadeamentos-queue.service';
 import { ProcessosService } from '../processos/processos.service';
 import type { CreateSentencaBodyDto } from './dto/create-sentenca-body.dto';
 import { validarValorSentenca } from './sentenca-validacao';
@@ -11,6 +12,7 @@ export class SentencasService {
   constructor(
     private readonly drizzle: DrizzleService,
     private readonly processos: ProcessosService,
+    private readonly encadeamentos: EncadeamentosQueueService,
   ) {}
 
   async listarPorProcesso(escritorioId: string, processoId: string) {
@@ -61,6 +63,14 @@ export class SentencasService {
       escritorioId,
       dto.processoId,
     );
+
+    if (resultado.toUpperCase() === 'ACORDO') {
+      await this.encadeamentos.dispatch(escritorioId, 'acordo_homologado', {
+        processoId: dto.processoId,
+        observacao: dto.observacoes?.trim() || null,
+      });
+    }
+
     return row;
   }
 }

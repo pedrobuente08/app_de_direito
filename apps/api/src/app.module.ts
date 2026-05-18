@@ -20,7 +20,9 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { DrizzleModule } from './db/drizzle.module';
 import { EscritorioModule } from './escritorio/escritorio.module';
+import { EncadeamentosModule } from './encadeamentos/encadeamentos.module';
 import { EscritoriosAdversariosModule } from './escritorios-adversarios/escritorios-adversarios.module';
+import { JobsModule } from './jobs/jobs.module';
 import { ImprocedentesModule } from './improcedentes/improcedentes.module';
 import { HealthController } from './health.controller';
 import { ImportacaoModule } from './importacao/importacao.module';
@@ -67,6 +69,8 @@ const adminImports = process.env.PLATFORM_JWT_SECRET?.trim()
     ScheduleModule.forRoot(),
     ...bullRoot,
     WorkersModule,
+    EncadeamentosModule,
+    JobsModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60_000,

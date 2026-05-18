@@ -37,6 +37,7 @@ import { AudienciasService } from '../audiencias/audiencias.service';
 import { EscritoriosAdversariosService } from '../escritorios-adversarios/escritorios-adversarios.service';
 import { EscritorioService } from '../escritorio/escritorio.service';
 import { ReusService } from '../reus/reus.service';
+import { EncadeamentosQueueService } from '../encadeamentos/encadeamentos-queue.service';
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import { transicaoFasePermitida } from '../fase-derivacao/fase-transicoes';
 import type { EscritorioConfig } from '../db/schema/escritorio';
@@ -112,6 +113,7 @@ export class ProcessosService {
     private readonly escritoriosAdversarios: EscritoriosAdversariosService,
     private readonly audiencias: AudienciasService,
     private readonly faseDerivacao: FaseDerivacaoService,
+    private readonly encadeamentos: EncadeamentosQueueService,
     private readonly storage: StorageService,
     @Optional()
     @Inject(getQueueToken('pdf-extract'))
@@ -654,6 +656,17 @@ export class ProcessosService {
         dataAudiencia: atualizado.dataAudiencia,
         horaAudiencia: atualizado.horaAudiencia,
         tipoAudiencia: atualizado.tipoAudiencia,
+      });
+    }
+
+    const transitoAntes = antes.dataTransito;
+    if (
+      dto.dataTransito !== undefined &&
+      dto.dataTransito &&
+      !transitoAntes
+    ) {
+      await this.encadeamentos.dispatch(escritorioId, 'transito_em_julgado', {
+        processoId: id,
       });
     }
 

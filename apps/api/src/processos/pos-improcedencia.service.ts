@@ -14,7 +14,7 @@ import { sentenca } from '../db/schema/sentenca';
 import { EscritorioService } from '../escritorio/escritorio.service';
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import { FaseDerivada } from '../fase-derivacao/fase-derivacao.constants';
-import { PendenciasService } from '../pendencias/pendencias.service';
+import { EncadeamentosQueueService } from '../encadeamentos/encadeamentos-queue.service';
 import { ProcessosService } from './processos.service';
 import type { PosImprocedenciaDto } from './dto/pos-improcedencia.dto';
 
@@ -48,7 +48,7 @@ export class PosImprocedenciaService {
     private readonly drizzle: DrizzleService,
     private readonly processos: ProcessosService,
     private readonly escritorio: EscritorioService,
-    private readonly pendencias: PendenciasService,
+    private readonly encadeamentos: EncadeamentosQueueService,
     private readonly faseDerivacao: FaseDerivacaoService,
   ) {}
 
@@ -144,14 +144,9 @@ export class PosImprocedenciaService {
         });
       });
 
-      const limite = addDaysYmd(hojeYmd(), prazoElaborar);
-      await this.pendencias.criar(escritorioId, {
+      await this.encadeamentos.dispatch(escritorioId, 'improcedente_recorrer', {
         processoId,
-        tipo: 'ELABORAR RECURSO',
-        dataLimite: limite,
-        responsavel: dto.responsavel?.trim() || null,
         observacao: obs,
-        origem: 'MANUAL',
       });
     } else if (dto.decisao === 'NAO_RECORRER') {
       const prazoPag = addDaysYmd(sent.data, 15);

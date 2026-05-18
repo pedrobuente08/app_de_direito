@@ -6,6 +6,7 @@ import {
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
 import { DrizzleService } from '../db/drizzle.service';
+import { EncadeamentosQueueService } from '../encadeamentos/encadeamentos-queue.service';
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import { processo } from '../db/schema/processo';
 import {
@@ -59,6 +60,7 @@ export class ProcedentesService {
   constructor(
     private readonly drizzle: DrizzleService,
     private readonly faseDerivacao: FaseDerivacaoService,
+    private readonly encadeamentos: EncadeamentosQueueService,
   ) {}
 
   private isoDate(d: unknown): string | null {
@@ -338,6 +340,12 @@ export class ProcedentesService {
     if (dto.dataRecebimento !== undefined) {
       patch.dataRecebimento = dto.dataRecebimento;
     }
+    if (dto.dataProtocoloAlvara !== undefined) {
+      patch.dataProtocoloAlvara = dto.dataProtocoloAlvara;
+    }
+    if (dto.dataAlvaraExpedido !== undefined) {
+      patch.dataAlvaraExpedido = dto.dataAlvaraExpedido;
+    }
 
     if (!Object.keys(patch).length) {
       throw new BadRequestException('Informe ao menos um campo.');
@@ -374,6 +382,15 @@ export class ProcedentesService {
       processoId,
       user.userId,
     );
+
+    if (
+      dto.dataAlvaraExpedido &&
+      !procRow.dataAlvaraExpedido
+    ) {
+      await this.encadeamentos.dispatch(escritorioId, 'alvara_expedido', {
+        processoId,
+      });
+    }
 
     return this.obter(escritorioId, processoId);
   }

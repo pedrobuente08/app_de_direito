@@ -45,6 +45,7 @@ export class CreatePendenciaDto {
     'COMUNICA',
     'IMPORT',
     'MANUAL',
+    'ENCADEAMENTO',
   ])
   origem?: string;
 

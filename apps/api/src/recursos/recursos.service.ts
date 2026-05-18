@@ -10,6 +10,7 @@ import { processo } from '../db/schema/processo';
 import { processoProcedente } from '../db/schema/processo-procedente';
 import { sentenca } from '../db/schema/sentenca';
 import { FaseDerivada } from '../fase-derivacao/fase-derivacao.constants';
+import { EncadeamentosQueueService } from '../encadeamentos/encadeamentos-queue.service';
 import { ProcessosService } from '../processos/processos.service';
 import type { RegistrarSegundoGrauDto } from './dto/registrar-segundo-grau.dto';
 
@@ -28,6 +29,7 @@ export class RecursosService {
   constructor(
     private readonly drizzle: DrizzleService,
     private readonly processos: ProcessosService,
+    private readonly encadeamentos: EncadeamentosQueueService,
   ) {}
 
   /** Processos em recurso sem acórdão de 2º grau registrado. */
@@ -341,6 +343,13 @@ export class RecursosService {
       escritorioId,
       dto.processoId,
     );
+
+    if (cen === 'C' || cen === 'D') {
+      await this.encadeamentos.dispatch(escritorioId, 'procedente_reu_recorre', {
+        processoId: dto.processoId,
+        observacao: observacoes,
+      });
+    }
 
     const lista = await this.drizzle.db
       .select()

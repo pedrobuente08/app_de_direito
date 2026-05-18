@@ -49,6 +49,10 @@ export type EscritorioConfig = {
   tipos_pendencia?: string[];
   /** Fatores de provisão (%), ex.: 60, 85, 100. */
   fatores_provisao_pct?: number[];
+  /** Ativação por evento de encadeamento automático (default: ligado). */
+  encadeamentos?: Partial<Record<string, boolean>>;
+  /** Cálculo de prazos de pendências automáticas. */
+  prazo_processual_tipo?: 'DIAS_UTEIS' | 'CORRIDOS';
 };
 
 export const escritorio = pgTable('escritorio', {

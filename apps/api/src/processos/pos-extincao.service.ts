@@ -10,7 +10,7 @@ import { processoReprotocolo } from '../db/schema/processo-reprotocolo';
 import { sentenca } from '../db/schema/sentenca';
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import { FaseDerivada } from '../fase-derivacao/fase-derivacao.constants';
-import { PendenciasService } from '../pendencias/pendencias.service';
+import { EncadeamentosQueueService } from '../encadeamentos/encadeamentos-queue.service';
 import { ProcessosService } from './processos.service';
 import type { PosExtincaoDto } from './dto/pos-extincao.dto';
 
@@ -37,7 +37,7 @@ export class PosExtincaoService {
   constructor(
     private readonly drizzle: DrizzleService,
     private readonly processos: ProcessosService,
-    private readonly pendencias: PendenciasService,
+    private readonly encadeamentos: EncadeamentosQueueService,
     private readonly faseDerivacao: FaseDerivacaoService,
   ) {}
 
@@ -102,15 +102,11 @@ export class PosExtincaoService {
           },
         });
 
-      await this.pendencias.criar(escritorioId, {
-        processoId,
-        tipo: 'ANALISE REPROTOCOLO',
-        dataLimite: addDaysYmd(hoje, 7),
-        responsavel: 'ADV',
-        observacao: obs,
-        origem: 'MANUAL',
-        fila: 'ADV',
-      });
+      await this.encadeamentos.dispatch(
+        escritorioId,
+        'extinto_sem_merito_sem_custas',
+        { processoId, observacao: obs },
+      );
     } else if (dto.modalidade === 'COM_CUSTAS') {
       await this.drizzle.db
         .insert(processoReprotocolo)
@@ -136,15 +132,11 @@ export class PosExtincaoService {
           },
         });
 
-      await this.pendencias.criar(escritorioId, {
-        processoId,
-        tipo: 'PETICIONAR ISENCAO CUSTAS',
-        dataLimite: addDaysYmd(hoje, 15),
-        responsavel: 'ADV',
-        observacao: obs,
-        origem: 'MANUAL',
-        fila: 'ADV',
-      });
+      await this.encadeamentos.dispatch(
+        escritorioId,
+        'extinto_sem_merito_com_custas',
+        { processoId, observacao: obs },
+      );
     } else {
       await this.drizzle.db
         .update(processo)
@@ -154,15 +146,11 @@ export class PosExtincaoService {
         })
         .where(eq(processo.id, processoId));
 
-      await this.pendencias.criar(escritorioId, {
-        processoId,
-        tipo: 'ELABORAR RECURSO',
-        dataLimite: addDaysYmd(hoje, 10),
-        responsavel: 'ADV',
-        observacao: obs,
-        origem: 'MANUAL',
-        fila: 'ADV',
-      });
+      await this.encadeamentos.dispatch(
+        escritorioId,
+        'extinto_sem_merito_ma_fe',
+        { processoId, observacao: obs },
+      );
     }
 
     await this.faseDerivacao.aplicarAposMutacao(escritorioId, processoId);

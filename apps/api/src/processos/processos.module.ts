@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { EncadeamentosModule } from '../encadeamentos/encadeamentos.module';
 import { AudienciasModule } from '../audiencias/audiencias.module';
 import { EscritorioModule } from '../escritorio/escritorio.module';
 import { FaseDerivacaoModule } from '../fase-derivacao/fase-derivacao.module';
@@ -16,6 +17,7 @@ import { ProcessosWorkflowService } from './processos-workflow.service';
 
 @Module({
   imports: [
+    EncadeamentosModule,
     SkillModule,
     EscritorioModule,
     AudienciasModule,

@@ -13,7 +13,7 @@ import { sentenca } from '../db/schema/sentenca';
 import { EscritorioService } from '../escritorio/escritorio.service';
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import { FaseDerivada } from '../fase-derivacao/fase-derivacao.constants';
-import { PendenciasService } from '../pendencias/pendencias.service';
+import { EncadeamentosQueueService } from '../encadeamentos/encadeamentos-queue.service';
 import { ProcessosService } from './processos.service';
 import type { PosProcedenteParcialDto } from './dto/pos-procedente-parcial.dto';
 
@@ -41,7 +41,7 @@ export class PosProcedenteParcialService {
     private readonly drizzle: DrizzleService,
     private readonly processos: ProcessosService,
     private readonly escritorio: EscritorioService,
-    private readonly pendencias: PendenciasService,
+    private readonly encadeamentos: EncadeamentosQueueService,
     private readonly faseDerivacao: FaseDerivacaoService,
   ) {}
 
@@ -121,25 +121,11 @@ export class PosProcedenteParcialService {
 
       await ensureProcedente();
 
-      const prazoRecurso = config.prazo_elaborar_recurso_dias ?? 10;
-      await this.pendencias.criar(escritorioId, {
-        processoId,
-        tipo: 'ELABORAR RECURSO',
-        dataLimite: addDaysYmd(hoje, prazoRecurso),
-        responsavel: dto.responsavel?.trim() || 'ADV',
-        observacao: obs,
-        origem: 'MANUAL',
-        fila: 'ADV',
-      });
-      await this.pendencias.criar(escritorioId, {
-        processoId,
-        tipo: 'SOLICITAR DOC GRATUIDADE',
-        dataLimite: addDaysYmd(hoje, 5),
-        responsavel: 'TELEMARKETING',
-        observacao: obs,
-        origem: 'MANUAL',
-        fila: 'TELEMARKETING',
-      });
+      await this.encadeamentos.dispatch(
+        escritorioId,
+        'procedente_parcial_recorrer',
+        { processoId, observacao: obs },
+      );
     } else if (dto.decisao === 'NAO_RECORRER') {
       await db
         .update(processo)
