@@ -399,6 +399,7 @@ export async function getReus(): Promise<Reu[]> {
 export async function criarReu(payload: {
   nomeCanonico: string
   aliases: string[]
+  cnpj?: string | null
 }): Promise<Reu> {
   return apiFetch<Reu>('/reus', {
     method: 'POST',
@@ -409,7 +410,7 @@ export async function criarReu(payload: {
 
 export async function editarReu(
   id: string,
-  payload: Partial<{ nomeCanonico: string; aliases: string[] }>,
+  payload: Partial<{ nomeCanonico: string; aliases: string[]; cnpj: string | null }>,
 ): Promise<Reu> {
   return apiFetch<Reu>(`/reus/${id}`, {
     method: 'PATCH',

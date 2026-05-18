@@ -165,6 +165,7 @@ export type Reu = {
   id: string
   nomeCanonico: string
   aliases: string[]
+  cnpj?: string | null
   createdAt: string
 }
 
