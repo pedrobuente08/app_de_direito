@@ -25,6 +25,9 @@ import {
   ReadField,
   type ToastApi,
 } from './processo-editable'
+import { CentroObservacoes } from '@/components/drawers/centro-observacoes'
+import { PopUpSobrestamento } from '@/components/popups'
+import { Btn } from '@/components/ui/btn'
 import { RegistrarSentencaSection } from './registrar-sentenca-section'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -46,6 +49,7 @@ type Props = {
   toast: ToastApi
   readOnly?: boolean
   dropdowns?: DropdownsProcessoConfig | null
+  onNovaPendencia?: (p: Processo) => void
 }
 
 export function ProcessoDetailPanel({
@@ -54,8 +58,10 @@ export function ProcessoDetailPanel({
   toast,
   readOnly,
   dropdowns,
+  onNovaPendencia,
 }: Props) {
   const [current, setCurrent] = useState<Processo>(processo)
+  const [sobrestarOpen, setSobrestarOpen] = useState(false)
   const [sentencas, setSentencas] = useState<Sentenca[]>([])
   const [timelineLoading, setTimelineLoading] = useState(true)
   const [timelineError, setTimelineError] = useState<string | null>(null)
@@ -149,19 +155,33 @@ export function ProcessoDetailPanel({
       </aside>
 
       <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto overscroll-y-contain pb-4">
+        {!ro ? (
+          <div className="flex flex-wrap gap-2">
+            <Btn type="button" variant="default" onClick={() => setSobrestarOpen(true)}>
+              Sobrestar
+            </Btn>
+            {onNovaPendencia ? (
+              <Btn type="button" variant="default" onClick={() => onNovaPendencia(current)}>
+                Pendência manual
+              </Btn>
+            ) : null}
+          </div>
+        ) : null}
+
         <Section title="Observações">
-          <Field label="Observações gerais" className="col-span-2 sm:col-span-3">
+          <Field label="Observação geral" className="col-span-2 sm:col-span-3">
             {ro ? (
-              <ReadField value={current.observacoes} />
+              <ReadField value={current.observacaoGeral ?? current.observacoes} />
             ) : (
               <EditableTextarea
-                value={current.observacoes}
+                value={current.observacaoGeral ?? current.observacoes}
                 toast={toast}
-                rows={4}
-                onCommit={(v) => patch({ observacoes: v })}
+                rows={3}
+                onCommit={(v) => patch({ observacaoGeral: v, observacoes: v })}
               />
             )}
           </Field>
+          <CentroObservacoes processoId={current.id} />
         </Section>
 
         <Section title="Identificação">
@@ -316,6 +336,18 @@ export function ProcessoDetailPanel({
           </Field>
         </Section>
       </div>
+
+      <PopUpSobrestamento
+        open={sobrestarOpen}
+        processoId={current.id}
+        processoNumero={current.numero}
+        onClose={() => setSobrestarOpen(false)}
+        onSuccess={() => {
+          toast.success('Processo sobrestado.')
+          void patch({ statusProcesso: 'SOBRESTADO' })
+          setSobrestarOpen(false)
+        }}
+      />
     </div>
   )
 }

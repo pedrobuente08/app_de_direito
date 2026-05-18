@@ -69,11 +69,27 @@ export function ProcessosGrid({
       ),
     },
     {
+      id: 'reuTexto',
+      header: 'Réu',
+      size: 140,
+      cell: ({ row }) => (
+        <span className="block truncate text-sm">{row.original.reuTexto?.trim() || '—'}</span>
+      ),
+    },
+    {
       id: 'materia',
       header: 'Matéria',
-      size: 160,
+      size: 140,
       cell: ({ row }) => (
         <span className="block truncate text-sm">{row.original.materia?.trim() || '—'}</span>
+      ),
+    },
+    {
+      id: 'vara',
+      header: 'Vara',
+      size: 100,
+      cell: ({ row }) => (
+        <span className="block truncate text-sm">{row.original.vara?.trim() || '—'}</span>
       ),
     },
     {
@@ -107,10 +123,20 @@ export function ProcessosGrid({
     {
       id: 'ultimaSentencaResultado',
       header: 'Sentença',
-      size: 120,
+      size: 110,
       cell: ({ row }) => (
         <span className="block truncate text-sm">
           {row.original.ultimaSentencaResultado?.trim() || '—'}
+        </span>
+      ),
+    },
+    {
+      id: 'ultimaMovimentacaoDt',
+      header: 'Últ. mov.',
+      size: 100,
+      cell: ({ row }) => (
+        <span className="block truncate text-xs text-[var(--color-text-secondary)]">
+          {row.original.ultimaMovimentacaoDt?.slice(0, 10) ?? '—'}
         </span>
       ),
     },

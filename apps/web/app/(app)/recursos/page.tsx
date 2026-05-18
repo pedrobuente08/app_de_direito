@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { RegistrarSegundoGrauDialog } from '@/components/recursos/registrar-segundo-grau-dialog'
 import type { RecursoLinha } from '@/components/recursos/registrar-segundo-grau-dialog'
 import { getAuthMe, getRecursos, getRecursosResumo } from '@/lib/api'
+import { KpiCard } from '@/components/ui/kpi-card'
 import type { RecursoListaItem, RecursosResumo } from '@/lib/types'
 import { ToastContainer, useToast } from '@/lib/toast'
 
@@ -38,9 +39,10 @@ export default function RecursosPage() {
   }, [load])
 
   const cards = [
-    { label: 'Total em recurso', value: resumo?.totalEmRecurso ?? '—' },
-    { label: 'Manifestação ≤7d', value: resumo?.manifestacao7d ?? '—' },
-    { label: 'Aguardando acórdão', value: resumo?.aguardandoAcordao ?? '—' },
+    { label: 'Total em recurso', value: resumo?.totalEmRecurso ?? '—', variant: 'default' as const },
+    { label: 'Manifestação ≤7d', value: resumo?.manifestacao7d ?? '—', variant: 'warning' as const },
+    { label: 'Aguardando acórdão', value: resumo?.aguardandoAcordao ?? '—', variant: 'accent' as const },
+    { label: 'Com decisão', value: resumo?.comDecisao ?? '—', variant: 'success' as const },
   ]
 
   return (
@@ -54,17 +56,9 @@ export default function RecursosPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {cards.map((c) => (
-          <div
-            key={c.label}
-            className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-4 py-3"
-          >
-            <p className="text-xs text-[var(--color-text-secondary)]">{c.label}</p>
-            <p className="mt-1 text-2xl font-semibold text-[var(--color-text-primary)]">
-              {c.value}
-            </p>
-          </div>
+          <KpiCard key={c.label} label={c.label} value={c.value} variant={c.variant} />
         ))}
       </div>
 

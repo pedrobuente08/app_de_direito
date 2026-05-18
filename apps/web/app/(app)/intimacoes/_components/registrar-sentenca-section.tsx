@@ -1,7 +1,11 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { PosImprocedenciaDialog } from '@/components/sentencas/pos-improcedencia-dialog'
+import {
+  PopUpPosExtincao,
+  PopUpPosImprocedencia,
+  PopUpPosProcedenteParcial,
+} from '@/components/popups'
 import { createSentenca } from '@/lib/api'
 import { mergeSentencaOpcoes } from '@/lib/sentenca-opcoes'
 import {
@@ -50,6 +54,8 @@ export function RegistrarSentencaSection({
 }: Props) {
   const [open, setOpen] = useState(false)
   const [posImprocedencia, setPosImprocedencia] = useState<Sentenca | null>(null)
+  const [posExtincao, setPosExtincao] = useState<Sentenca | null>(null)
+  const [posParcial, setPosParcial] = useState<Sentenca | null>(null)
   const [saving, setSaving] = useState(false)
   const [grau, setGrau] = useState<string>('PRIMEIRO_GRAU')
   const [data, setData] = useState(() => new Date().toISOString().slice(0, 10))
@@ -88,11 +94,14 @@ export function RegistrarSentencaSection({
       setValor('')
       setResultado('')
       onCreated()
-      if (
-        normResultado(created.resultado) === 'IMPROCEDENTE' &&
-        isPrimeiroGrau(created.grau)
-      ) {
+      const res = normResultado(created.resultado)
+      if (!isPrimeiroGrau(created.grau)) return
+      if (res === 'IMPROCEDENTE') {
         setPosImprocedencia(created)
+      } else if (res.includes('EXTINTO')) {
+        setPosExtincao(created)
+      } else if (res === 'PARCIAL' || res.includes('PROCEDENTE')) {
+        setPosParcial(created)
       }
     } catch (e) {
       toast.error((e as Error).message)
@@ -233,7 +242,7 @@ export function RegistrarSentencaSection({
         </>
       )}
 
-      <PosImprocedenciaDialog
+      <PopUpPosImprocedencia
         open={!!posImprocedencia}
         processoId={processoId}
         processoNumero={processoNumero}
@@ -241,6 +250,28 @@ export function RegistrarSentencaSection({
         onClose={() => setPosImprocedencia(null)}
         onSuccess={() => {
           toast.success('Decisão pós-improcedência registrada.')
+          onCreated()
+        }}
+      />
+      <PopUpPosExtincao
+        open={!!posExtincao}
+        processoId={processoId}
+        processoNumero={processoNumero}
+        sentenca={posExtincao}
+        onClose={() => setPosExtincao(null)}
+        onSuccess={() => {
+          toast.success('Fluxo pós-extinção aplicado.')
+          onCreated()
+        }}
+      />
+      <PopUpPosProcedenteParcial
+        open={!!posParcial}
+        processoId={processoId}
+        processoNumero={processoNumero}
+        sentenca={posParcial}
+        onClose={() => setPosParcial(null)}
+        onSuccess={() => {
+          toast.success('Decisão pós-procedente parcial registrada.')
           onCreated()
         }}
       />

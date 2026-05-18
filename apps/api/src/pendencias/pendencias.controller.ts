@@ -14,6 +14,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ThrottlePresets } from '../common/throttle-presets';
 import { Roles } from '../common/metadata';
 import { CumprirPendenciaDto } from './dto/cumprir-pendencia.dto';
+import { EncerrarPendenciaDto } from './dto/encerrar-pendencia.dto';
 import { CreatePendenciaDto } from './dto/create-pendencia.dto';
 import { ListPendenciasQueryDto } from './dto/list-pendencias.query.dto';
 import { UpdatePendenciaDto } from './dto/update-pendencia.dto';
@@ -65,6 +66,17 @@ export class PendenciasController {
     @Body() dto: CumprirPendenciaDto,
   ) {
     return this.pendencias.cumprir(user.escritorioId, id, dto);
+  }
+
+  @Post(':id/encerrar')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.pendenciasWrite)
+  encerrar(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: EncerrarPendenciaDto,
+  ) {
+    return this.pendencias.encerrar(user.escritorioId, id, dto);
   }
 
   /**

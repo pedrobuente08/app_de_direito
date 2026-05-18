@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { PopUpPosPendencia } from '@/components/popups'
 import {
   criarPendencia,
-  cumprirPendencia,
   getPendencias,
   getPendenciasResumo,
 } from '@/lib/api'
@@ -51,7 +51,7 @@ export default function PendenciasPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<Form>(FORM_VAZIO)
   const [saving, setSaving] = useState(false)
-  const [cumprindo, setCumprindo] = useState<string | null>(null)
+  const [pendenciaEncerrar, setPendenciaEncerrar] = useState<Pendencia | null>(null)
   const [resumo, setResumo] = useState<PendenciasResumo | null>(null)
   const [filtroOrigem, setFiltroOrigem] = useState('')
   const toast = useToast()
@@ -104,24 +104,6 @@ export default function PendenciasPage() {
     }
   }
 
-  async function handleCumprir(id: string) {
-    const motivo = window.prompt('Motivo do cumprimento (obrigatório):')
-    if (motivo == null) return
-    if (!motivo.trim()) {
-      toast.error('Informe o motivo do cumprimento.')
-      return
-    }
-    setCumprindo(id)
-    try {
-      await cumprirPendencia(id, { motivoCumprimento: motivo.trim() })
-      toast.success('Pendência cumprida.')
-      load()
-    } catch (e) {
-      toast.error((e as Error).message)
-    } finally {
-      setCumprindo(null)
-    }
-  }
 
   return (
     <div className="animate-fade-in-up">
@@ -261,9 +243,12 @@ export default function PendenciasPage() {
                       <span className="rounded-full bg-[var(--urgencia-normal-bg)] px-2 py-0.5 text-xs text-[var(--urgencia-normal-text)]">{p.status}</span>
                     </td>
                     <td className="px-4 py-2.5 text-right">
-                      <button onClick={() => handleCumprir(p.id)} disabled={cumprindo === p.id}
-                        className="text-xs text-[var(--color-brand)] hover:underline disabled:opacity-50">
-                        {cumprindo === p.id ? 'Cumprindo…' : 'Cumprir'}
+                      <button
+                        type="button"
+                        onClick={() => setPendenciaEncerrar(p)}
+                        className="text-xs text-[var(--color-brand)] hover:underline"
+                      >
+                        Encerrar
                       </button>
                     </td>
                   </tr>
@@ -273,6 +258,16 @@ export default function PendenciasPage() {
           </table>
         </div>
       )}
+
+      <PopUpPosPendencia
+        open={!!pendenciaEncerrar}
+        pendencia={pendenciaEncerrar}
+        onClose={() => setPendenciaEncerrar(null)}
+        onSuccess={() => {
+          toast.success('Pendência encerrada.')
+          load()
+        }}
+      />
 
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
     </div>

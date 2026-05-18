@@ -47,4 +47,9 @@ export class CreatePendenciaDto {
     'MANUAL',
   ])
   origem?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  fila?: string | null;
 }

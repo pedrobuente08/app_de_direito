@@ -7,7 +7,9 @@ import { EscritoriosAdversariosModule } from '../escritorios-adversarios/escrito
 import { ReusModule } from '../reus/reus.module';
 import { SkillModule } from '../skill/skill.module';
 import { ExtracaoPendenteController } from './extracao-pendente.controller';
+import { PosExtincaoService } from './pos-extincao.service';
 import { PosImprocedenciaService } from './pos-improcedencia.service';
+import { PosProcedenteParcialService } from './pos-procedente-parcial.service';
 import { ProcessosController } from './processos.controller';
 import { ProcessosService } from './processos.service';
 import { ProcessosWorkflowService } from './processos-workflow.service';
@@ -26,6 +28,8 @@ import { ProcessosWorkflowService } from './processos-workflow.service';
   providers: [
     ProcessosService,
     PosImprocedenciaService,
+    PosExtincaoService,
+    PosProcedenteParcialService,
     ProcessosWorkflowService,
   ],
   exports: [ProcessosService, ProcessosWorkflowService],

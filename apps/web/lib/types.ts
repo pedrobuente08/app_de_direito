@@ -29,7 +29,9 @@ export type Processo = {
   statusAudiencia?: string | null
   ultimaMovimentacaoDt?: string | null
   ultimaMovimentacaoTipo?: string | null
+  tipoCr?: string | null
   observacoes?: string | null
+  observacaoGeral?: string | null
   requerConferencia: boolean
   createdAt: string
   updatedAt?: string
@@ -61,6 +63,8 @@ export type PatchProcessoPayload = Partial<{
   ultimaMovimentacaoTipo: string | null
   requerConferencia: boolean
   observacoes: string | null
+  observacaoGeral: string | null
+  tipoCr: string | null
 }>
 
 export type Sentenca = {
@@ -257,6 +261,39 @@ export type ProcedentesResumo = {
   alvara60d: number
 }
 
+export type ObservacaoItem = {
+  fonte: string
+  texto: string | null
+  dataRef: string | null
+}
+
+export type ReprotocoloResumo = {
+  total: number
+  porSubEstado: Record<string, number>
+  aRevisitarSemana: number
+}
+
+export type ReprotocoloLinha = {
+  reprotocolo: {
+    processoId: string
+    subEstado: string | null
+    motivoExtincao: string | null
+    modalidadeExtincao: string | null
+    dataExtincao: string | null
+    dataIsencaoResultado: string | null
+    dataReprotocolo: string | null
+    processoNovoId: string | null
+    observacoes: string | null
+  }
+  processo: {
+    id: string
+    numero: string
+    clienteNome: string | null
+    reuTexto: string | null
+    faseAtual: string | null
+  }
+}
+
 export type PendenciasResumo = {
   total: number
   vencidos: number
@@ -274,6 +311,40 @@ export type PosImprocedenciaPayload = {
   observacao?: string | null
   responsavel?: string | null
   prazoDias?: number
+}
+
+export type PosExtincaoPayload = {
+  sentencaId: string
+  modalidade: 'SEM_CUSTAS' | 'COM_CUSTAS' | 'COM_MA_FE'
+  motivo: string
+  observacao?: string | null
+}
+
+export type PosProcedenteParcialPayload = {
+  sentencaId: string
+  decisao: 'RECORRER_PARA_MAJORAR' | 'NAO_RECORRER' | 'AVALIAR'
+  valorConcedido?: string | null
+  valorPedido?: string | null
+  observacao?: string | null
+  responsavel?: string | null
+  prazoDias?: number
+}
+
+export type EncerrarPendenciaPayload = {
+  resultado:
+    | 'CUMPRIDA'
+    | 'NAO_CUMPRIDA'
+    | 'SEM_EXITO'
+    | 'AUTOR_FALECIDO'
+    | 'DEIXOU_DE_RESPONDER'
+  motivo?: string | null
+  observacao?: string | null
+  proximaAcao?: string | null
+}
+
+export type SobrestarProcessoPayload = {
+  motivo: string
+  sobrestadoDesde: string
 }
 
 export type EscritorioAdversario = {

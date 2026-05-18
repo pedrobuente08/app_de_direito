@@ -9,9 +9,10 @@ import {
   getProcedentesResumo,
   sincronizarProcedentesEmFalta,
 } from '@/lib/api'
-import type { ProcedentesResumo } from '@/lib/types'
+import { FamiliaTabs } from '@/components/ui/familia-tabs'
+import { KpiCard } from '@/components/ui/kpi-card'
+import type { Procedente, ProcedentesResumo } from '@/lib/types'
 import { ToastContainer, useToast } from '@/lib/toast'
-import type { Procedente } from '@/lib/types'
 
 const FAMILIAS = [
   { value: 'AGUARDAR_TRANSITO', label: 'Aguardar trânsito', bg: 'var(--familia-aguardar-transito-bg)', text: 'var(--familia-aguardar-transito-text)' },
@@ -164,26 +165,37 @@ export default function ProcedentesPage() {
         )}
       </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {[
-          { label: 'Total ativos', value: resumo?.totalAtivos, fam: '' },
-          { label: 'Ação imediata', value: resumo?.acaoImediata, fam: 'PEND_INTERNA' },
-          { label: 'Aguardando', value: resumo?.aguardando, fam: 'AGUARDAR_TRANSITO' },
-          { label: 'Encerrado 30d', value: resumo?.encerrado30d, fam: 'ENCERRADO' },
-          { label: 'Sem visto 30d', value: resumo?.semVisto30d, fam: '' },
-          { label: 'Alvará >60d', value: resumo?.alvara60d, fam: '' },
+          { label: 'Total ativos', value: resumo?.totalAtivos, fam: '', variant: 'default' as const },
+          { label: 'Ação imediata', value: resumo?.acaoImediata, fam: 'PEND_INTERNA', variant: 'danger' as const },
+          { label: 'Aguardando', value: resumo?.aguardando, fam: 'AGUARDAR_TRANSITO', variant: 'warning' as const },
+          { label: 'Encerrado 30d', value: resumo?.encerrado30d, fam: 'ENCERRADO', variant: 'success' as const },
+          { label: 'Sem visto 30d', value: resumo?.semVisto30d, fam: '', variant: 'warning' as const },
+          { label: 'Alvará >60d', value: resumo?.alvara60d, fam: '', variant: 'danger' as const },
         ].map((c) => (
-          <button
+          <KpiCard
             key={c.label}
-            type="button"
+            label={c.label}
+            value={c.value ?? '—'}
+            variant={c.variant}
             onClick={() => setFiltroFamilia(c.fam)}
-            className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-2 py-2 text-left text-xs hover:bg-[var(--color-bg-hover)]"
-          >
-            <p className="text-[var(--color-text-secondary)]">{c.label}</p>
-            <p className="text-lg font-semibold">{c.value ?? '—'}</p>
-          </button>
+          />
         ))}
       </div>
+
+      <FamiliaTabs
+        tabs={[
+          { id: '', label: 'Todas', count: procedentes.length },
+          ...FAMILIAS.map((f) => ({
+            id: f.value,
+            label: f.label,
+            count: procedentes.filter((p) => p.familiaSituacao === f.value).length,
+          })),
+        ]}
+        activeId={filtroFamilia}
+        onChange={setFiltroFamilia}
+      />
 
       {loading ? (
         <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-9 animate-pulse rounded bg-[var(--color-bg-subtle)]" />)}</div>

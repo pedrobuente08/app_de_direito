@@ -25,6 +25,8 @@ import type {
   Usuario,
 } from '@/lib/types'
 import { NovaPendenciaDialog } from '@/components/pendencias/nova-pendencia-dialog'
+import { FilterBar, FilterField, filterControlClass } from '@/components/ui/filter-bar'
+import { KpiCard } from '@/components/ui/kpi-card'
 import { PdfRevisaoModal, type PdfRevisaoCatalogo } from './_components/pdf-revisao-modal'
 import { ProcessosGrid } from './_components/processos-grid'
 import { ProcessoModal } from './_components/processo-modal'
@@ -381,113 +383,101 @@ export default function IntimacoesPage() {
 
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {cards.map((c) => (
-          <button
+          <KpiCard
             key={c.id}
-            type="button"
+            label={c.label}
+            value={c.value ?? '—'}
+            variant={c.id === 'acao' ? 'danger' : c.id === 'avaliar' ? 'warning' : 'default'}
             onClick={() => aplicarCard(c.id)}
-            className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-3 py-2.5 text-left hover:border-[var(--color-brand)] hover:bg-[var(--color-bg-hover)]"
-          >
-            <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-secondary)]">
-              {c.label}
-            </p>
-            <p className="mt-1 text-xl font-semibold text-[var(--color-text-primary)]">
-              {c.value ?? '—'}
-            </p>
-          </button>
+          />
         ))}
       </div>
 
       {filtrosAbertos && (
-        <div className="mb-4 flex flex-wrap items-end gap-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
-          <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-            Nº processo
+        <FilterBar>
+          <FilterField label="Nº processo">
             <input
               value={draftNumero}
               onChange={(e) => setDraftNumero(e.target.value)}
               placeholder="Contém…"
-              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+              className={filterControlClass}
             />
-          </label>
-          <label className="flex min-w-[140px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-            Cliente
+          </FilterField>
+          <FilterField label="Cliente" className="min-w-[140px]">
             <input
               value={draftCliente}
               onChange={(e) => setDraftCliente(e.target.value)}
               placeholder="Nome…"
-              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+              className={filterControlClass}
             />
-          </label>
-          <label className="flex min-w-[120px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-            Vara
+          </FilterField>
+          <FilterField label="Vara">
             <input
               value={draftVara}
               onChange={(e) => setDraftVara(e.target.value)}
               placeholder="Contém…"
-              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+              className={filterControlClass}
             />
-          </label>
-          <label className="flex min-w-[140px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-            Situação
+          </FilterField>
+          <FilterField label="Situação" className="min-w-[140px]">
             <input
               value={draftQualidadeCaso}
               onChange={(e) => setDraftQualidadeCaso(e.target.value)}
               placeholder="Ex.: BOA, RUIM…"
-              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+              className={filterControlClass}
             />
-          </label>
-          <label className="flex min-w-[160px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-            Sentença
+          </FilterField>
+          <FilterField label="Sentença" className="min-w-[160px]">
             <select
               value={draftFilterUltimaSentenca}
               onChange={(e) =>
                 setDraftFilterUltimaSentenca(e.target.value as '' | 'BOA' | 'RUIM' | 'SEM')
               }
-              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+              className={filterControlClass}
             >
               <option value="">Todos</option>
               <option value="BOA">Favorável ao autor</option>
               <option value="RUIM">Favorável ao réu</option>
               <option value="SEM">Sem sentença</option>
             </select>
-          </label>
-          <label className="flex min-w-[120px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-            Status
+          </FilterField>
+          <FilterField label="Status">
             <select
               value={draftStatusProcesso}
               onChange={(e) => setDraftStatusProcesso(e.target.value)}
-              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
+              className={filterControlClass}
             >
               <option value="">Ativos (padrão)</option>
               <option value="ATIVO">ATIVO</option>
               <option value="SOBRESTADO">SOBRESTADO</option>
               <option value="ARQUIVADO">ARQUIVADO</option>
             </select>
-          </label>
-          <label className="flex min-w-[140px] flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-            Fase
+          </FilterField>
+          <FilterField label="Fase" className="min-w-[140px]">
             <input
               value={draftFaseAtual}
               onChange={(e) => setDraftFaseAtual(e.target.value)}
               placeholder="Contém…"
-              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
+              className={filterControlClass}
             />
-          </label>
-          <label className="flex items-end gap-2 pb-1.5 text-xs text-[var(--color-text-secondary)]">
-            <input
-              type="checkbox"
-              checked={draftEmAvaliacao}
-              onChange={(e) => setDraftEmAvaliacao(e.target.checked)}
-            />
-            Em avaliação (recurso)
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-            Ordenar por
+          </FilterField>
+          <FilterField label="Avaliação" className="min-w-[160px]">
+            <label className="flex min-h-[34px] items-center gap-2 text-sm text-[var(--color-text-primary)]">
+              <input
+                type="checkbox"
+                checked={draftEmAvaliacao}
+                onChange={(e) => setDraftEmAvaliacao(e.target.checked)}
+              />
+              Em avaliação (recurso)
+            </label>
+          </FilterField>
+          <FilterField label="Ordenar por">
             <select
               value={draftSortField}
               onChange={(e) =>
                 setDraftSortField(e.target.value as (typeof SORT_OPTIONS)[number]['value'])
               }
-              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+              className={filterControlClass}
             >
               {SORT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -495,18 +485,17 @@ export default function IntimacoesPage() {
                 </option>
               ))}
             </select>
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
-            Direção
+          </FilterField>
+          <FilterField label="Direção">
             <select
               value={draftSortOrder}
               onChange={(e) => setDraftSortOrder(e.target.value as 'asc' | 'desc')}
-              className="rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+              className={filterControlClass}
             >
               <option value="desc">Decrescente</option>
               <option value="asc">Crescente</option>
             </select>
-          </label>
+          </FilterField>
           <button
             type="button"
             onClick={aplicarFiltros}
@@ -515,7 +504,7 @@ export default function IntimacoesPage() {
           >
             Aplicar filtros
           </button>
-        </div>
+        </FilterBar>
       )}
 
       {!readOnly && <ReuNormalizacao processos={processos} onNormalized={load} />}
@@ -592,6 +581,10 @@ export default function IntimacoesPage() {
           toast={toast}
           readOnly={readOnly}
           dropdowns={dropdowns}
+          onNovaPendencia={(p) => {
+            setSelectedProcesso(null)
+            setPendenciaProcesso(p)
+          }}
         />
       )}
 

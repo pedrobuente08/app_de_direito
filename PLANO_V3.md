@@ -593,20 +593,20 @@ Cada job cria notificações em `notificacao` (canal IN_APP) + dispara email (ca
 - [x] 1.5 Novos endpoints de workflow — `ProcessosWorkflowService` + rotas sobrestar/dessobrestar/justica-gratuita/observacoes/avaliacao-recurso
 
 ### Sprint 3 — Pop-ups
-- [ ] 2.1 PopUpPosAudiencia + endpoint finalizar-audiencia
-- [ ] 2.2 PopUpPosImprocedencia + endpoint pos-improcedencia
-- [ ] 2.3 PopUpPosProcedenteParcial
-- [ ] 2.4 PopUpPosExtincao + endpoint pos-extincao
-- [ ] 2.5 PopUpPosPendencia + endpoint cumprir-pendencia
-- [ ] 2.6 PopUpHabilitacaoAdversaria
-- [ ] 2.7 PopUpSobrestamento
+- [x] 2.1 PopUpPosAudiencia — `components/popups/pos-audiencia.tsx` + `POST /audiencias/:id/finalizar`
+- [x] 2.2 PopUpPosImprocedencia — `components/popups/pos-improcedencia.tsx` + endpoint existente
+- [x] 2.3 PopUpPosProcedenteParcial — `components/popups/pos-procedente-parcial.tsx` + `POST /processos/:id/pos-procedente-parcial`
+- [x] 2.4 PopUpPosExtincao — `components/popups/pos-extincao.tsx` + `POST /processos/:id/pos-extincao`
+- [x] 2.5 PopUpPosPendencia — `components/popups/pos-pendencia.tsx` + `POST /pendencias/:id/encerrar`
+- [x] 2.6 PopUpHabilitacaoAdversaria — header layout + CRUD advogado/banca
+- [x] 2.7 PopUpSobrestamento — `components/popups/sobrestamento.tsx` + workflow sobrestar (integrar no drawer quando necessário)
 
 ### Sprint 4 — Telas operacionais
-- [ ] 3.x INTIMAÇÕES: KPI cards + barra filtros + grid (labels canônicos) + drawer com Centro de Obs
-- [ ] 4.x PROCEDENTES: familia tabs + KPI cards + grid por família
-- [ ] 5.x RECURSOS: KPI cards + grid + registrar acórdão
-- [ ] 6.x IMPROCEDENTES: KPI cards + grid + bandeira AVALIAR
-- [ ] 7.x REPROTOCOLO: página nova completa
+- [x] 3.x INTIMAÇÕES: KPI cards + barra filtros + grid (labels canônicos) + drawer com Centro de Obs
+- [x] 4.x PROCEDENTES: familia tabs + KPI cards + grid por família
+- [x] 5.x RECURSOS: KPI cards + grid + registrar acórdão
+- [x] 6.x IMPROCEDENTES: KPI cards + grid + bandeira AVALIAR
+- [x] 7.x REPROTOCOLO: página nova completa
 
 ### Sprint 5 — Pendências + Agenda
 - [ ] 8.x PENDÊNCIAS: KPI cards + grid + PopUpPosPendencia integrado

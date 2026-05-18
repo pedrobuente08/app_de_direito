@@ -1,0 +1,8 @@
+export { PopUpPosAudiencia, PosAudienciaDialog } from './pos-audiencia'
+export { PopUpPosImprocedencia, PosImprocedenciaDialog } from './pos-improcedencia'
+export { PopUpPosProcedenteParcial } from './pos-procedente-parcial'
+export { PopUpPosExtincao } from './pos-extincao'
+export { PopUpPosPendencia } from './pos-pendencia'
+export { PopUpHabilitacaoAdversaria } from './habilitacao-adversaria'
+export { PopUpSobrestamento } from './sobrestamento'
+export { PopupShell, PopupFooterActions } from './popup-shell'

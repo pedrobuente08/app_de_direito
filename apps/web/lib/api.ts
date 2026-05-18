@@ -228,6 +228,106 @@ export async function aplicarPosImprocedencia(
   )
 }
 
+export async function aplicarPosExtincao(
+  processoId: string,
+  payload: import('@/lib/types').PosExtincaoPayload,
+): Promise<import('@/lib/types').Processo> {
+  return apiFetch<import('@/lib/types').Processo>(
+    `/processos/${processoId}/pos-extincao`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+}
+
+export async function aplicarPosProcedenteParcial(
+  processoId: string,
+  payload: import('@/lib/types').PosProcedenteParcialPayload,
+): Promise<import('@/lib/types').Processo> {
+  return apiFetch<import('@/lib/types').Processo>(
+    `/processos/${processoId}/pos-procedente-parcial`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+}
+
+export async function sobrestarProcesso(
+  processoId: string,
+  payload: import('@/lib/types').SobrestarProcessoPayload,
+): Promise<import('@/lib/types').Processo> {
+  return apiFetch<import('@/lib/types').Processo>(
+    `/processos/${processoId}/sobrestar`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+}
+
+export async function getProcessoObservacoes(
+  processoId: string,
+): Promise<import('@/lib/types').ObservacaoItem[]> {
+  return apiFetch<import('@/lib/types').ObservacaoItem[]>(
+    `/processos/${processoId}/observacoes`,
+  )
+}
+
+export async function getReprotocoloList(
+  subEstado?: string,
+): Promise<import('@/lib/types').ReprotocoloLinha[]> {
+  const q = subEstado?.trim()
+    ? `?subEstado=${encodeURIComponent(subEstado)}`
+    : ''
+  return apiFetch<import('@/lib/types').ReprotocoloLinha[]>(`/reprotocolo${q}`)
+}
+
+export async function getReprotocoloResumo(): Promise<
+  import('@/lib/types').ReprotocoloResumo
+> {
+  return apiFetch<import('@/lib/types').ReprotocoloResumo>('/reprotocolo/resumo')
+}
+
+export async function patchReprotocolo(
+  processoId: string,
+  payload: Record<string, unknown>,
+): Promise<unknown> {
+  return apiFetch(`/reprotocolo/${processoId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function encerrarPendencia(
+  id: string,
+  payload: import('@/lib/types').EncerrarPendenciaPayload,
+): Promise<void> {
+  await apiFetch<void>(`/pendencias/${id}/encerrar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function criarAdvogadoAdversario(payload: {
+  nomeCanonico: string
+  oab?: string
+  escritorioAdversarioId?: string | null
+  aliases?: string[]
+}): Promise<{ id: string; nomeCanonico: string }> {
+  return apiFetch('/advogados-adversarios', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function getRecursos(): Promise<
   import('@/lib/types').RecursoListaItem[]
 > {

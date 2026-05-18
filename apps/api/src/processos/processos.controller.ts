@@ -23,12 +23,16 @@ import { Roles } from '../common/metadata';
 import { ConfirmarBatchDto } from './dto/confirmar-batch.dto';
 import { CreateProcessoDto } from './dto/create-processo.dto';
 import { ListProcessosQueryDto } from './dto/list-processos.query.dto';
+import { PosExtincaoDto } from './dto/pos-extincao.dto';
 import { PosImprocedenciaDto } from './dto/pos-improcedencia.dto';
+import { PosProcedenteParcialDto } from './dto/pos-procedente-parcial.dto';
 import { UpdateProcessoDto } from './dto/update-processo.dto';
 import { JusticaGratuitaProcessoDto } from './dto/justica-gratuita-processo.dto';
 import { PatchAvaliacaoRecursoDto } from './dto/patch-avaliacao-recurso.dto';
 import { SobrestarProcessoDto } from './dto/sobrestar-processo.dto';
+import { PosExtincaoService } from './pos-extincao.service';
 import { PosImprocedenciaService } from './pos-improcedencia.service';
+import { PosProcedenteParcialService } from './pos-procedente-parcial.service';
 import { ProcessosService } from './processos.service';
 import { ProcessosWorkflowService } from './processos-workflow.service';
 
@@ -63,6 +67,8 @@ export class ProcessosController {
   constructor(
     private readonly processos: ProcessosService,
     private readonly posImprocedenciaService: PosImprocedenciaService,
+    private readonly posExtincaoService: PosExtincaoService,
+    private readonly posProcedenteParcialService: PosProcedenteParcialService,
     private readonly workflow: ProcessosWorkflowService,
   ) {}
 
@@ -206,6 +212,33 @@ export class ProcessosController {
     @Body() dto: PosImprocedenciaDto,
   ) {
     return this.posImprocedenciaService.aplicar(
+      user.escritorioId,
+      id,
+      dto,
+      user.userId,
+    );
+  }
+
+  @Post(':id/pos-extincao')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.processoPostManual)
+  posExtincao(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PosExtincaoDto,
+  ) {
+    return this.posExtincaoService.aplicar(user.escritorioId, id, dto);
+  }
+
+  @Post(':id/pos-procedente-parcial')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.processoPostManual)
+  posProcedenteParcial(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PosProcedenteParcialDto,
+  ) {
+    return this.posProcedenteParcialService.aplicar(
       user.escritorioId,
       id,
       dto,

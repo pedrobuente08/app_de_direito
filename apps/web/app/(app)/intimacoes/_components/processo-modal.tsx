@@ -13,6 +13,7 @@ type Props = {
   toast: ToastApi
   readOnly?: boolean
   dropdowns?: DropdownsProcessoConfig | null
+  onNovaPendencia?: (p: Processo) => void
 }
 
 /** Drawer lateral de detalhe do processo (Sprint 1 — F0.1). */
@@ -23,6 +24,7 @@ export function ProcessoModal({
   toast,
   readOnly,
   dropdowns,
+  onNovaPendencia,
 }: Props) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -80,6 +82,7 @@ export function ProcessoModal({
             toast={toast}
             readOnly={readOnly}
             dropdowns={dropdowns}
+            onNovaPendencia={onNovaPendencia}
           />
         </div>
       </div>

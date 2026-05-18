@@ -7,6 +7,7 @@ import {
   getImprocedentesResumo,
   patchImprocedente,
 } from '@/lib/api'
+import { KpiCard } from '@/components/ui/kpi-card'
 import type { ImprocedenteRow, ImprocedentesResumo } from '@/lib/types'
 import { ToastContainer, useToast } from '@/lib/toast'
 
@@ -90,14 +91,11 @@ export default function ImprocedentesPage() {
   }
 
   const cards = [
-    { label: 'Total', value: resumo?.total ?? '—' },
-    { label: 'Em avaliação', value: resumo?.emAvaliacao ?? '—' },
-    { label: 'Sucumbência a pagar', value: resumo?.sucumbenciaAPagar ?? '—' },
-    { label: 'Vence em 15d', value: resumo?.venceEm15 ?? '—' },
-    {
-      label: 'Passivo (R$)',
-      value: resumo?.passivoTotal ?? '—',
-    },
+    { label: 'Total improc.', value: resumo?.total ?? '—', variant: 'default' as const },
+    { label: 'Em avaliação', value: resumo?.emAvaliacao ?? '—', variant: 'warning' as const },
+    { label: 'Sucumb. a pagar', value: resumo?.sucumbenciaAPagar ?? '—', variant: 'danger' as const },
+    { label: 'Vence em 15d', value: resumo?.venceEm15 ?? '—', variant: 'warning' as const },
+    { label: 'Passivo (R$)', value: resumo?.passivoTotal ?? '—', variant: 'accent' as const },
   ]
 
   return (
@@ -113,15 +111,9 @@ export default function ImprocedentesPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {cards.map((c) => (
-          <div
-            key={c.label}
-            className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-3 py-2"
-          >
-            <p className="text-[10px] text-[var(--color-text-secondary)]">{c.label}</p>
-            <p className="text-lg font-semibold">{c.value}</p>
-          </div>
+          <KpiCard key={c.label} label={c.label} value={c.value} variant={c.variant} />
         ))}
       </div>
 
@@ -170,7 +162,14 @@ export default function ImprocedentesPage() {
                     <td className="px-3 py-2">{r.clienteNome ?? '—'}</td>
                     <td className="px-3 py-2">
                       {av?.ativa ? (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-900">
+                        <span
+                          className="rounded-full bg-[var(--urgencia-atencao-bg)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--urgencia-atencao-text)]"
+                          title={
+                            (av as { prazo?: string }).prazo
+                              ? `Prazo: ${(av as { prazo?: string }).prazo}`
+                              : 'Em avaliação de recurso'
+                          }
+                        >
                           AVALIAR
                         </span>
                       ) : (

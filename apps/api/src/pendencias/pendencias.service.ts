@@ -17,6 +17,7 @@ import { parseCsvSimple } from '../importacao/csv-parse';
 import type { CreatePendenciaDto } from './dto/create-pendencia.dto';
 import type { CumprirPendenciaDto } from './dto/cumprir-pendencia.dto';
 import type { ListPendenciasQueryDto } from './dto/list-pendencias.query.dto';
+import type { EncerrarPendenciaDto } from './dto/encerrar-pendencia.dto';
 import type { UpdatePendenciaDto } from './dto/update-pendencia.dto';
 
 const HISTORICO = new Set(['CUMPRIDO', 'AUTOR FALECIDO']);
@@ -160,6 +161,7 @@ export class PendenciasService {
           status: (dto.status ?? 'ABERTA').trim(),
           observacao: dto.observacao?.trim() || null,
           origem: (dto.origem ?? 'MANUAL_INTIMACOES').trim(),
+          fila: dto.fila?.trim() || null,
         })
         .returning();
       if (!row) {
@@ -335,6 +337,56 @@ export class PendenciasService {
       current.processoId,
     );
     return { movidoPara: 'problema', registro: last };
+  }
+
+  private mapResultadoEncerrar(resultado: string): string {
+    const r = resultado.trim().toUpperCase();
+    const map: Record<string, string> = {
+      CUMPRIDA: 'CUMPRIDO',
+      NAO_CUMPRIDA: 'NAO CUMPRIDO',
+      SEM_EXITO: 'SEM EXITO',
+      AUTOR_FALECIDO: 'AUTOR FALECIDO',
+      DEIXOU_DE_RESPONDER: 'DEIXOU DE RESPONDER',
+    };
+    return map[r] ?? r;
+  }
+
+  /** Pop-up pós-pendência — roteia para histórico ou problema. */
+  async encerrar(escritorioId: string, id: string, dto: EncerrarPendenciaDto) {
+    const current = await this.obter(escritorioId, id);
+    const status = this.mapResultadoEncerrar(dto.resultado);
+    const motivo = dto.motivo?.trim() ?? '';
+    const obs = dto.observacao?.trim() ?? '';
+    const prox = dto.proximaAcao?.trim() ?? '';
+
+    if (!HISTORICO.has(status) && !PROBLEMA.has(status)) {
+      throw new BadRequestException(`Resultado inválido: ${dto.resultado}`);
+    }
+
+    if (!HISTORICO.has(status) && !motivo) {
+      throw new BadRequestException(
+        'Motivo é obrigatório quando o resultado não é CUMPRIDA ou AUTOR_FALECIDO.',
+      );
+    }
+
+    const partes = [
+      current.observacao?.trim(),
+      motivo ? `[Motivo] ${motivo}` : null,
+      obs ? `[Obs] ${obs}` : null,
+      prox ? `[Próxima ação] ${prox}` : null,
+    ].filter(Boolean);
+    const observacao = partes.join('\n') || null;
+
+    if (HISTORICO.has(status)) {
+      return this.moverParaHistorico(escritorioId, current, status, {
+        dataCumprimento: hojeIso(),
+        observacao,
+      });
+    }
+
+    return this.moverParaProblema(escritorioId, current, status, {
+      observacao,
+    });
   }
 
   async cumprir(

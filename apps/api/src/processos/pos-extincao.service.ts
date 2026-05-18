@@ -1,0 +1,171 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { and, eq } from 'drizzle-orm';
+import { DrizzleService } from '../db/drizzle.service';
+import { processo } from '../db/schema/processo';
+import { processoReprotocolo } from '../db/schema/processo-reprotocolo';
+import { sentenca } from '../db/schema/sentenca';
+import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
+import { FaseDerivada } from '../fase-derivacao/fase-derivacao.constants';
+import { PendenciasService } from '../pendencias/pendencias.service';
+import { ProcessosService } from './processos.service';
+import type { PosExtincaoDto } from './dto/pos-extincao.dto';
+
+function norm(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .trim()
+    .toUpperCase();
+}
+
+function addDaysYmd(baseYmd: string, days: number): string {
+  const d = new Date(`${baseYmd.slice(0, 10)}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function hojeYmd(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+@Injectable()
+export class PosExtincaoService {
+  constructor(
+    private readonly drizzle: DrizzleService,
+    private readonly processos: ProcessosService,
+    private readonly pendencias: PendenciasService,
+    private readonly faseDerivacao: FaseDerivacaoService,
+  ) {}
+
+  async aplicar(escritorioId: string, processoId: string, dto: PosExtincaoDto) {
+    await this.processos.obterPorId(escritorioId, processoId);
+
+    const [sent] = await this.drizzle.db
+      .select()
+      .from(sentenca)
+      .where(
+        and(
+          eq(sentenca.id, dto.sentencaId),
+          eq(sentenca.processoId, processoId),
+          eq(sentenca.escritorioId, escritorioId),
+        ),
+      )
+      .limit(1);
+
+    if (!sent) {
+      throw new NotFoundException('Sentença não encontrada neste processo.');
+    }
+    const res = norm(sent.resultado);
+    if (!res.includes('EXTINTO')) {
+      throw new BadRequestException(
+        'O pop-up pós-extinção exige sentença de extinção sem mérito.',
+      );
+    }
+
+    const motivo = dto.motivo.trim();
+    const obs = dto.observacao?.trim() || null;
+    const hoje = hojeYmd();
+
+    await this.drizzle.db
+      .update(sentenca)
+      .set({
+        extincaoModalidade: dto.modalidade,
+        motivoExtincao: motivo,
+        observacoes: obs ?? sent.observacoes,
+      })
+      .where(eq(sentenca.id, sent.id));
+
+    if (dto.modalidade === 'SEM_CUSTAS') {
+      await this.drizzle.db
+        .insert(processoReprotocolo)
+        .values({
+          processoId,
+          escritorioId,
+          subEstado: 'AGUARDANDO_ANALISE',
+          modalidadeExtincao: dto.modalidade,
+          motivoExtincao: motivo,
+          dataExtincao: sent.data,
+          observacoes: obs,
+        })
+        .onConflictDoUpdate({
+          target: processoReprotocolo.processoId,
+          set: {
+            subEstado: 'AGUARDANDO_ANALISE',
+            modalidadeExtincao: dto.modalidade,
+            motivoExtincao: motivo,
+            dataExtincao: sent.data,
+            observacoes: obs,
+          },
+        });
+
+      await this.pendencias.criar(escritorioId, {
+        processoId,
+        tipo: 'ANALISE REPROTOCOLO',
+        dataLimite: addDaysYmd(hoje, 7),
+        responsavel: 'ADV',
+        observacao: obs,
+        origem: 'MANUAL',
+        fila: 'ADV',
+      });
+    } else if (dto.modalidade === 'COM_CUSTAS') {
+      await this.drizzle.db
+        .insert(processoReprotocolo)
+        .values({
+          processoId,
+          escritorioId,
+          subEstado: 'AGUARDANDO_ISENCAO_CUSTAS',
+          modalidadeExtincao: dto.modalidade,
+          motivoExtincao: motivo,
+          dataExtincao: sent.data,
+          dataIsencaoPedida: hoje,
+          observacoes: obs,
+        })
+        .onConflictDoUpdate({
+          target: processoReprotocolo.processoId,
+          set: {
+            subEstado: 'AGUARDANDO_ISENCAO_CUSTAS',
+            modalidadeExtincao: dto.modalidade,
+            motivoExtincao: motivo,
+            dataExtincao: sent.data,
+            dataIsencaoPedida: hoje,
+            observacoes: obs,
+          },
+        });
+
+      await this.pendencias.criar(escritorioId, {
+        processoId,
+        tipo: 'PETICIONAR ISENCAO CUSTAS',
+        dataLimite: addDaysYmd(hoje, 15),
+        responsavel: 'ADV',
+        observacao: obs,
+        origem: 'MANUAL',
+        fila: 'ADV',
+      });
+    } else {
+      await this.drizzle.db
+        .update(processo)
+        .set({
+          faseAtual: FaseDerivada.EM_RECURSO,
+          updatedAt: new Date(),
+        })
+        .where(eq(processo.id, processoId));
+
+      await this.pendencias.criar(escritorioId, {
+        processoId,
+        tipo: 'ELABORAR RECURSO',
+        dataLimite: addDaysYmd(hoje, 10),
+        responsavel: 'ADV',
+        observacao: obs,
+        origem: 'MANUAL',
+        fila: 'ADV',
+      });
+    }
+
+    await this.faseDerivacao.aplicarAposMutacao(escritorioId, processoId);
+    return this.processos.obterPorId(escritorioId, processoId);
+  }
+}

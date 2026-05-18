@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
+import { PopUpHabilitacaoAdversaria } from '@/components/popups'
 import { Btn } from '@/components/ui/btn'
 import { getAuthMe } from '@/lib/api'
 import { LogoutButton } from './logout-button'
@@ -23,6 +24,7 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
   const router = useRouter()
   const [email, setEmail] = useState<string | null>(null)
   const [escritorioNome, setEscritorioNome] = useState('Escritório')
+  const [habilitacaoOpen, setHabilitacaoOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -127,7 +129,7 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
         <Btn
           variant="default"
           className="hidden shrink-0 sm:inline-flex"
-          onClick={() => router.push('/bancas')}
+          onClick={() => setHabilitacaoOpen(true)}
         >
           + Habilitação adversária
         </Btn>
@@ -165,6 +167,12 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
       >
         {children}
       </main>
+
+      <PopUpHabilitacaoAdversaria
+        open={habilitacaoOpen}
+        onClose={() => setHabilitacaoOpen(false)}
+        onSuccess={() => setHabilitacaoOpen(false)}
+      />
     </div>
   )
 }
