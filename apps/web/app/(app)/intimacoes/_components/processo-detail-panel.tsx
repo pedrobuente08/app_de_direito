@@ -36,7 +36,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <p className="mb-3 border-b border-[var(--color-border-default)] pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-tertiary)]">
         {title}
       </p>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 [&>*]:min-w-0">
         {children}
       </div>
     </div>

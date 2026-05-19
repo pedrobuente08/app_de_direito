@@ -47,7 +47,7 @@ export function ProcessoModal({
         role="dialog"
         aria-modal="true"
         aria-label={`Processo ${processo.numero}`}
-        className="fixed left-1/2 z-[51] flex min-h-0 w-[min(56rem,calc(100vw-2rem))] -translate-x-1/2 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shadow-[var(--shadow-lg)]"
+        className="fixed left-1/2 z-[51] flex min-h-0 w-[min(68rem,calc(100vw-1.5rem))] -translate-x-1/2 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shadow-[var(--shadow-lg)]"
         style={{
           top: 'calc(var(--header-height) + var(--app-main-padding))',
           bottom: 'max(1rem, env(safe-area-inset-bottom, 0px))',
