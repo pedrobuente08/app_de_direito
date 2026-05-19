@@ -16,7 +16,7 @@ type Props = {
   onNovaPendencia?: (p: Processo) => void
 }
 
-/** Drawer lateral de detalhe do processo (Sprint 1 — F0.1). */
+/** Modal centralizado de detalhe do processo (Sprint 1 — F0.1). */
 export function ProcessoModal({
   processo,
   onClose,
@@ -47,8 +47,11 @@ export function ProcessoModal({
         role="dialog"
         aria-modal="true"
         aria-label={`Processo ${processo.numero}`}
-        className="fixed inset-y-0 right-0 z-[51] flex w-full max-w-[min(56rem,100vw)] flex-col border-l border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shadow-[var(--shadow-lg)]"
-        style={{ top: 'var(--header-height)' }}
+        className="fixed left-1/2 z-[51] flex min-h-0 w-[min(56rem,calc(100vw-2rem))] -translate-x-1/2 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shadow-[var(--shadow-lg)]"
+        style={{
+          top: 'calc(var(--header-height) + var(--app-main-padding))',
+          bottom: 'max(1rem, env(safe-area-inset-bottom, 0px))',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex shrink-0 items-center justify-between border-b border-[var(--color-border-default)] px-5 py-4">
