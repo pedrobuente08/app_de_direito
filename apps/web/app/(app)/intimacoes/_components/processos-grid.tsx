@@ -63,39 +63,23 @@ export function ProcessosGrid({
     {
       id: 'clienteNome',
       header: 'Cliente',
-      size: 180,
+      size: 200,
       cell: ({ row }) => (
         <span className="block truncate text-sm">{row.original.clienteNome ?? '—'}</span>
       ),
     },
     {
-      id: 'reuTexto',
-      header: 'Réu',
-      size: 140,
-      cell: ({ row }) => (
-        <span className="block truncate text-sm">{row.original.reuTexto?.trim() || '—'}</span>
-      ),
-    },
-    {
       id: 'materia',
       header: 'Matéria',
-      size: 140,
+      size: 150,
       cell: ({ row }) => (
         <span className="block truncate text-sm">{row.original.materia?.trim() || '—'}</span>
       ),
     },
     {
-      id: 'vara',
-      header: 'Vara',
-      size: 100,
-      cell: ({ row }) => (
-        <span className="block truncate text-sm">{row.original.vara?.trim() || '—'}</span>
-      ),
-    },
-    {
       id: 'login',
       header: 'Login',
-      size: 100,
+      size: 110,
       cell: ({ row }) => (
         <span className="block truncate text-sm">{row.original.login ?? '—'}</span>
       ),
@@ -103,7 +87,7 @@ export function ProcessosGrid({
     {
       id: 'qualidadeCaso',
       header: 'Situação',
-      size: 160,
+      size: 170,
       cell: ({ row }) => (
         <span className="block truncate text-sm">
           {row.original.qualidadeCaso?.trim() || '—'}
@@ -113,7 +97,7 @@ export function ProcessosGrid({
     {
       id: 'faseAtual',
       header: 'Fase atual',
-      size: 130,
+      size: 160,
       cell: ({ row }) => (
         <span className="block truncate text-sm text-[var(--color-text-primary)]">
           {row.original.faseAtual?.trim() || '—'}
@@ -123,20 +107,10 @@ export function ProcessosGrid({
     {
       id: 'ultimaSentencaResultado',
       header: 'Sentença',
-      size: 110,
+      size: 130,
       cell: ({ row }) => (
         <span className="block truncate text-sm">
           {row.original.ultimaSentencaResultado?.trim() || '—'}
-        </span>
-      ),
-    },
-    {
-      id: 'ultimaMovimentacaoDt',
-      header: 'Últ. mov.',
-      size: 100,
-      cell: ({ row }) => (
-        <span className="block truncate text-xs text-[var(--color-text-secondary)]">
-          {row.original.ultimaMovimentacaoDt?.slice(0, 10) ?? '—'}
         </span>
       ),
     },

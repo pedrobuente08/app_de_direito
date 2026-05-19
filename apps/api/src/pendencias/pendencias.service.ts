@@ -20,11 +20,11 @@ import type { ListPendenciasQueryDto } from './dto/list-pendencias.query.dto';
 import type { EncerrarPendenciaDto } from './dto/encerrar-pendencia.dto';
 import type { UpdatePendenciaDto } from './dto/update-pendencia.dto';
 
-const HISTORICO = new Set(['CUMPRIDO', 'AUTOR FALECIDO']);
+const HISTORICO = new Set(['CUMPRIDA', 'AUTOR_FALECIDO']);
 const PROBLEMA = new Set([
-  'NAO CUMPRIDO',
-  'SEM EXITO',
-  'DEIXOU DE RESPONDER',
+  'NAO_CUMPRIDA',
+  'SEM_EXITO',
+  'DEIXOU_DE_RESPONDER',
 ]);
 
 function hojeIso(): string {
@@ -341,15 +341,7 @@ export class PendenciasService {
   }
 
   private mapResultadoEncerrar(resultado: string): string {
-    const r = resultado.trim().toUpperCase();
-    const map: Record<string, string> = {
-      CUMPRIDA: 'CUMPRIDO',
-      NAO_CUMPRIDA: 'NAO CUMPRIDO',
-      SEM_EXITO: 'SEM EXITO',
-      AUTOR_FALECIDO: 'AUTOR FALECIDO',
-      DEIXOU_DE_RESPONDER: 'DEIXOU DE RESPONDER',
-    };
-    return map[r] ?? r;
+    return resultado.trim().toUpperCase();
   }
 
   /** Pop-up pós-pendência — roteia para histórico ou problema. */
@@ -396,10 +388,10 @@ export class PendenciasService {
     dto: CumprirPendenciaDto,
   ) {
     const current = await this.obter(escritorioId, id);
-    const status = (dto.status ?? 'CUMPRIDO').trim().toUpperCase();
+    const status = (dto.status ?? 'CUMPRIDA').trim().toUpperCase();
     if (!HISTORICO.has(status)) {
       throw new BadRequestException(
-        'Status inválido para cumprir. Use CUMPRIDO ou AUTOR FALECIDO.',
+        'Status inválido para cumprir. Use CUMPRIDA ou AUTOR_FALECIDO.',
       );
     }
     const motivo = dto.motivoCumprimento.trim();

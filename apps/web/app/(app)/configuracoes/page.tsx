@@ -201,7 +201,8 @@ export default function ConfiguracoesPage() {
                   'BOA — SEM NADA',
                   'RUIM — CONTRATO ASSINADO',
                   'MEEIRA',
-                  'RUIM — SEM CONTRATO',
+                  'MEEIRA — RG + SELFIE',
+                  'RUIM',
                 ]
                 setDdSituacao(padrao.join('\n'))
                 toast.success('Sugestão de situação (qualidade) aplicada no formulário — salve para gravar.')

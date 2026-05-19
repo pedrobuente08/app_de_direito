@@ -64,7 +64,7 @@ export class TelemarketingService {
       .where(
         and(
           base,
-          eq(pendencia.status, 'CUMPRIDO'),
+          eq(pendencia.status, 'CUMPRIDA'),
           gte(pendencia.dataCumprimento, corte30),
         ),
       );
