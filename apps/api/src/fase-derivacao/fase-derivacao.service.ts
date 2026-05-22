@@ -88,9 +88,10 @@ export class FaseDerivacaoService {
       return nova;
     }
 
+    const now = new Date();
     await db
       .update(processo)
-      .set({ faseAtual: nova, updatedAt: new Date() })
+      .set({ faseAtual: nova, faseUpdatedAt: now, updatedAt: now })
       .where(eq(processo.id, processoId));
 
     await db.insert(faseHistorico).values({

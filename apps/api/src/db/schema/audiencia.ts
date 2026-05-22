@@ -41,6 +41,8 @@ export const audiencia = pgTable(
     obsPre: text('obs_pre'),
     obsPos: text('obs_pos'),
     link: varchar('link', { length: 500 }),
+    cenario: varchar('cenario', { length: 30 }),
+    cenarioObservacao: text('cenario_observacao'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),

@@ -315,12 +315,12 @@ Novo endpoint `GET /api/dashboards/litigancia-ma-fe`: lista processos com `litig
 - [x] A.4 Migration SQL (remover CHECK antigo se existir)
 
 ### Sprint B — Schema aditivo
-- [ ] B.1 Migration: campos DAJE + revelia_decretada + litigancia_ma_fe + fase_updated_at em `processo`
-- [ ] B.2 Migration: `perfil_diligencia` em `comarca`
-- [ ] B.3 Migration: `cenario` + `cenario_observacao` em `audiencia`
-- [ ] B.4 Migration: obrigação de fazer + SerasaJud em `processo_procedente`
-- [ ] B.5 Atualizar schemas Drizzle
-- [ ] B.6 Atualizar tipos TypeScript
+- [x] B.1 Migration: campos DAJE + revelia_decretada + litigancia_ma_fe + fase_updated_at em `processo`
+- [x] B.2 Migration: `perfil_diligencia` em `comarca`
+- [x] B.3 Migration: `cenario` + `cenario_observacao` em `audiencia`
+- [x] B.4 Migration: obrigação de fazer + SerasaJud em `processo_procedente`
+- [x] B.5 Atualizar schemas Drizzle
+- [x] B.6 Atualizar tipos TypeScript
 
 ### Sprint C — Pop-up audiência
 - [ ] C.1 Adicionar bloco cenário no `pos-audiencia.tsx`

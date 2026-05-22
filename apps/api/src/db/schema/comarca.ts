@@ -11,6 +11,7 @@ export const comarca = pgTable(
     codigo: varchar('codigo', { length: 10 }).notNull(),
     nome: varchar('nome', { length: 100 }).notNull(),
     abreviado: varchar('abreviado', { length: 30 }).notNull(),
+    perfilDiligencia: varchar('perfil_diligencia', { length: 20 }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),

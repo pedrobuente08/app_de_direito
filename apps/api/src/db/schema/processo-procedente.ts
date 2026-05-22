@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   date,
   jsonb,
   numeric,
@@ -42,6 +43,11 @@ export const processoProcedente = pgTable('processo_procedente', {
   valorPenhorado: numeric('valor_penhorado', { precision: 12, scale: 2 }),
   penhoraOrigem: varchar('penhora_origem', { length: 50 }),
   observacoesExecucao: text('observacoes_execucao'),
+  temObrigacaoFazer: boolean('tem_obrigacao_fazer').notNull().default(false),
+  obrigacaoFazerDescricao: text('obrigacao_fazer_descricao'),
+  obrigacaoFazerCumprida: boolean('obrigacao_fazer_cumprida').notNull().default(false),
+  obrigacaoFazerCumpridaEm: date('obrigacao_fazer_cumprida_em'),
+  serasajudAcionado: boolean('serasajud_acionado').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

@@ -22,6 +22,15 @@ export type Processo = {
   /** Qualidade do processo (BOA, RUIM, MEEIRA…); exibida como “Situação” na grid. */
   qualidadeCaso?: string | null
   faseAtual?: string | null
+  faseUpdatedAt?: string | null
+  reveliaDecretada?: boolean
+  litiganciaMaFe?: boolean
+  dajeEmitido?: boolean
+  dajeValor?: string | null
+  dajeDataEmissao?: string | null
+  dajeStatus?: string | null
+  dajeDataPedidoIsencao?: string | null
+  dajeDataPagamento?: string | null
   avaliacaoRecurso?: Record<string, unknown> | null
   justicaGratuita?: boolean
   situacaoFinal?: string | null
@@ -163,6 +172,7 @@ export type Comarca = {
   codigo: string
   nome: string
   abreviado: string
+  perfilDiligencia?: 'DILIGENTE' | 'MENOS_DILIGENTE' | null
 }
 
 export type Reu = {
@@ -492,6 +502,8 @@ export type Audiencia = {
   escritorioAdversarioId?: string | null
   /** Nome canónico do escritório adversário (tabela `escritorio_adversario`). */
   escritorioAdversarioNome?: string | null
+  cenario?: string | null
+  cenarioObservacao?: string | null
 }
 
 export type Procedente = {
@@ -508,6 +520,11 @@ export type Procedente = {
   dataEstimadaRecebimento?: string | null
   valorRecebido?: string | null
   dataRecebimento?: string | null
+  temObrigacaoFazer?: boolean
+  obrigacaoFazerDescricao?: string | null
+  obrigacaoFazerCumprida?: boolean
+  obrigacaoFazerCumpridaEm?: string | null
+  serasajudAcionado?: boolean
   createdAt: string
   processo?: { numero: string; clienteNome: string; reuTexto: string; sentenca?: string | null }
 }

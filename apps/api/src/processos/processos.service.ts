@@ -563,6 +563,9 @@ export class ProcessosService {
     if (dto.faseAtual !== undefined) {
       patch.faseAtual =
         dto.faseAtual === null ? null : toFaseCanonical(dto.faseAtual);
+      if ((patch.faseAtual ?? null) !== (faseAntes ?? null)) {
+        patch.faseUpdatedAt = new Date();
+      }
     }
     if (dto.qualidadeCaso !== undefined) {
       patch.qualidadeCaso =
