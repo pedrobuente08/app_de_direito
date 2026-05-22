@@ -97,18 +97,36 @@ export function EditableTextarea({
   )
 }
 
+export type SelectOption = string | { value: string; label: string }
+
+function resolveSelectOptions(options: SelectOption[]): { value: string; label: string }[] {
+  const out: { value: string; label: string }[] = []
+  const seen = new Set<string>()
+  for (const o of options) {
+    const row =
+      typeof o === 'string' ? { value: o, label: o } : { value: o.value, label: o.label }
+    const v = row.value.trim()
+    if (!v || seen.has(v)) continue
+    seen.add(v)
+    out.push({ value: v, label: row.label })
+  }
+  return out
+}
+
 export function EditableSelect({
   value, options, onCommit, toast,
 }: {
   value: string | null | undefined
-  options: string[]
+  options: SelectOption[]
   onCommit: (next: string | null) => Promise<void>
   toast: ToastApi
 }) {
   const mergedOptions = useMemo(() => {
     const v = (value ?? '').trim()
-    const base = [...options]
-    if (v && !base.includes(v)) base.push(v)
+    const base = resolveSelectOptions(options)
+    if (v && !base.some((o) => o.value === v)) {
+      base.push({ value: v, label: v })
+    }
     return base
   }, [options, value])
 
@@ -132,7 +150,9 @@ export function EditableSelect({
       className="min-h-[32px] w-full rounded border border-transparent bg-[var(--color-bg-subtle)] px-1 py-1 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-brand)]"
     >
       <option value="">—</option>
-      {mergedOptions.map((o) => <option key={o} value={o}>{o}</option>)}
+      {mergedOptions.map((o) => (
+        <option key={o.value} value={o.value}>{o.label}</option>
+      ))}
     </select>
   )
 }

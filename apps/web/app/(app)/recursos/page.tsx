@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { RegistrarSegundoGrauDialog } from '@/components/recursos/registrar-segundo-grau-dialog'
 import type { RecursoLinha } from '@/components/recursos/registrar-segundo-grau-dialog'
 import { getAuthMe, getRecursos, getRecursosResumo } from '@/lib/api'
+import { faseLabel } from '@/lib/fase-label'
 import { KpiCard } from '@/components/ui/kpi-card'
 import type { RecursoListaItem, RecursosResumo } from '@/lib/types'
 import { ToastContainer, useToast } from '@/lib/toast'
@@ -108,7 +109,7 @@ export default function RecursosPage() {
                         ? 'Réu'
                         : '—'}
                   </td>
-                  <td className="px-4 py-2.5">{r.faseAtual ?? '—'}</td>
+                  <td className="px-4 py-2.5">{faseLabel(r.faseAtual)}</td>
                   <td className="px-4 py-2.5">{r.prazoManifestacao ?? '—'}</td>
                   <td className="px-4 py-2.5 text-right">
                     {!readOnly ? (

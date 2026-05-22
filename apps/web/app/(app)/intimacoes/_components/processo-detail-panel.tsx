@@ -8,6 +8,11 @@ import {
   getSentencas,
   patchProcesso,
 } from '@/lib/api'
+import {
+  FASE_OPCOES_CANONICAS,
+  faseLabel,
+  faseSelectOptions,
+} from '@/lib/fase-label'
 import { SISTEMAS_TRIBUNAL_SUGESTAO } from '@/lib/pdf-preview'
 import type {
   DropdownsProcessoConfig,
@@ -117,7 +122,13 @@ export function ProcessoDetailPanel({
     const uniq = Array.from(new Set(base))
     return uniq.length ? uniq : ['ATIVO', 'SOBRESTADO', 'ARQUIVADO']
   }, [dropdowns])
-  const faseOpts = dropdowns?.fase_atual ?? []
+  const faseOpts = useMemo(
+    () =>
+      faseSelectOptions(
+        (dropdowns?.fase_atual?.length ? dropdowns.fase_atual : FASE_OPCOES_CANONICAS) as string[],
+      ),
+    [dropdowns?.fase_atual],
+  )
   const situacaoOpts = useMemo(() => {
     const base = (dropdowns?.situacao ?? []).filter(Boolean)
     return Array.from(new Set(base))
@@ -218,10 +229,15 @@ export function ProcessoDetailPanel({
             )}
           </Field>
           <Field label="Fase">
-            {ro ? <ReadField value={current.faseAtual} /> : faseOpts.length > 0 ? (
-              <EditableSelect value={current.faseAtual} options={faseOpts} toast={toast} onCommit={(v) => patch({ faseAtual: v })} />
+            {ro ? (
+              <ReadField value={faseLabel(current.faseAtual)} />
             ) : (
-              <EditableText value={current.faseAtual} toast={toast} onCommit={(v) => patch({ faseAtual: v })} />
+              <EditableSelect
+                value={current.faseAtual}
+                options={faseOpts}
+                toast={toast}
+                onCommit={(v) => patch({ faseAtual: v })}
+              />
             )}
           </Field>
         </Section>

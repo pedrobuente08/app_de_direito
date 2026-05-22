@@ -6,7 +6,7 @@ import { processo } from '../db/schema/processo';
 import type { CumprirPendenciaDto } from '../pendencias/dto/cumprir-pendencia.dto';
 import { PendenciasService } from '../pendencias/pendencias.service';
 
-const FILA = 'TELEMARKETING';
+const FILA = 'ATENDIMENTO';
 
 @Injectable()
 export class TelemarketingService {

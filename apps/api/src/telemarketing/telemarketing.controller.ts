@@ -15,7 +15,7 @@ import { Roles } from '../common/metadata';
 import { CumprirPendenciaDto } from '../pendencias/dto/cumprir-pendencia.dto';
 import { TelemarketingService } from './telemarketing.service';
 
-@Controller('telemarketing')
+@Controller('atendimento')
 export class TelemarketingController {
   constructor(private readonly service: TelemarketingService) {}
 
@@ -37,7 +37,7 @@ export class TelemarketingController {
   }
 
   @Post('puxar')
-  @Roles('admin', 'adm', 'advogado', 'telemarketing')
+  @Roles('admin', 'adm', 'advogado', 'atendimento')
   @Throttle(ThrottlePresets.pendenciasWrite)
   puxar(@CurrentUser() user: AuthUser) {
     const rotulo = user.email || user.userId;
@@ -45,7 +45,7 @@ export class TelemarketingController {
   }
 
   @Post('pendencias/:id/cumprir')
-  @Roles('admin', 'adm', 'advogado', 'telemarketing')
+  @Roles('admin', 'adm', 'advogado', 'atendimento')
   @Throttle(ThrottlePresets.pendenciasWrite)
   cumprir(
     @CurrentUser() user: AuthUser,

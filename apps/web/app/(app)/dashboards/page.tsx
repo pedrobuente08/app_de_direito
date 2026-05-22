@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { DashCard } from './_components/dash-card'
 import { KpiCard } from '@/components/ui/kpi-card'
 import { getDashGeral, getDashPendenciasOrigem, getDashPassivoSucumbencia } from '@/lib/api'
+import { faseLabel } from '@/lib/fase-label'
 import type { DashGeral, DashPendenciasOrigem, DashPassivoSucumbencia } from '@/lib/types'
 
 export default function DashboardGeralPage() {
@@ -58,7 +59,7 @@ export default function DashboardGeralPage() {
             <ul className="space-y-1.5 text-sm">
               {geral.funilPorFase.map((f) => (
                 <li key={f.fase} className="flex justify-between gap-4">
-                  <span className="truncate text-[var(--color-text-primary)]">{f.fase}</span>
+                  <span className="truncate text-[var(--color-text-primary)]">{faseLabel(f.fase)}</span>
                   <span className="shrink-0 font-mono font-semibold">{f.total}</span>
                 </li>
               ))}

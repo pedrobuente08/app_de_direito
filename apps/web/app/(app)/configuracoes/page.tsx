@@ -229,7 +229,7 @@ export default function ConfiguracoesPage() {
               Dropdowns — Intimações
             </h2>
             <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
-              Uma opção por linha. Situação = qualidade do processo na grade Intimações; Sentença = valores extras para resultado; Fase atual = fase do processo.
+              Uma opção por linha. Situação = qualidade do processo na grade Intimações; Sentença = valores extras para resultado; Fase atual = chave UPPER_SNAKE_CASE (ex.: AGUARDANDO_AUDIENCIA).
             </p>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -262,7 +262,7 @@ export default function ConfiguracoesPage() {
                 rows={6}
                 value={ddFase}
                 onChange={(e) => setDdFase(e.target.value)}
-                placeholder={'AUDIÊNCIA AGENDADA\nREVELIA DECRETADA'}
+                placeholder={'AGUARDANDO_AUDIENCIA\nAGUARDANDO_SENTENCA\nEM_RECURSO'}
                 className="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
               />
             </label>
@@ -316,7 +316,7 @@ export default function ConfiguracoesPage() {
             rows={10}
             value={transicoesFaseRaw}
             onChange={(e) => setTransicoesFaseRaw(e.target.value)}
-            placeholder={`{\n  "AGUARDANDO AUDIÊNCIA": ["AGUARDANDO SENTENÇA", "EM RECURSO"],\n  "AGUARDANDO SENTENÇA": ["AGUARDANDO TRÂNSITO", "EM RECURSO"]\n}`}
+            placeholder={`{\n  "AGUARDANDO_AUDIENCIA": ["AGUARDANDO_SENTENCA", "EM_RECURSO"],\n  "AGUARDANDO_SENTENCA": ["AGUARDANDO_TRANSITO", "EM_RECURSO"]\n}`}
             className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
           />
         </section>
@@ -394,7 +394,7 @@ export default function ConfiguracoesPage() {
               <input
                 value={faseInicial}
                 onChange={(e) => setFaseInicial(e.target.value)}
-                placeholder="AUDIÊNCIA AGENDADA"
+                placeholder="AGUARDANDO_AUDIENCIA"
                 className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none"
               />
             </div>

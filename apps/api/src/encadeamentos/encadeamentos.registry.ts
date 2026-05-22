@@ -9,8 +9,8 @@ export const ENCADEAMENTO_PENDENCIAS: Record<
     {
       tipo: 'SOLICITAR DOC GRATUIDADE',
       dias: 5,
-      responsavel: 'TELEMARKETING',
-      fila: 'TELEMARKETING',
+      responsavel: 'ATENDIMENTO',
+      fila: 'ATENDIMENTO',
     },
   ],
   procedente_reu_recorre: [
@@ -57,8 +57,8 @@ export const ENCADEAMENTO_PENDENCIAS: Record<
     {
       tipo: 'SOLICITAR DOC GRATUIDADE',
       dias: 5,
-      responsavel: 'TELEMARKETING',
-      fila: 'TELEMARKETING',
+      responsavel: 'ATENDIMENTO',
+      fila: 'ATENDIMENTO',
     },
   ],
 };

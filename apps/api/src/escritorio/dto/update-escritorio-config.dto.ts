@@ -72,7 +72,7 @@ export class UpdateEscritorioConfigDto {
   @IsObject()
   comunica_digest?: Record<string, unknown>;
 
-  /** Ex.: `{ "AGUARDANDO AUDIÊNCIA": ["AGUARDANDO SENTENÇA", "EM RECURSO"] }` */
+  /** Ex.: `{ "AGUARDANDO_AUDIENCIA": ["AGUARDANDO_SENTENCA", "EM_RECURSO"] }` */
   @IsOptional()
   @IsObject()
   transicoes_fase?: Record<string, string[]>;

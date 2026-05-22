@@ -681,14 +681,14 @@ export type ResolverComunicacaoPayload = {
   }
 }
 
-export type TelemarketingResumo = {
+export type AtendimentoResumo = {
   abertas: number
   vencendo: number
   naFila: number
   cumpridas30d: number
 }
 
-export type TelemarketingLinha = {
+export type AtendimentoLinha = {
   pendencia: Pendencia
   processo: {
     id: string

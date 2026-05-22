@@ -114,7 +114,7 @@ async function main() {
 
   const config: EscritorioConfig = {
     materias_validas: ESCRITORIO.materias_validas,
-    fase_inicial: 'AUDIÊNCIA AGENDADA',
+    fase_inicial: 'AGUARDANDO_AUDIENCIA',
     situacao_inicial: 'ATIVO',
     status_processo_inicial: 'ATIVO',
   };

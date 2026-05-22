@@ -159,7 +159,7 @@ export default function PendenciasPage() {
           <input
             value={filtroFila}
             onChange={(e) => setFiltroFila(e.target.value)}
-            placeholder="Ex.: TELEMARKETING"
+            placeholder="Ex.: ATENDIMENTO"
             className={filterControlClass}
           />
         </FilterField>

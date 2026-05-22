@@ -7,7 +7,10 @@ import { pendencia } from '../db/schema/pendencia';
 import { processo } from '../db/schema/processo';
 import { processoProcedente } from '../db/schema/processo-procedente';
 import { sentenca } from '../db/schema/sentenca';
-import { FaseDerivada } from './fase-derivacao.constants';
+import {
+  FaseDerivada,
+  pendenciaFaseCanonical,
+} from './fase-derivacao.constants';
 
 const SENT_PROC = new Set(['PROCEDENTE', 'PARCIAL', 'ACORDO']);
 
@@ -131,8 +134,7 @@ export class FaseDerivacaoService {
       if (porMapa) {
         return porMapa;
       }
-      const t = escolhida.tipo.trim().slice(0, 40);
-      return `PENDÊNCIA — ${t}`;
+      return pendenciaFaseCanonical(escolhida.tipo);
     }
 
     const [pp] = await db

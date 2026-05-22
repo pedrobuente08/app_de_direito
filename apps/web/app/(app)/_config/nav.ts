@@ -26,6 +26,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Gestão',
     items: [
       { href: '/importacao', label: 'Importação PDF' },
+      { href: '/atendimento', label: 'Atendimento' },
       { href: '/comunicacoes', label: 'Comunicações Órfãs' },
     ],
   },
@@ -53,6 +54,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   '/agenda': 'Agenda',
   '/pendencias': 'Pendências',
   '/importacao': 'Importação PDF',
+  '/atendimento': 'Atendimento',
   '/comunicacoes': 'Comunicações Órfãs',
   '/dashboards': 'Dashboards',
   '/dashboards/varas': 'Varas & Teses',
@@ -69,15 +71,15 @@ export const ROUTE_LABELS: Record<string, string> = {
   '/migracao-procedentes': 'Migração planilha',
 }
 
-const TELEMARKETING_HREFS = new Set(['/pendencias'])
+const ATENDIMENTO_HREFS = new Set(['/pendencias', '/atendimento'])
 
 export function navSectionsForPerfil(perfil: string | undefined): NavSection[] {
-  if (perfil === 'telemarketing') {
+  if (perfil === 'atendimento') {
     return [
       {
         label: 'Operacional',
         items: NAV_SECTIONS.flatMap((s) => s.items).filter((i) =>
-          TELEMARKETING_HREFS.has(i.href),
+          ATENDIMENTO_HREFS.has(i.href),
         ),
       },
     ]
@@ -85,9 +87,10 @@ export function navSectionsForPerfil(perfil: string | undefined): NavSection[] {
   return NAV_SECTIONS
 }
 
-export function telemarketingAllowedPath(pathname: string): boolean {
+export function atendimentoAllowedPath(pathname: string): boolean {
   return (
-    pathname === '/pendencias' || pathname.startsWith('/pendencias/')
+    pathname === '/pendencias' || pathname.startsWith('/pendencias/') ||
+    pathname === '/atendimento' || pathname.startsWith('/atendimento/')
   )
 }
 

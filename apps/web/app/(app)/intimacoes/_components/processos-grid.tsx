@@ -7,6 +7,7 @@ import {
   type ColumnDef,
 } from '@tanstack/react-table'
 import { useMemo } from 'react'
+import { faseLabel } from '@/lib/fase-label'
 import type { Processo } from '@/lib/types'
 
 type Props = {
@@ -100,7 +101,7 @@ export function ProcessosGrid({
       size: 160,
       cell: ({ row }) => (
         <span className="block truncate text-sm text-[var(--color-text-primary)]">
-          {row.original.faseAtual?.trim() || '—'}
+          {faseLabel(row.original.faseAtual)}
         </span>
       ),
     },

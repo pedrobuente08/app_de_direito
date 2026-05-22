@@ -25,6 +25,7 @@ import type {
   Usuario,
 } from '@/lib/types'
 import { NovaPendenciaDialog } from '@/components/pendencias/nova-pendencia-dialog'
+import { FASE_OPCOES_CANONICAS, faseLabel } from '@/lib/fase-label'
 import { FilterBar, FilterField, filterControlClass } from '@/components/ui/filter-bar'
 import { KpiCard } from '@/components/ui/kpi-card'
 import { PdfRevisaoModal, type PdfRevisaoCatalogo } from './_components/pdf-revisao-modal'
@@ -453,13 +454,19 @@ export default function IntimacoesPage() {
               <option value="ARQUIVADO">ARQUIVADO</option>
             </select>
           </FilterField>
-          <FilterField label="Fase" className="min-w-[140px]">
-            <input
+          <FilterField label="Fase" className="min-w-[180px]">
+            <select
               value={draftFaseAtual}
               onChange={(e) => setDraftFaseAtual(e.target.value)}
-              placeholder="Contém…"
               className={filterControlClass}
-            />
+            >
+              <option value="">Todas</option>
+              {FASE_OPCOES_CANONICAS.map((code) => (
+                <option key={code} value={code}>
+                  {faseLabel(code)}
+                </option>
+              ))}
+            </select>
           </FilterField>
           <FilterField label="Avaliação" className="min-w-[160px]">
             <label className="flex min-h-[34px] items-center gap-2 text-sm text-[var(--color-text-primary)]">

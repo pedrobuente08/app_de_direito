@@ -69,3 +69,6 @@ export const FAMILIA_SITUACAO_OPCOES = [
 
 /** Resultado de sentença — re-exportado para conveniência. */
 export { SENTENCA_OPCOES_PADRAO, mergeSentencaOpcoes } from './sentenca-opcoes'
+
+/** Re-exporta fases canônicas (UPPER_SNAKE_CASE) para dropdowns. */
+export { FASE_OPCOES_CANONICAS, faseLabel, faseSelectOptions } from './fase-label'

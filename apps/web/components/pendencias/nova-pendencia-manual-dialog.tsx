@@ -200,7 +200,7 @@ export function NovaPendenciaManualDialog({ open, onClose, onSuccess }: Props) {
                 <input
                   value={fila}
                   onChange={(e) => setFila(e.target.value)}
-                  placeholder="Ex.: TELEMARKETING"
+                  placeholder="Ex.: ATENDIMENTO"
                   className={filterControlClass}
                 />
               </FilterField>

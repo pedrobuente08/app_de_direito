@@ -39,6 +39,8 @@ import { EscritorioService } from '../escritorio/escritorio.service';
 import { ReusService } from '../reus/reus.service';
 import { EncadeamentosQueueService } from '../encadeamentos/encadeamentos-queue.service';
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
+import { toFaseCanonical } from '../fase-derivacao/fase-derivacao.constants';
+import { faseDisplay } from '../fase-derivacao/fase-display';
 import { transicaoFasePermitida } from '../fase-derivacao/fase-transicoes';
 import type { EscritorioConfig } from '../db/schema/escritorio';
 import { StorageService } from '../storage/storage.service';
@@ -426,9 +428,9 @@ export class ProcessosService {
         id: `fase-${f.id}`,
         tipo: 'fase',
         data: f.createdAt.toISOString(),
-        titulo: `Fase: ${f.faseNova}`,
+        titulo: `Fase: ${faseDisplay(f.faseNova)}`,
         subtitulo: f.faseAnterior
-          ? `${f.faseAnterior} → ${f.faseNova} (${f.origem})`
+          ? `${faseDisplay(f.faseAnterior)} → ${faseDisplay(f.faseNova)} (${f.origem})`
           : `Origem: ${f.origem}`,
       });
     }
@@ -465,7 +467,7 @@ export class ProcessosService {
         );
       }
       const novaFase =
-        dto.faseAtual === null ? null : dto.faseAtual.trim();
+        dto.faseAtual === null ? null : toFaseCanonical(dto.faseAtual);
       if (novaFase) {
         const tenant = await this.escritorio.obterPerfilTenant(escritorioId);
         const cfg = (tenant.config ?? {}) as EscritorioConfig;
@@ -560,7 +562,7 @@ export class ProcessosService {
     }
     if (dto.faseAtual !== undefined) {
       patch.faseAtual =
-        dto.faseAtual === null ? null : nullableTrim(dto.faseAtual);
+        dto.faseAtual === null ? null : toFaseCanonical(dto.faseAtual);
     }
     if (dto.qualidadeCaso !== undefined) {
       patch.qualidadeCaso =
@@ -712,7 +714,9 @@ export class ProcessosService {
         emptyToNull(skillProc.status_processo_inicial) ??
           emptyToNull(skillProc.situacao_inicial),
       ),
-      faseAtual: emptyToNull(skillProc.fase_inicial),
+      faseAtual: toFaseCanonical(
+        emptyToNull(skillProc.fase_inicial) as string | null,
+      ),
       requerConferencia: options.requerConferencia,
       updatedAt: new Date(),
     };

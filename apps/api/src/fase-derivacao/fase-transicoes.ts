@@ -4,6 +4,7 @@ function norm(s: string): string {
   return s
     .normalize('NFD')
     .replace(/\p{M}/gu, '')
+    .replace(/_/g, ' ')
     .trim()
     .toUpperCase();
 }

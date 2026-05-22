@@ -12,7 +12,7 @@ import { LogoutButton } from './logout-button'
 import {
   labelForPath,
   navSectionsForPerfil,
-  telemarketingAllowedPath,
+  atendimentoAllowedPath,
 } from './_config/nav'
 
 function iniciaisDeEmail(email: string): string {
@@ -53,7 +53,7 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (perfil === 'telemarketing' && !telemarketingAllowedPath(pathname)) {
+    if (perfil === 'atendimento' && !atendimentoAllowedPath(pathname)) {
       router.replace('/pendencias')
     }
   }, [perfil, pathname, router])

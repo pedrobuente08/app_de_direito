@@ -998,30 +998,30 @@ export async function marcarTodasNotificacoesLidas(): Promise<void> {
   await apiFetch('/notificacoes/marcar-todas-lidas', { method: 'POST' })
 }
 
-// ─── Telemarketing ────────────────────────────────────────────────────────────
+// ─── Atendimento ──────────────────────────────────────────────────────────────
 
-export async function getTelemarketingResumo(): Promise<
-  import('@/lib/types').TelemarketingResumo
+export async function getAtendimentoResumo(): Promise<
+  import('@/lib/types').AtendimentoResumo
 > {
-  return apiFetch<import('@/lib/types').TelemarketingResumo>('/telemarketing/resumo')
+  return apiFetch<import('@/lib/types').AtendimentoResumo>('/atendimento/resumo')
 }
 
-export async function getTelemarketingLista(
+export async function getAtendimentoLista(
   minhas?: boolean,
-): Promise<import('@/lib/types').TelemarketingLinha[]> {
+): Promise<import('@/lib/types').AtendimentoLinha[]> {
   const qs = minhas ? '?minhas=1' : ''
-  return apiFetch<import('@/lib/types').TelemarketingLinha[]>(`/telemarketing${qs}`)
+  return apiFetch<import('@/lib/types').AtendimentoLinha[]>(`/atendimento${qs}`)
 }
 
-export async function puxarTelemarketingFila(): Promise<Pendencia> {
-  return apiFetch<Pendencia>('/telemarketing/puxar', { method: 'POST' })
+export async function puxarAtendimentoFila(): Promise<Pendencia> {
+  return apiFetch<Pendencia>('/atendimento/puxar', { method: 'POST' })
 }
 
-export async function cumprirTelemarketingPendencia(
+export async function cumprirAtendimentoPendencia(
   id: string,
   payload: { motivoCumprimento: string; status?: string },
 ): Promise<Pendencia> {
-  return apiFetch<Pendencia>(`/telemarketing/pendencias/${id}/cumprir`, {
+  return apiFetch<Pendencia>(`/atendimento/pendencias/${id}/cumprir`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

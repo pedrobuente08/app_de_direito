@@ -72,7 +72,7 @@ export class EscritorioService {
       mapa_comarcas,
       login_map,
       materias_validas: c.materias_validas ?? [],
-      fase_inicial: c.fase_inicial ?? 'AUDIÊNCIA AGENDADA',
+      fase_inicial: c.fase_inicial ?? 'AGUARDANDO_AUDIENCIA',
       situacao_inicial: c.situacao_inicial ?? 'ATIVO',
       status_processo_inicial:
         c.status_processo_inicial ?? c.situacao_inicial ?? 'ATIVO',
