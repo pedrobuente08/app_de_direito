@@ -30,9 +30,20 @@ export type FinalizarAudienciaPayload = {
   houvePendencia?: boolean
   pendencias?: PendenciaPosAudienciaApi[]
   escritorioAdversarioId?: string | null
+  cenario?: string
+  cenarioObservacao?: string | null
 }
 
 const STATUS_OPCOES = ['REALIZADA', 'REDESIGNADA'] as const
+
+const CENARIO_OPCOES: { value: string; label: string }[] = [
+  { value: 'TODOS_COMPARECERAM', label: 'Todos compareceram' },
+  { value: 'REVELIA', label: 'Revelia (réu não compareceu)' },
+  { value: 'SO_ADVOGADO', label: 'Só o advogado' },
+  { value: 'UNA', label: 'UNA' },
+  { value: 'FRACIONADA', label: 'Fracionada' },
+  { value: 'DOCUMENTACAO_PENDENTE', label: 'Documentação pendente' },
+]
 
 const MOTIVOS_AUSENCIA = [
   { value: 'AUTOR_FALTOU', label: 'Autor faltou' },
@@ -100,6 +111,8 @@ export function PopUpPosAudiencia({
     emptyPendencia(),
   ])
   const [escritorioAdvId, setEscritorioAdvId] = useState('')
+  const [cenario, setCenario] = useState('')
+  const [cenarioObservacao, setCenarioObservacao] = useState('')
   const [adversarios, setAdversarios] = useState<EscritorioAdversario[]>([])
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -121,6 +134,8 @@ export function PopUpPosAudiencia({
     setHouvePendencia(false)
     setPendencias([emptyPendencia()])
     setEscritorioAdvId(audiencia?.escritorioAdversarioId ?? '')
+    setCenario('')
+    setCenarioObservacao('')
     setErro(null)
     getEscritoriosAdversarios()
       .then(setAdversarios)
@@ -169,6 +184,22 @@ export function PopUpPosAudiencia({
       setErro('Adicione ao menos uma pendência ou marque "Não".')
       return
     }
+    if (status === 'REALIZADA' && !cenario.trim()) {
+      setErro('Selecione o cenário da audiência.')
+      return
+    }
+    if (status === 'REALIZADA' && cenario === 'SO_ADVOGADO' && !cenarioObservacao.trim()) {
+      setErro('Informe a justificativa (só o advogado compareceu).')
+      return
+    }
+    if (
+      status === 'REALIZADA' &&
+      cenario === 'DOCUMENTACAO_PENDENTE' &&
+      !cenarioObservacao.trim()
+    ) {
+      setErro('Informe o documento necessário.')
+      return
+    }
 
     setSalvando(true)
     try {
@@ -192,6 +223,8 @@ export function PopUpPosAudiencia({
         body.novaHora = novaHora.trim() || null
       }
       if (status === 'REALIZADA') {
+        body.cenario = cenario.trim()
+        body.cenarioObservacao = cenarioObservacao.trim() || null
         body.houvePendencia = houvePendencia
         if (houvePendencia) {
           const hoje = new Date().toISOString().slice(0, 10)
@@ -336,6 +369,60 @@ export function PopUpPosAudiencia({
                 />
               </label>
             </div>
+          ) : null}
+
+          {status === 'REALIZADA' ? (
+            <fieldset className="mb-3 rounded border border-[var(--color-border-default)] p-3">
+              <legend className="px-1 text-xs font-medium text-[var(--color-text-primary)]">
+                Cenário da audiência *
+              </legend>
+              <div className="space-y-1.5">
+                {CENARIO_OPCOES.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className="flex cursor-pointer items-start gap-2 text-sm text-[var(--color-text-primary)]"
+                  >
+                    <input
+                      type="radio"
+                      name="cenario-aud"
+                      value={opt.value}
+                      checked={cenario === opt.value}
+                      disabled={readOnly || salvando}
+                      onChange={() => setCenario(opt.value)}
+                      className="mt-0.5"
+                    />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+              {cenario === 'SO_ADVOGADO' ? (
+                <label className="mt-3 block text-xs text-[var(--color-text-secondary)]">
+                  Justificativa *
+                  <textarea
+                    required
+                    rows={2}
+                    disabled={readOnly || salvando}
+                    value={cenarioObservacao}
+                    onChange={(e) => setCenarioObservacao(e.target.value)}
+                    className="mt-1 w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
+                  />
+                </label>
+              ) : null}
+              {cenario === 'DOCUMENTACAO_PENDENTE' ? (
+                <label className="mt-3 block text-xs text-[var(--color-text-secondary)]">
+                  Documento necessário *
+                  <textarea
+                    required
+                    rows={2}
+                    disabled={readOnly || salvando}
+                    value={cenarioObservacao}
+                    onChange={(e) => setCenarioObservacao(e.target.value)}
+                    placeholder="Ex.: procuração atualizada, comprovante de residência…"
+                    className="mt-1 w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
+                  />
+                </label>
+              ) : null}
+            </fieldset>
           ) : null}
 
           <label className="mb-3 block text-xs text-[var(--color-text-secondary)]">

@@ -1,7 +1,19 @@
 # PLANO FINAL — Incrementos CONECTAR_M0_LEAN_FINAL
 
-Incremento sobre o V3 já implementado. Banco praticamente vazio — sem preocupação com migração de dados.  
+Incremento sobre o V3 já implementado. Referência de negócio: pasta `CONECTAR_M0_LEAN_FINAL/` (briefing, fluxogramas em `FLUXOGRAMA ESCRITÓRIO/`, protótipo HTML).  
 Stack inalterada. Prioridade: BREAKING primeiro, depois aditivos independentes.
+
+## Status de execução (atualizado em 2026-05-18)
+
+| Sprint | Estado | Commits / notas |
+|--------|--------|-----------------|
+| **A** — `fase_atual` UPPER_SNAKE_CASE | ✅ Concluída | `85c85fc` — migration `007`, `fase-label.ts`, UI + API |
+| **B** — Schema aditivo | ✅ Concluída | `83251c7` — migration `008`, Drizzle + tipos web |
+| **H** — Aba ATENDIMENTO | ✅ Concluída | incluída em `85c85fc` |
+| **C** — Cenário pós-audiência | ✅ Concluída | ver commit Sprint C |
+| **D–G, I** | ⏳ Pendente | — |
+
+**Próxima sprint:** D (5º cenário 2º grau).
 
 ---
 
@@ -323,9 +335,9 @@ Novo endpoint `GET /api/dashboards/litigancia-ma-fe`: lista processos com `litig
 - [x] B.6 Atualizar tipos TypeScript
 
 ### Sprint C — Pop-up audiência
-- [ ] C.1 Adicionar bloco cenário no `pos-audiencia.tsx`
-- [ ] C.2 Lógica de cenário no `audiencias.service.ts`
-- [ ] C.3 Atualizar DTO e endpoint `/audiencias/:id/finalizar`
+- [x] C.1 Adicionar bloco cenário no `pos-audiencia.tsx`
+- [x] C.2 Lógica de cenário no `audiencias.service.ts`
+- [x] C.3 Atualizar DTO e endpoint `/audiencias/:id/finalizar`
 
 ### Sprint D — 5º cenário 2º grau
 - [ ] D.1 Adicionar cenário E ao pop-up de acórdão

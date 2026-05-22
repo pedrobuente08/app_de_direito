@@ -6,7 +6,12 @@ import {
 } from '@nestjs/common';
 import { and, desc, eq, gte } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
+import { CalcularPrazoProcessualService } from '../encadeamentos/calcular-prazo-processual.service';
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
+import {
+  CENARIO_AUDIENCIA_OPCOES,
+  type CenarioAudiencia,
+} from './dto/finalizar-audiencia.dto';
 import {
   audiencia,
   audienciaHistorico,
@@ -75,6 +80,7 @@ export class AudienciasService {
   constructor(
     private readonly drizzle: DrizzleService,
     private readonly faseDerivacao: FaseDerivacaoService,
+    private readonly prazos: CalcularPrazoProcessualService,
   ) {}
 
   async listar(escritorioId: string, limit = 500) {
@@ -392,6 +398,60 @@ export class AudienciasService {
     return out;
   }
 
+  private async aplicarCenarioPosRealizada(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx: any,
+    escritorioId: string,
+    processoId: string,
+    cenario: CenarioAudiencia,
+    cenarioObservacao: string | null | undefined,
+  ) {
+    const hoje = hojeIso();
+    if (cenario === 'REVELIA') {
+      await tx
+        .update(processo)
+        .set({ reveliaDecretada: true, updatedAt: new Date() })
+        .where(
+          and(
+            eq(processo.escritorioId, escritorioId),
+            eq(processo.id, processoId),
+          ),
+        );
+      return;
+    }
+    if (cenario === 'SO_ADVOGADO') {
+      const dataLimite = await this.prazos.calcular(escritorioId, 5, hoje);
+      await tx.insert(pendencia).values({
+        escritorioId,
+        processoId,
+        tipo: 'JUSTIFICAR_AUSENCIA_CLIENTE',
+        dataAbertura: hoje,
+        dataLimite,
+        responsavel: 'ATENDIMENTO',
+        status: 'ABERTA',
+        observacao: cenarioObservacao?.trim() || null,
+        origem: 'POS_AUDIENCIA',
+        fila: 'ATENDIMENTO',
+      });
+      return;
+    }
+    if (cenario === 'DOCUMENTACAO_PENDENTE') {
+      const dataLimite = await this.prazos.calcular(escritorioId, 5, hoje);
+      await tx.insert(pendencia).values({
+        escritorioId,
+        processoId,
+        tipo: 'SOLICITAR_DOC_CONFORME_VARA',
+        dataAbertura: hoje,
+        dataLimite,
+        responsavel: 'ATENDIMENTO',
+        status: 'ABERTA',
+        observacao: cenarioObservacao?.trim() || null,
+        origem: 'POS_AUDIENCIA',
+        fila: 'ATENDIMENTO',
+      });
+    }
+  }
+
   private async registrarAusente(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tx: any,
@@ -546,6 +606,35 @@ export class AudienciasService {
           'motivoAusencia é obrigatório quando autorPresenca é AUSENTE.',
         );
       }
+      const cenario = dto.cenario?.trim().toUpperCase() as
+        | CenarioAudiencia
+        | undefined;
+      if (
+        !cenario ||
+        !(CENARIO_AUDIENCIA_OPCOES as readonly string[]).includes(cenario)
+      ) {
+        throw new BadRequestException(
+          'Informe o cenário da audiência (REALIZADA).',
+        );
+      }
+      if (cenario === 'SO_ADVOGADO' && !dto.cenarioObservacao?.trim()) {
+        throw new BadRequestException(
+          'Justificativa é obrigatória para cenário SÓ O ADVOGADO.',
+        );
+      }
+      if (
+        cenario === 'DOCUMENTACAO_PENDENTE' &&
+        !dto.cenarioObservacao?.trim()
+      ) {
+        throw new BadRequestException(
+          'Documento necessário é obrigatório para DOCUMENTAÇÃO PENDENTE.',
+        );
+      }
+      const cenarioObs =
+        dto.cenarioObservacao === undefined
+          ? null
+          : dto.cenarioObservacao?.trim() || null;
+
       await this.drizzle.db.transaction(async (tx) => {
         if (dto.escritorioAdversarioId) {
           await tx
@@ -579,6 +668,20 @@ export class AudienciasService {
             });
           }
         }
+        await this.aplicarCenarioPosRealizada(
+          tx,
+          escritorioId,
+          current.processoId,
+          cenario,
+          cenarioObs,
+        );
+        await tx
+          .update(audiencia)
+          .set({
+            cenario,
+            cenarioObservacao: cenarioObs,
+          })
+          .where(eq(audiencia.id, id));
         await tx.insert(audienciaHistorico).values({
           audienciaIdOrigem: current.id,
           escritorioId,

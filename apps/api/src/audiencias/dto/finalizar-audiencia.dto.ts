@@ -13,6 +13,18 @@ import {
 } from 'class-validator';
 import { PendenciaPosAudienciaDto } from './pendencia-pos-audiencia.dto';
 
+/** Cenários pós-audiência REALIZADA (BRIEFING_DEV_V3 / FLUXO 1 JUIZADO PROJUDI). */
+export const CENARIO_AUDIENCIA_OPCOES = [
+  'REVELIA',
+  'TODOS_COMPARECERAM',
+  'SO_ADVOGADO',
+  'UNA',
+  'FRACIONADA',
+  'DOCUMENTACAO_PENDENTE',
+] as const;
+
+export type CenarioAudiencia = (typeof CENARIO_AUDIENCIA_OPCOES)[number];
+
 export class FinalizarAudienciaDto {
   @IsString()
   @MinLength(1)
@@ -58,4 +70,15 @@ export class FinalizarAudienciaDto {
   @IsOptional()
   @IsUUID('4')
   escritorioAdversarioId?: string | null;
+
+  /** Obrigatório quando `status` = REALIZADA (Sprint C). */
+  @IsOptional()
+  @IsString()
+  @IsIn([...CENARIO_AUDIENCIA_OPCOES])
+  cenario?: CenarioAudiencia;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(8000)
+  cenarioObservacao?: string | null;
 }
