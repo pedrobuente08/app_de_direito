@@ -123,6 +123,26 @@ export class RecursosService {
       pendPorProc.set(p.processoId, arr);
     }
 
+    const sentRows = await db
+      .select({
+        processoId: sentenca.processoId,
+        grau: sentenca.grau,
+        turmaRecursal: sentenca.turmaRecursal,
+        turma: sentenca.turma,
+      })
+      .from(sentenca)
+      .where(eq(sentenca.escritorioId, escritorioId))
+      .orderBy(desc(sentenca.data), desc(sentenca.createdAt));
+
+    const turmaPorProc = new Map<string, string | number | null>();
+    for (const s of sentRows) {
+      if (turmaPorProc.has(s.processoId)) continue;
+      const g = (s.grau ?? '').toUpperCase();
+      if (g.includes('SEGUNDO') || g === 'STJ' || g === 'TST') continue;
+      const v = s.turmaRecursal ?? s.turma;
+      turmaPorProc.set(s.processoId, v != null ? v : null);
+    }
+
     return lista.map((r) => {
       const pends = pendPorProc.get(r.processoId) ?? [];
       const pendRecurso = pends.find((p) =>
@@ -145,6 +165,7 @@ export class RecursosService {
         tipoRecurso: r.recursoTipo,
         prazoManifestacao: pendRecurso?.dataLimite ?? null,
         pendenciaRecurso: pendRecurso?.tipo ?? null,
+        turmaRecursal: turmaPorProc.get(r.processoId) ?? null,
       };
     });
   }

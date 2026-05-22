@@ -1,4 +1,5 @@
 import {
+  boolean,
   date,
   numeric,
   pgTable,
@@ -30,6 +31,10 @@ export const improcedente = pgTable('improcedente', {
   dataPrazoPagamento: date('data_prazo_pagamento'),
   dataPagamento: date('data_pagamento'),
   decisaoRecurso: varchar('decisao_recurso', { length: 20 }),
+  certidaoCreditoSolicitada: boolean('certidao_credito_solicitada')
+    .notNull()
+    .default(false),
+  certidaoCreditoData: date('certidao_credito_data'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

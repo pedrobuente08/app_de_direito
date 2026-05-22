@@ -38,4 +38,12 @@ export class CreateSentencaDto {
   @IsOptional()
   @IsString()
   observacoes?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  tipoDecisao?: 'MONOCRATICA' | 'COLEGIADA' | null;
+
+  @IsOptional()
+  turmaRecursal?: number | null;
 }

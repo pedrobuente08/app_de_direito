@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import {
+  atualizarObrigacaoFazer,
   atualizarProcedente,
   getAuthMe,
   getProcedentes,
@@ -40,6 +41,11 @@ type EditForm = {
   obsCurta: string
   valorRecebido: string
   dataRecebimento: string
+  obrigacaoDescricao: string
+  obrigacaoCumprida: boolean
+  obrigacaoCumpridaEm: string
+  serasajudAcionado: boolean
+  temObrigacaoFazer: boolean
 }
 
 function formFromProcedente(p: Procedente): EditForm {
@@ -50,6 +56,11 @@ function formFromProcedente(p: Procedente): EditForm {
     obsCurta: p.obsCurta ?? '',
     valorRecebido: p.valorRecebido ?? '',
     dataRecebimento: p.dataRecebimento ?? '',
+    obrigacaoDescricao: p.obrigacaoFazerDescricao ?? '',
+    obrigacaoCumprida: !!p.obrigacaoFazerCumprida,
+    obrigacaoCumpridaEm: p.obrigacaoFazerCumpridaEm ?? '',
+    serasajudAcionado: !!p.serasajudAcionado,
+    temObrigacaoFazer: !!p.temObrigacaoFazer,
   }
 }
 
@@ -58,7 +69,19 @@ export default function ProcedentesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editandoId, setEditandoId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState<EditForm>({ familiaSituacao: '', situacao: '', responsavel: '', obsCurta: '', valorRecebido: '', dataRecebimento: '' })
+  const [editForm, setEditForm] = useState<EditForm>({
+    familiaSituacao: '',
+    situacao: '',
+    responsavel: '',
+    obsCurta: '',
+    valorRecebido: '',
+    dataRecebimento: '',
+    obrigacaoDescricao: '',
+    obrigacaoCumprida: false,
+    obrigacaoCumpridaEm: '',
+    serasajudAcionado: false,
+    temObrigacaoFazer: false,
+  })
   const [saving, setSaving] = useState(false)
   const [readOnly, setReadOnly] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -241,6 +264,11 @@ export default function ProcedentesPage() {
                     </td>
                     <td className="px-4 py-2.5">
                       <FamiliaBadge value={p.familiaSituacao} />
+                      {p.temObrigacaoFazer ? (
+                        <span className="mt-1 inline-block rounded bg-[var(--familia-pend-interna-bg)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--familia-pend-interna-text)]">
+                          Obrigação de fazer
+                        </span>
+                      ) : null}
                       {p.situacao && <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">{p.situacao}</p>}
                     </td>
                     <td className="px-4 py-2.5 text-xs text-[var(--color-text-secondary)]">{p.responsavel ?? '—'}</td>
@@ -307,6 +335,101 @@ export default function ProcedentesPage() {
                             <input type="date" value={editForm.dataRecebimento}
                               onChange={e => setEditForm(prev => ({ ...prev, dataRecebimento: e.target.value }))}
                               className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none" />
+                          </div>
+                          <div className="col-span-full rounded border border-dashed p-3">
+                            <p className="mb-2 text-xs font-semibold text-[var(--color-text-secondary)]">
+                              Obrigação de fazer / SerasaJud
+                            </p>
+                            <label className="mb-2 flex items-center gap-2 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={editForm.temObrigacaoFazer}
+                                onChange={(e) =>
+                                  setEditForm((prev) => ({
+                                    ...prev,
+                                    temObrigacaoFazer: e.target.checked,
+                                  }))
+                                }
+                              />
+                              Tem obrigação de fazer
+                            </label>
+                            {editForm.temObrigacaoFazer ? (
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <input
+                                  value={editForm.obrigacaoDescricao}
+                                  onChange={(e) =>
+                                    setEditForm((prev) => ({
+                                      ...prev,
+                                      obrigacaoDescricao: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Descrição da obrigação"
+                                  className="rounded border px-2 py-1.5 text-sm sm:col-span-2"
+                                />
+                                <label className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    checked={editForm.obrigacaoCumprida}
+                                    onChange={(e) =>
+                                      setEditForm((prev) => ({
+                                        ...prev,
+                                        obrigacaoCumprida: e.target.checked,
+                                      }))
+                                    }
+                                  />
+                                  Réu cumpriu
+                                </label>
+                                <input
+                                  type="date"
+                                  value={editForm.obrigacaoCumpridaEm}
+                                  onChange={(e) =>
+                                    setEditForm((prev) => ({
+                                      ...prev,
+                                      obrigacaoCumpridaEm: e.target.value,
+                                    }))
+                                  }
+                                  className="rounded border px-2 py-1.5 text-sm"
+                                />
+                                <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={editForm.serasajudAcionado}
+                                    onChange={(e) =>
+                                      setEditForm((prev) => ({
+                                        ...prev,
+                                        serasajudAcionado: e.target.checked,
+                                      }))
+                                    }
+                                  />
+                                  SerasaJud acionado
+                                </label>
+                                <button
+                                  type="button"
+                                  className="text-xs text-[var(--color-brand)] hover:underline sm:col-span-2"
+                                  onClick={async () => {
+                                    if (!editForm.obrigacaoDescricao.trim()) {
+                                      toast.error('Informe a descrição.')
+                                      return
+                                    }
+                                    try {
+                                      await atualizarObrigacaoFazer(p.processoId, {
+                                        descricao: editForm.obrigacaoDescricao,
+                                        cumprida: editForm.obrigacaoCumprida,
+                                        cumpridaEm: editForm.obrigacaoCumpridaEm || undefined,
+                                        serasajudAcionado: editForm.serasajudAcionado,
+                                        temObrigacaoFazer: true,
+                                      })
+                                      toast.success('Obrigação de fazer salva.')
+                                      load()
+                                    } catch (err) {
+                                      toast.error((err as Error).message)
+                                    }
+                                  }}
+                                >
+                                  Salvar só obrigação de fazer
+                                </button>
+                              </div>
+                            ) : null}
                           </div>
                           <div className="col-span-full flex gap-2 pt-1">
                             <button type="submit" disabled={saving}

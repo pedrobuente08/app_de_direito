@@ -5,12 +5,14 @@ import {
 } from '@nestjs/common';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
-import { pendencia, pendenciaProblema } from '../db/schema/pendencia';
+import { pendencia, pendenciaHistorico, pendenciaProblema } from '../db/schema/pendencia';
 import { processo } from '../db/schema/processo';
 import type { AvaliacaoRecursoJson } from '../db/schema/processo';
+import type { DesistirProcessoDto } from './dto/desistir-processo.dto';
 import type { JusticaGratuitaProcessoDto } from './dto/justica-gratuita-processo.dto';
 import type { PatchAvaliacaoRecursoDto } from './dto/patch-avaliacao-recurso.dto';
 import type { SobrestarProcessoDto } from './dto/sobrestar-processo.dto';
+import { ProcessosHipossuficienciaService } from './processos-hipossuficiencia.service';
 
 function addYearsIso(dateIso: string, years: number): string {
   const d = new Date(`${dateIso}T12:00:00.000Z`);
@@ -20,7 +22,10 @@ function addYearsIso(dateIso: string, years: number): string {
 
 @Injectable()
 export class ProcessosWorkflowService {
-  constructor(private readonly drizzle: DrizzleService) {}
+  constructor(
+    private readonly drizzle: DrizzleService,
+    private readonly hipossuf: ProcessosHipossuficienciaService,
+  ) {}
 
   private async assertProcesso(escritorioId: string, id: string) {
     const [row] = await this.drizzle.db
@@ -142,6 +147,71 @@ export class ProcessosWorkflowService {
       .set(patch)
       .where(and(eq(processo.escritorioId, escritorioId), eq(processo.id, id)));
 
+    if (dto.operacao === 'REVOGAR') {
+      await this.hipossuf.garantirPendenciaSeNecessario(
+        escritorioId,
+        id,
+        'Gratuidade revogada — solicitar documentação de hipossuficiência',
+      );
+    }
+
+    return this.assertProcesso(escritorioId, id);
+  }
+
+  async desistir(escritorioId: string, id: string, dto: DesistirProcessoDto) {
+    await this.assertProcesso(escritorioId, id);
+    const motivo = dto.motivo.trim();
+    if (!motivo) {
+      throw new BadRequestException('Informe o motivo da desistência.');
+    }
+    const data = dto.data.slice(0, 10);
+
+    const abertas = await this.drizzle.db
+      .select()
+      .from(pendencia)
+      .where(
+        and(
+          eq(pendencia.escritorioId, escritorioId),
+          eq(pendencia.processoId, id),
+          eq(pendencia.status, 'ABERTA'),
+        ),
+      );
+
+    await this.drizzle.db.transaction(async (tx) => {
+      for (const p of abertas) {
+        await tx.insert(pendenciaHistorico).values({
+          pendenciaIdOrigem: p.id,
+          escritorioId,
+          processoId: p.processoId,
+          tipo: p.tipo,
+          dataAbertura: p.dataAbertura,
+          dataLimite: p.dataLimite,
+          solicitante: p.solicitante,
+          responsavel: p.responsavel,
+          status: 'DESISTENCIA',
+          dataCumprimento: data,
+          observacao: motivo,
+          origem: p.origem,
+          createdAtOrigem: p.createdAt,
+        });
+        await tx
+          .delete(pendencia)
+          .where(
+            and(eq(pendencia.escritorioId, escritorioId), eq(pendencia.id, p.id)),
+          );
+      }
+      await tx
+        .update(processo)
+        .set({
+          statusProcesso: 'ARQUIVADO',
+          situacaoFinal: 'DESISTENCIA',
+          faseAtual: 'ENCERRADO',
+          observacaoGeral: motivo,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(processo.escritorioId, escritorioId), eq(processo.id, id)));
+    });
+
     return this.assertProcesso(escritorioId, id);
   }
 
@@ -219,6 +289,15 @@ export class ProcessosWorkflowService {
       FROM processo_procedente pp
       WHERE pp.processo_id = ${processoId} AND pp.escritorio_id = ${escritorioId}
         AND pp.obs_curta IS NOT NULL AND TRIM(pp.obs_curta) <> ''
+
+      UNION ALL
+
+      SELECT 'LITIGANCIA',
+        'Processo marcado com litigância de má-fé',
+        p.updated_at
+      FROM processo p
+      WHERE p.id = ${processoId} AND p.escritorio_id = ${escritorioId}
+        AND p.litigancia_ma_fe = true
 
       ORDER BY data_ref DESC NULLS LAST
     `);

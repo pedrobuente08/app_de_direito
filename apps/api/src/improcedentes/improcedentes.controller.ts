@@ -5,6 +5,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Post,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
@@ -28,6 +29,16 @@ export class ImprocedentesController {
   @Throttle(ThrottlePresets.processosList)
   resumo(@CurrentUser() user: AuthUser) {
     return this.improcedentes.resumo(user.escritorioId);
+  }
+
+  @Post(':id/certidao-credito')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.processoPostManual)
+  certidaoCredito(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.improcedentes.solicitarCertidaoCredito(user.escritorioId, id);
   }
 
   @Patch(':id')

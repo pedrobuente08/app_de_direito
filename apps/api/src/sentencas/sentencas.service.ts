@@ -57,12 +57,27 @@ export class SentencasService {
         assessorJulgador: dto.assessorJulgador?.trim() || null,
         turnoJulgamento: dto.turnoJulgamento?.trim() || null,
         observacoes: dto.observacoes?.trim() || null,
+        tipoDecisao: dto.tipoDecisao?.trim() || null,
+        turmaRecursal: dto.turmaRecursal ?? null,
       })
       .returning();
     await this.processos.recalcularProcedenteAposSentenca(
       escritorioId,
       dto.processoId,
     );
+
+    const td = dto.tipoDecisao?.trim().toUpperCase();
+    if (td === 'MONOCRATICA') {
+      await this.encadeamentos.dispatch(escritorioId, 'decisao_monocratica', {
+        processoId: dto.processoId,
+        observacao: dto.observacoes?.trim() || null,
+      });
+    } else if (td === 'COLEGIADA') {
+      await this.encadeamentos.dispatch(escritorioId, 'decisao_colegiada', {
+        processoId: dto.processoId,
+        observacao: dto.observacoes?.trim() || null,
+      });
+    }
 
     if (resultado.toUpperCase() === 'ACORDO') {
       await this.encadeamentos.dispatch(escritorioId, 'acordo_homologado', {

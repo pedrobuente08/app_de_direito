@@ -51,6 +51,13 @@ export const processo = pgTable(
     faseUpdatedAt: timestamp('fase_updated_at', { withTimezone: true }),
     reveliaDecretada: boolean('revelia_decretada').notNull().default(false),
     litiganciaMaFe: boolean('litigancia_ma_fe').notNull().default(false),
+    hipossuficienciaComprovada: boolean('hipossuficiencia_comprovada')
+      .notNull()
+      .default(false),
+    varaExigeDocFrequente: boolean('vara_exige_doc_frequente')
+      .notNull()
+      .default(false),
+    reuOrgaoPublico: boolean('reu_orgao_publico').notNull().default(false),
     dajeEmitido: boolean('daje_emitido').notNull().default(false),
     dajeValor: numeric('daje_valor', { precision: 12, scale: 2 }),
     dajeDataEmissao: date('daje_data_emissao'),

@@ -13,6 +13,7 @@ import {
   processoProcedente,
   procedenteTransicao,
 } from '../db/schema/processo-procedente';
+import type { ObrigacaoFazerDto } from './dto/obrigacao-fazer.dto';
 import type { UpdateProcedenteDto } from './dto/update-procedente.dto';
 
 const SENT = ['PROCEDENTE', 'PARCIAL', 'ACORDO'] as const;
@@ -40,6 +41,11 @@ export type ProcedenteListaItem = {
   recursoTipo: string | null;
   recursoOrigem: string | null;
   recursoResultado: string | null;
+  temObrigacaoFazer?: boolean;
+  obrigacaoFazerDescricao?: string | null;
+  obrigacaoFazerCumprida?: boolean;
+  obrigacaoFazerCumpridaEm?: string | null;
+  serasajudAcionado?: boolean;
   docPendente?: string[];
   responsavel: string | null;
   obsCurta: string | null;
@@ -99,6 +105,11 @@ export class ProcedentesService {
       recursoTipo: proc?.recursoTipo ?? null,
       recursoOrigem: proc?.recursoOrigem ?? null,
       recursoResultado: proc?.recursoResultado ?? null,
+      temObrigacaoFazer: proc?.temObrigacaoFazer ?? false,
+      obrigacaoFazerDescricao: proc?.obrigacaoFazerDescricao ?? null,
+      obrigacaoFazerCumprida: proc?.obrigacaoFazerCumprida ?? false,
+      obrigacaoFazerCumpridaEm: this.isoDate(proc?.obrigacaoFazerCumpridaEm),
+      serasajudAcionado: proc?.serasajudAcionado ?? false,
       docPendente: proc?.docPendente ?? undefined,
       responsavel: proc?.responsavel ?? null,
       obsCurta: proc?.obsCurta ?? null,
@@ -391,6 +402,39 @@ export class ProcedentesService {
         processoId,
       });
     }
+
+    return this.obter(escritorioId, processoId);
+  }
+
+  async atualizarObrigacaoFazer(
+    escritorioId: string,
+    processoId: string,
+    dto: ObrigacaoFazerDto,
+  ) {
+    const row = await this.obterJoinRaw(escritorioId, processoId);
+    if (!row?.procedente) {
+      throw new NotFoundException('Linha de procedente não encontrada.');
+    }
+
+    const patch: Partial<typeof processoProcedente.$inferInsert> = {
+      temObrigacaoFazer: dto.temObrigacaoFazer ?? true,
+      obrigacaoFazerDescricao: dto.descricao.trim(),
+      updatedAt: new Date(),
+    };
+    if (dto.cumprida !== undefined) {
+      patch.obrigacaoFazerCumprida = dto.cumprida;
+    }
+    if (dto.cumpridaEm !== undefined) {
+      patch.obrigacaoFazerCumpridaEm = dto.cumpridaEm;
+    }
+    if (dto.serasajudAcionado !== undefined) {
+      patch.serasajudAcionado = dto.serasajudAcionado;
+    }
+
+    await this.drizzle.db
+      .update(processoProcedente)
+      .set(patch)
+      .where(eq(processoProcedente.processoId, processoId));
 
     return this.obter(escritorioId, processoId);
   }

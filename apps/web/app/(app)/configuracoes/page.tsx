@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { FamiliaTabs } from '@/components/ui/familia-tabs'
 import { getEscritorioConfig, salvarEscritorioConfig } from '@/lib/api'
 import { ToastContainer, useToast } from '@/lib/toast'
+import { ComarcasSection } from './_components/comarcas-section'
 
 const CONFIG_TABS = [
   { id: 'geral', label: 'Geral' },
@@ -16,6 +17,7 @@ const CONFIG_TABS = [
   { id: 'provisao', label: 'Provisão' },
   { id: 'comunica', label: 'Comunica' },
   { id: 'links', label: 'Cadastros' },
+  { id: 'comarcas', label: 'Comarcas' },
 ] as const
 
 type ConfigTab = (typeof CONFIG_TABS)[number]['id']
@@ -412,6 +414,8 @@ export default function ConfiguracoesPage() {
           </div>
         </section>
         )}
+
+        {aba === 'comarcas' && <ComarcasSection toast={toast} />}
 
         {aba === 'links' && (
           <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">

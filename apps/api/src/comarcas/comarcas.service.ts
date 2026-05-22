@@ -33,6 +33,8 @@ export class ComarcasService {
           codigo: dto.codigo.trim(),
           nome: dto.nome.trim(),
           abreviado: dto.abreviado.trim(),
+          perfilDiligencia: dto.perfilDiligencia ?? null,
+          exigeDocFrequente: dto.exigeDocFrequente ?? false,
         })
         .returning();
 
@@ -67,6 +69,12 @@ export class ComarcasService {
     }
     if (dto.abreviado !== undefined) {
       patch.abreviado = dto.abreviado.trim();
+    }
+    if (dto.perfilDiligencia !== undefined) {
+      patch.perfilDiligencia = dto.perfilDiligencia;
+    }
+    if (dto.exigeDocFrequente !== undefined) {
+      patch.exigeDocFrequente = dto.exigeDocFrequente;
     }
 
     if (!Object.keys(patch).length) {

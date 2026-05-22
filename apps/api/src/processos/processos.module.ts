@@ -14,6 +14,7 @@ import { PosProcedenteParcialService } from './pos-procedente-parcial.service';
 import { ProcessosController } from './processos.controller';
 import { ProcessosService } from './processos.service';
 import { ProcessosWorkflowService } from './processos-workflow.service';
+import { ProcessosHipossuficienciaService } from './processos-hipossuficiencia.service';
 
 @Module({
   imports: [
@@ -33,7 +34,12 @@ import { ProcessosWorkflowService } from './processos-workflow.service';
     PosExtincaoService,
     PosProcedenteParcialService,
     ProcessosWorkflowService,
+    ProcessosHipossuficienciaService,
   ],
-  exports: [ProcessosService, ProcessosWorkflowService],
+  exports: [
+    ProcessosService,
+    ProcessosWorkflowService,
+    ProcessosHipossuficienciaService,
+  ],
 })
 export class ProcessosModule {}

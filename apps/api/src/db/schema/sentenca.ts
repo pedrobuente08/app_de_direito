@@ -3,6 +3,7 @@ import {
   index,
   numeric,
   pgTable,
+  smallint,
   text,
   timestamp,
   uuid,
@@ -33,6 +34,8 @@ export const sentenca = pgTable(
     motivoExtincao: varchar('motivo_extincao', { length: 100 }),
     observacoes: text('observacoes'),
     subResultado: varchar('sub_resultado', { length: 30 }),
+    turmaRecursal: smallint('turma_recursal'),
+    tipoDecisao: varchar('tipo_decisao', { length: 20 }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
   (t) => [

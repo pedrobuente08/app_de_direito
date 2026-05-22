@@ -61,4 +61,35 @@ export const ENCADEAMENTO_PENDENCIAS: Record<
       fila: 'ATENDIMENTO',
     },
   ],
+  juizado_cliente_recorre: [
+    { tipo: 'ELABORAR RECURSO', dias: 10, responsavel: 'ADV', fila: 'ADV' },
+    {
+      tipo: 'SOLICITAR DOC HIPOSSUFICIENCIA',
+      dias: 5,
+      responsavel: 'ATENDIMENTO',
+      fila: 'ATENDIMENTO',
+    },
+  ],
+  decisao_monocratica: [
+    {
+      tipo: 'ELABORAR EMBARGOS DECLARACAO',
+      dias: 5,
+      responsavel: 'ADV',
+      fila: 'ADV',
+    },
+    {
+      tipo: 'ELABORAR AGRAVO INTERNO',
+      dias: 10,
+      responsavel: 'ADV',
+      fila: 'ADV',
+    },
+  ],
+  decisao_colegiada: [
+    {
+      tipo: 'ELABORAR EMBARGOS DECLARACAO',
+      dias: 5,
+      responsavel: 'ADV',
+      fila: 'ADV',
+    },
+  ],
 };

@@ -13,6 +13,7 @@ const TABS: DashTab[] = [
   { href: '/dashboards/recursos', label: 'Recursos' },
   { href: '/dashboards/improcedentes', label: 'Improcedentes' },
   { href: '/dashboards/financeiro', label: 'Financeiro' },
+  { href: '/dashboards/litigancia-ma-fe', label: 'Litigância' },
 ]
 
 export function DashNav() {

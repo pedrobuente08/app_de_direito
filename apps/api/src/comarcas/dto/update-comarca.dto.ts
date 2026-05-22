@@ -1,4 +1,11 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class UpdateComarcaDto {
   @IsOptional()
@@ -18,4 +25,12 @@ export class UpdateComarcaDto {
   @MinLength(1)
   @MaxLength(30)
   abreviado?: string;
+
+  @IsOptional()
+  @IsIn(['DILIGENTE', 'MENOS_DILIGENTE'])
+  perfilDiligencia?: 'DILIGENTE' | 'MENOS_DILIGENTE' | null;
+
+  @IsOptional()
+  @IsBoolean()
+  exigeDocFrequente?: boolean;
 }

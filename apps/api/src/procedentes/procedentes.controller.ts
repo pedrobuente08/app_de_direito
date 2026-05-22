@@ -12,6 +12,7 @@ import type { AuthUser } from '../common/decorators/current-user.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ThrottlePresets } from '../common/throttle-presets';
 import { Roles } from '../common/metadata';
+import { ObrigacaoFazerDto } from './dto/obrigacao-fazer.dto';
 import { UpdateProcedenteDto } from './dto/update-procedente.dto';
 import { ProcedentesService } from './procedentes.service';
 
@@ -46,6 +47,21 @@ export class ProcedentesController {
     @Param('processoId', ParseUUIDPipe) processoId: string,
   ) {
     return this.procedentes.obter(user.escritorioId, processoId);
+  }
+
+  @Post(':processoId/obrigacao-fazer')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.procedentesWrite)
+  obrigacaoFazer(
+    @CurrentUser() user: AuthUser,
+    @Param('processoId', ParseUUIDPipe) processoId: string,
+    @Body() dto: ObrigacaoFazerDto,
+  ) {
+    return this.procedentes.atualizarObrigacaoFazer(
+      user.escritorioId,
+      processoId,
+      dto,
+    );
   }
 
   @Patch(':processoId')

@@ -48,6 +48,8 @@ export const processoProcedente = pgTable('processo_procedente', {
   obrigacaoFazerCumprida: boolean('obrigacao_fazer_cumprida').notNull().default(false),
   obrigacaoFazerCumpridaEm: date('obrigacao_fazer_cumprida_em'),
   serasajudAcionado: boolean('serasajud_acionado').notNull().default(false),
+  tipoExecucao: varchar('tipo_execucao', { length: 20 }),
+  penhoraStatus: varchar('penhora_status', { length: 30 }),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

@@ -29,6 +29,7 @@ import { PosProcedenteParcialDto } from './dto/pos-procedente-parcial.dto';
 import { UpdateProcessoDto } from './dto/update-processo.dto';
 import { JusticaGratuitaProcessoDto } from './dto/justica-gratuita-processo.dto';
 import { PatchAvaliacaoRecursoDto } from './dto/patch-avaliacao-recurso.dto';
+import { DesistirProcessoDto } from './dto/desistir-processo.dto';
 import { SobrestarProcessoDto } from './dto/sobrestar-processo.dto';
 import { PosExtincaoService } from './pos-extincao.service';
 import { PosImprocedenciaService } from './pos-improcedencia.service';
@@ -294,6 +295,17 @@ export class ProcessosController {
     @Body() dto: JusticaGratuitaProcessoDto,
   ) {
     return this.workflow.justicaGratuita(user.escritorioId, id, dto);
+  }
+
+  @Post(':id/desistir')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.processoPostManual)
+  desistir(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: DesistirProcessoDto,
+  ) {
+    return this.workflow.desistir(user.escritorioId, id, dto);
   }
 
   @Patch(':id/avaliacao-recurso')

@@ -87,7 +87,7 @@ export default function RecursosPage() {
           <table className="w-full text-sm">
             <thead className="bg-[var(--color-bg-muted)]">
               <tr>
-                {['Processo', 'Cliente', 'Origem', 'Fase', 'Prazo manifestação', ''].map((h) => (
+                {['Processo', 'Cliente', 'Origem', 'Turma', 'Fase', 'Prazo manifestação', ''].map((h) => (
                   <th
                     key={h}
                     className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]"
@@ -108,6 +108,9 @@ export default function RecursosPage() {
                       : r.origemRecurso === 'REU'
                         ? 'Réu'
                         : '—'}
+                  </td>
+                  <td className="px-4 py-2.5 font-mono text-xs">
+                    {r.turmaRecursal ?? '—'}
                   </td>
                   <td className="px-4 py-2.5">{faseLabel(r.faseAtual)}</td>
                   <td className="px-4 py-2.5">{r.prazoManifestacao ?? '—'}</td>

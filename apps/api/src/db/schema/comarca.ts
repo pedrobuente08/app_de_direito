@@ -1,4 +1,11 @@
-import { pgTable, timestamp, unique, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  pgTable,
+  timestamp,
+  unique,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { escritorio } from './escritorio';
 
 export const comarca = pgTable(
@@ -12,6 +19,7 @@ export const comarca = pgTable(
     nome: varchar('nome', { length: 100 }).notNull(),
     abreviado: varchar('abreviado', { length: 30 }).notNull(),
     perfilDiligencia: varchar('perfil_diligencia', { length: 20 }),
+    exigeDocFrequente: boolean('exige_doc_frequente').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),

@@ -12,9 +12,12 @@ Stack inalterada. Prioridade: BREAKING primeiro, depois aditivos independentes.
 | **H** — Aba ATENDIMENTO | ✅ Concluída | incluída em `85c85fc` |
 | **C** — Cenário pós-audiência | ✅ Concluída | `0f95833` |
 | **D** — 5º cenário 2º grau (E + E1–E4) | ✅ Concluída | `f270f92` — migration `009`, dialog + API |
-| **E–G, I** | ⏳ Pendente | — |
+| **E** — Workflow DAJE | ✅ Concluída | módulo `daje`, seção no drawer, comarcas |
+| **F** — Obrigação de fazer | ✅ Concluída | API + UI procedentes, `GET /clientes/:cpf/processos` |
+| **G** — Observações + dashboard | ✅ Concluída | fonte LITIGANCIA, `/dashboards/litigancia-ma-fe` |
+| **I** — Fluxogramas M0 | ✅ Concluída | migration `010`, hipossuf, desistir, certidão, turma |
 
-**Próxima sprint:** E (workflow DAJE).
+**Próxima sprint:** M1 (prazos DJEN/10G) — ver PENDÊNCIAS FUTURAS.
 
 ---
 
@@ -345,18 +348,18 @@ Novo endpoint `GET /api/dashboards/litigancia-ma-fe`: lista processos com `litig
 - [x] D.2 Lógica dos 4 sub-resultados em `recursos.service.ts` + `sentenca.sub_resultado`
 
 ### Sprint E — DAJE
-- [ ] E.1 Módulo NestJS `daje` com 5 endpoints
-- [ ] E.2 Seção DAJE no drawer do processo
-- [ ] E.3 Campo `perfil_diligencia` no CRUD de comarcas
+- [x] E.1 Módulo NestJS `daje` com 5 endpoints
+- [x] E.2 Seção DAJE no drawer do processo
+- [x] E.3 Campo `perfil_diligencia` no CRUD de comarcas (aba Configurações)
 
 ### Sprint F — Obrigação de fazer + SerasaJud
-- [ ] F.1 UI na página de PROCEDENTES
-- [ ] F.2 Endpoint `POST /procedentes/:id/obrigacao-fazer`
-- [ ] F.3 Endpoint `GET /clientes/:cpf/processos`
+- [x] F.1 UI na página de PROCEDENTES
+- [x] F.2 Endpoint `POST /procedentes/:id/obrigacao-fazer`
+- [x] F.3 Endpoint `GET /clientes/:cpf/processos`
 
 ### Sprint G — Observações + Dashboard
-- [ ] G.1 Atualizar query de observações (7ª fonte: LITIGANCIA)
-- [ ] G.2 Endpoint e página de dashboard litigância de má-fé
+- [x] G.1 Atualizar query de observações (7ª fonte: LITIGANCIA)
+- [x] G.2 Endpoint e página de dashboard litigância de má-fé
 
 ### Sprint H — Aba ATENDIMENTO ✅ CONCLUÍDO
 
@@ -390,7 +393,7 @@ Novo endpoint `GET /api/dashboards/litigancia-ma-fe`: lista processos com `litig
 
 ### I.1 — Novos campos: `processo` e `processo_procedente`
 
-Migration SQL (`009_fluxogramas_escritorio.sql`):
+Migration SQL (`010_fluxogramas_escritorio.sql`):
 
 ```sql
 -- processo
@@ -511,6 +514,17 @@ Implementar no `processos.service.ts` ao receber novo processo (importação PDF
 ### I.9 — Turma recursal no grid de RECURSOS
 
 Adicionar coluna "Turma" no grid da aba RECURSOS, preenchida via `sentenca.turma_recursal`. Campo editável inline (input numérico 1–5 para Juizado; texto livre para Justiça Comum).
+
+### Sprint I — Checklist
+- [x] I.1 Migration `010` + schemas Drizzle
+- [x] I.2 Gate hipossuficiência (revogação JG, improcedente recorrer, isenção DAJE indeferida)
+- [x] I.3 Cascata `tipo_decisao` em `sentencas.service.ts`
+- [x] I.4 Campo `reu_orgao_publico` + badge no drawer
+- [x] I.5 `GET /clientes/:cpf/restricoes-ativas` (relatório manual)
+- [x] I.6 Certidão de crédito em IMPROCEDENTES
+- [x] I.7 `POST /processos/:id/desistir` + UI drawer
+- [x] I.8 Comarca `exige_doc_frequente` + pendência ao criar processo
+- [x] I.9 Coluna Turma na aba RECURSOS
 
 ---
 

@@ -6,6 +6,7 @@ import {
   getImprocedentes,
   getImprocedentesResumo,
   patchImprocedente,
+  solicitarCertidaoCredito,
 } from '@/lib/api'
 import { KpiCard } from '@/components/ui/kpi-card'
 import type { ImprocedenteRow, ImprocedentesResumo } from '@/lib/types'
@@ -182,13 +183,35 @@ export default function ImprocedentesPage() {
                     <td className="px-3 py-2">{r.justicaGratuita ? 'Sim' : 'Não'}</td>
                     <td className="px-3 py-2 text-right">
                       {!readOnly ? (
-                        <button
-                          type="button"
-                          onClick={() => openEdit(r)}
-                          className="text-xs text-[var(--color-brand)] hover:underline"
-                        >
-                          Editar
-                        </button>
+                        <div className="flex flex-col items-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(r)}
+                            className="text-xs text-[var(--color-brand)] hover:underline"
+                          >
+                            Editar
+                          </button>
+                          {r.litiganciaMaFe &&
+                          !av?.ativa &&
+                          r.decisaoRecurso !== 'RECORRER' &&
+                          !r.certidaoCreditoSolicitada ? (
+                            <button
+                              type="button"
+                              className="text-xs text-[var(--color-text-secondary)] hover:underline"
+                              onClick={async () => {
+                                try {
+                                  await solicitarCertidaoCredito(r.id)
+                                  toast.success('Certidão de crédito solicitada.')
+                                  void load()
+                                } catch (e) {
+                                  toast.error((e as Error).message)
+                                }
+                              }}
+                            >
+                              Certidão de crédito
+                            </button>
+                          ) : null}
+                        </div>
                       ) : null}
                     </td>
                   </tr>

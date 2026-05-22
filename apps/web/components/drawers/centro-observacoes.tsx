@@ -11,6 +11,7 @@ const FONTE_LABEL: Record<string, string> = {
   PENDÊNCIA: 'Pendência',
   SENTENÇA: 'Sentença',
   PROCEDENTE: 'Procedente',
+  LITIGANCIA: 'Litigância de má-fé',
 }
 
 type Props = {

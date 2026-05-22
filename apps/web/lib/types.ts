@@ -31,6 +31,8 @@ export type Processo = {
   dajeStatus?: string | null
   dajeDataPedidoIsencao?: string | null
   dajeDataPagamento?: string | null
+  reuOrgaoPublico?: boolean
+  hipossuficienciaComprovada?: boolean
   avaliacaoRecurso?: Record<string, unknown> | null
   justicaGratuita?: boolean
   situacaoFinal?: string | null
@@ -173,6 +175,7 @@ export type Comarca = {
   nome: string
   abreviado: string
   perfilDiligencia?: 'DILIGENTE' | 'MENOS_DILIGENTE' | null
+  exigeDocFrequente?: boolean
 }
 
 export type Reu = {
@@ -218,6 +221,9 @@ export type ImprocedenteRow = {
   dataPrazoPagamento?: string | null
   dataPagamento?: string | null
   decisaoRecurso?: string | null
+  litiganciaMaFe?: boolean | null
+  certidaoCreditoSolicitada?: boolean
+  certidaoCreditoData?: string | null
   numero?: string
   clienteNome?: string | null
   materia?: string | null
@@ -246,6 +252,7 @@ export type RecursoListaItem = {
   tipoRecurso?: string | null
   prazoManifestacao?: string | null
   pendenciaRecurso?: string | null
+  turmaRecursal?: string | number | null
 }
 
 export type RecursosResumo = {

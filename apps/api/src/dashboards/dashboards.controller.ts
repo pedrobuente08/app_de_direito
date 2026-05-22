@@ -99,4 +99,10 @@ export class DashboardsController {
   financeiro(@CurrentUser() user: AuthUser) {
     return this.dashboards.financeiro(user.escritorioId);
   }
+
+  @Get('litigancia-ma-fe')
+  @Throttle(ThrottlePresets.dashboardRead)
+  litiganciaMaFe(@CurrentUser() user: AuthUser) {
+    return this.dashboards.litiganciaMaFe(user.escritorioId);
+  }
 }

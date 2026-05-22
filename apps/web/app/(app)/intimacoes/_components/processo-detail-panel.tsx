@@ -34,6 +34,8 @@ import { CentroObservacoes } from '@/components/drawers/centro-observacoes'
 import { PopUpSobrestamento } from '@/components/popups'
 import { Btn } from '@/components/ui/btn'
 import { RegistrarSentencaSection } from './registrar-sentenca-section'
+import { DajeSection } from '@/components/processos/daje-section'
+import { desistirProcesso } from '@/lib/api'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -67,6 +69,8 @@ export function ProcessoDetailPanel({
 }: Props) {
   const [current, setCurrent] = useState<Processo>(processo)
   const [sobrestarOpen, setSobrestarOpen] = useState(false)
+  const [desistirOpen, setDesistirOpen] = useState(false)
+  const [motivoDesistencia, setMotivoDesistencia] = useState('')
   const [sentencas, setSentencas] = useState<Sentenca[]>([])
   const [timelineLoading, setTimelineLoading] = useState(true)
   const [timelineError, setTimelineError] = useState<string | null>(null)
@@ -334,7 +338,29 @@ export function ProcessoDetailPanel({
           </Field>
         </Section>
 
+        <Section title="Custas (DAJE)">
+          <DajeSection
+            processo={current}
+            readOnly={ro}
+            onUpdated={(p) => {
+              setCurrent(p)
+              onUpdated(p)
+            }}
+            toast={toast}
+          />
+        </Section>
+
         <Section title="Outros">
+          {current.reuOrgaoPublico ? (
+            <p className="col-span-2 text-xs font-medium text-[var(--color-brand)] sm:col-span-3">
+              Órgão público (prazo em dobro na Justiça Comum)
+            </p>
+          ) : null}
+          {current.litiganciaMaFe ? (
+            <p className="col-span-2 text-xs text-[var(--urgencia-vencida-text)] sm:col-span-3">
+              Litigância de má-fé
+            </p>
+          ) : null}
           <Field label="Situação final">
             {ro ? <ReadField value={current.situacaoFinal} /> : (
               <EditableText value={current.situacaoFinal} toast={toast} onCommit={(v) => patch({ situacaoFinal: v })} />
@@ -351,6 +377,61 @@ export function ProcessoDetailPanel({
             )}
           </Field>
         </Section>
+
+        {!ro && current.statusProcesso !== 'ARQUIVADO' ? (
+          <Section title="Ações avançadas">
+            <div className="col-span-2 sm:col-span-3">
+              {!desistirOpen ? (
+                <button
+                  type="button"
+                  className="text-xs text-[var(--color-text-secondary)] underline"
+                  onClick={() => setDesistirOpen(true)}
+                >
+                  Registrar desistência
+                </button>
+              ) : (
+                <div className="space-y-2 rounded border p-3">
+                  <textarea
+                    value={motivoDesistencia}
+                    onChange={(e) => setMotivoDesistencia(e.target.value)}
+                    placeholder="Motivo da desistência"
+                    rows={2}
+                    className="w-full rounded border px-2 py-1 text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="rounded bg-[var(--color-brand)] px-2 py-1 text-xs text-white"
+                      onClick={async () => {
+                        try {
+                          const p = await desistirProcesso(current.id, {
+                            motivo: motivoDesistencia,
+                            data: new Date().toISOString().slice(0, 10),
+                          })
+                          setCurrent(p)
+                          onUpdated(p)
+                          toast.success('Desistência registrada.')
+                          setDesistirOpen(false)
+                        } catch (e) {
+                          toast.error((e as Error).message)
+                        }
+                      }}
+                    >
+                      Confirmar
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs underline"
+                      onClick={() => setDesistirOpen(false)}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Section>
+        ) : null}
       </div>
 
       <PopUpSobrestamento

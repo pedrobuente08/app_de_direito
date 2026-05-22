@@ -760,4 +760,54 @@ export class DashboardsService {
         .sort((a, b) => b.total - a.total),
     };
   }
+
+  /** Sprint G — processos com litigância de má-fé por réu e vara. */
+  async litiganciaMaFe(escritorioId: string) {
+    const rows = await this.drizzle.db
+      .select({
+        processoId: processo.id,
+        numero: processo.numero,
+        clienteNome: processo.clienteNome,
+        reuTexto: processo.reuTexto,
+        vara: processo.vara,
+        faseAtual: processo.faseAtual,
+        updatedAt: processo.updatedAt,
+      })
+      .from(processo)
+      .where(
+        and(
+          eq(processo.escritorioId, escritorioId),
+          eq(processo.litiganciaMaFe, true),
+        ),
+      )
+      .orderBy(desc(processo.updatedAt));
+
+    const porReu = new Map<string, typeof rows>();
+    const porVara = new Map<string, typeof rows>();
+    for (const r of rows) {
+      const reuKey = r.reuTexto?.trim() || '—';
+      const varaKey = r.vara?.trim() || '—';
+      const arrR = porReu.get(reuKey) ?? [];
+      arrR.push(r);
+      porReu.set(reuKey, arrR);
+      const arrV = porVara.get(varaKey) ?? [];
+      arrV.push(r);
+      porVara.set(varaKey, arrV);
+    }
+
+    return {
+      total: rows.length,
+      processos: rows,
+      porReu: Array.from(porReu.entries()).map(([reu, lista]) => ({
+        reu,
+        total: lista.length,
+        processos: lista,
+      })),
+      porVara: Array.from(porVara.entries()).map(([vara, lista]) => ({
+        vara,
+        total: lista.length,
+        processos: lista,
+      })),
+    };
+  }
 }

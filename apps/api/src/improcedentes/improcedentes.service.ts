@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -28,6 +29,8 @@ export class ImprocedentesService {
         dataPrazoPagamento: improcedente.dataPrazoPagamento,
         dataPagamento: improcedente.dataPagamento,
         decisaoRecurso: improcedente.decisaoRecurso,
+        certidaoCreditoSolicitada: improcedente.certidaoCreditoSolicitada,
+        certidaoCreditoData: improcedente.certidaoCreditoData,
         createdAt: improcedente.createdAt,
         updatedAt: improcedente.updatedAt,
         numero: processo.numero,
@@ -35,6 +38,7 @@ export class ImprocedentesService {
         materia: processo.materia,
         vara: processo.vara,
         justicaGratuita: processo.justicaGratuita,
+        litiganciaMaFe: processo.litiganciaMaFe,
         avaliacaoRecurso: processo.avaliacaoRecurso,
         faseAtual: processo.faseAtual,
       })
@@ -134,6 +138,50 @@ export class ImprocedentesService {
 
     const lista = await this.listar(escritorioId, 2000);
     return lista.find((x) => x.id === id) ?? row;
+  }
+
+  async solicitarCertidaoCredito(escritorioId: string, id: string) {
+    const [imp] = await this.drizzle.db
+      .select({
+        imp: improcedente,
+        litigancia: processo.litiganciaMaFe,
+        decisao: improcedente.decisaoRecurso,
+      })
+      .from(improcedente)
+      .innerJoin(processo, eq(improcedente.processoId, processo.id))
+      .where(
+        and(eq(improcedente.id, id), eq(improcedente.escritorioId, escritorioId)),
+      )
+      .limit(1);
+
+    if (!imp) {
+      throw new NotFoundException('Registro de improcedente não encontrado.');
+    }
+    if (!imp.litigancia) {
+      throw new BadRequestException(
+        'Certidão de crédito exige processo com litigância de má-fé.',
+      );
+    }
+    const dec = (imp.decisao ?? '').toUpperCase();
+    if (dec === 'RECORRER' || dec === 'AVALIAR') {
+      throw new BadRequestException(
+        'Processo ainda com recurso ativo — não é possível solicitar certidão.',
+      );
+    }
+
+    const hoje = hojeYmd();
+    await this.drizzle.db
+      .update(improcedente)
+      .set({
+        certidaoCreditoSolicitada: true,
+        certidaoCreditoData: hoje,
+        statusPagamento: 'CERTIDAO_CREDITO',
+        updatedAt: new Date(),
+      })
+      .where(eq(improcedente.id, id));
+
+    const lista = await this.listar(escritorioId, 2000);
+    return lista.find((x) => x.id === id);
   }
 }
 

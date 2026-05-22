@@ -46,6 +46,7 @@ import type { EscritorioConfig } from '../db/schema/escritorio';
 import { StorageService } from '../storage/storage.service';
 import type { SkillExtractResult } from '../skill/skill.service';
 import { SkillService } from '../skill/skill.service';
+import { ProcessosHipossuficienciaService } from './processos-hipossuficiencia.service';
 import type { AplicarExtracaoDto } from './dto/aplicar-extracao.dto';
 import type { ConfirmarBatchItemDto } from './dto/confirmar-batch.dto';
 import type { CreateProcessoDto } from './dto/create-processo.dto';
@@ -116,6 +117,7 @@ export class ProcessosService {
     private readonly audiencias: AudienciasService,
     private readonly faseDerivacao: FaseDerivacaoService,
     private readonly encadeamentos: EncadeamentosQueueService,
+    private readonly hipossuf: ProcessosHipossuficienciaService,
     private readonly storage: StorageService,
     @Optional()
     @Inject(getQueueToken('pdf-extract'))
@@ -774,6 +776,12 @@ export class ProcessosService {
       horaAudiencia: out.horaAudiencia,
       tipoAudiencia: out.tipoAudiencia,
     });
+
+    await this.hipossuf.aplicarContatoProativoVara(
+      escritorioId,
+      out.id,
+      out.vara,
+    );
 
     return out;
   }

@@ -465,6 +465,8 @@ export async function criarComarca(payload: {
   codigo: string
   nome: string
   abreviado: string
+  perfilDiligencia?: 'DILIGENTE' | 'MENOS_DILIGENTE'
+  exigeDocFrequente?: boolean
 }): Promise<Comarca> {
   return apiFetch<Comarca>('/comarcas', {
     method: 'POST',
@@ -475,7 +477,13 @@ export async function criarComarca(payload: {
 
 export async function editarComarca(
   id: string,
-  payload: Partial<{ codigo: string; nome: string; abreviado: string }>,
+  payload: Partial<{
+    codigo: string
+    nome: string
+    abreviado: string
+    perfilDiligencia: 'DILIGENTE' | 'MENOS_DILIGENTE' | null
+    exigeDocFrequente: boolean
+  }>,
 ): Promise<Comarca> {
   return apiFetch<Comarca>(`/comarcas/${id}`, {
     method: 'PATCH',
@@ -799,6 +807,115 @@ export async function registrarSegundoGrau(
       body: JSON.stringify(payload),
     },
   )
+}
+
+// ─── DAJE ─────────────────────────────────────────────────────────────────────
+
+export async function dajeEmitir(
+  processoId: string,
+  body: { valor: string; dataEmissao?: string },
+): Promise<import('@/lib/types').Processo> {
+  return apiFetch(`/processos/${processoId}/daje/emitir`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export async function dajePedirIsencao(
+  processoId: string,
+): Promise<import('@/lib/types').Processo> {
+  return apiFetch(`/processos/${processoId}/daje/pedir-isencao`, { method: 'POST' })
+}
+
+export async function dajeResultadoIsencao(
+  processoId: string,
+  body: { resultado: 'DEFERIDA' | 'INDEFERIDA' },
+): Promise<import('@/lib/types').Processo> {
+  return apiFetch(`/processos/${processoId}/daje/resultado-isencao`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export async function dajeRegistrarPagamento(
+  processoId: string,
+): Promise<import('@/lib/types').Processo> {
+  return apiFetch(`/processos/${processoId}/daje/registrar-pagamento`, {
+    method: 'POST',
+  })
+}
+
+export async function dajeInadimplencia(
+  processoId: string,
+): Promise<{ processo: import('@/lib/types').Processo; perfilDiligencia: string }> {
+  return apiFetch(`/processos/${processoId}/daje/inadimplencia`, { method: 'POST' })
+}
+
+export async function desistirProcesso(
+  processoId: string,
+  body: { motivo: string; data: string },
+): Promise<import('@/lib/types').Processo> {
+  return apiFetch(`/processos/${processoId}/desistir`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export async function atualizarObrigacaoFazer(
+  processoId: string,
+  body: {
+    descricao: string
+    cumprida?: boolean
+    cumpridaEm?: string
+    serasajudAcionado?: boolean
+    temObrigacaoFazer?: boolean
+  },
+): Promise<import('@/lib/types').Procedente> {
+  return apiFetch(`/procedentes/${processoId}/obrigacao-fazer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export async function getClientesProcessos(cpf: string) {
+  return apiFetch<
+    {
+      processoId: string
+      numero: string
+      clienteNome: string | null
+      reuTexto: string | null
+      vara: string | null
+      faseAtual: string | null
+      statusProcesso: string
+      materia: string | null
+    }[]
+  >(`/clientes/${encodeURIComponent(cpf)}/processos`)
+}
+
+export async function solicitarCertidaoCredito(improcedenteId: string) {
+  return apiFetch(`/improcedentes/${improcedenteId}/certidao-credito`, {
+    method: 'POST',
+  })
+}
+
+export async function getDashLitiganciaMaFe(): Promise<{
+  total: number
+  processos: {
+    processoId: string
+    numero: string
+    clienteNome: string | null
+    reuTexto: string | null
+    vara: string | null
+    faseAtual: string | null
+  }[]
+  porReu: { reu: string; total: number }[]
+  porVara: { vara: string; total: number }[]
+}> {
+  return apiFetch('/dashboards/litigancia-ma-fe')
 }
 
 // ─── Dashboards ───────────────────────────────────────────────────────────────

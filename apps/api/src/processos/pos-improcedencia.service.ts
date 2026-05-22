@@ -16,6 +16,7 @@ import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import { FaseDerivada } from '../fase-derivacao/fase-derivacao.constants';
 import { EncadeamentosQueueService } from '../encadeamentos/encadeamentos-queue.service';
 import { ProcessosService } from './processos.service';
+import { ProcessosHipossuficienciaService } from './processos-hipossuficiencia.service';
 import type { PosImprocedenciaDto } from './dto/pos-improcedencia.dto';
 
 function normResultado(r: string): string {
@@ -50,6 +51,7 @@ export class PosImprocedenciaService {
     private readonly escritorio: EscritorioService,
     private readonly encadeamentos: EncadeamentosQueueService,
     private readonly faseDerivacao: FaseDerivacaoService,
+    private readonly hipossuf: ProcessosHipossuficienciaService,
   ) {}
 
   private async cfg(escritorioId: string): Promise<EscritorioConfig> {
@@ -148,6 +150,11 @@ export class PosImprocedenciaService {
         processoId,
         observacao: obs,
       });
+      await this.hipossuf.garantirPendenciaSeNecessario(
+        escritorioId,
+        processoId,
+        obs,
+      );
     } else if (dto.decisao === 'NAO_RECORRER') {
       const prazoPag = addDaysYmd(sent.data, 15);
       await db.transaction(async (tx) => {
