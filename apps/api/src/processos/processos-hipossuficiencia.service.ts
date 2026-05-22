@@ -1,11 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { and, eq, ilike, or } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import { comarca } from '../db/schema/comarca';
 import { pendencia } from '../db/schema/pendencia';
 import { processo } from '../db/schema/processo';
 import { CalcularPrazoProcessualService } from '../encadeamentos/calcular-prazo-processual.service';
-import { ProcessosService } from './processos.service';
 
 function hojeYmd(): string {
   return new Date().toISOString().slice(0, 10);
@@ -15,9 +14,22 @@ function hojeYmd(): string {
 export class ProcessosHipossuficienciaService {
   constructor(
     private readonly drizzle: DrizzleService,
-    private readonly processos: ProcessosService,
     private readonly prazos: CalcularPrazoProcessualService,
   ) {}
+
+  private async assertProcesso(escritorioId: string, processoId: string) {
+    const [row] = await this.drizzle.db
+      .select({ hipossuficienciaComprovada: processo.hipossuficienciaComprovada })
+      .from(processo)
+      .where(
+        and(eq(processo.escritorioId, escritorioId), eq(processo.id, processoId)),
+      )
+      .limit(1);
+    if (!row) {
+      throw new NotFoundException('Processo não encontrado');
+    }
+    return row;
+  }
 
   /** Cria pendência ATENDIMENTO se hipossuficiência não comprovada. */
   async garantirPendenciaSeNecessario(
@@ -25,7 +37,7 @@ export class ProcessosHipossuficienciaService {
     processoId: string,
     observacao?: string | null,
   ): Promise<boolean> {
-    const p = await this.processos.obterPorId(escritorioId, processoId);
+    const p = await this.assertProcesso(escritorioId, processoId);
     if (p.hipossuficienciaComprovada) return false;
 
     const hoje = hojeYmd();
