@@ -20,8 +20,18 @@ export class UpdateUsuarioDto {
   loginAliases?: string[];
 
   @IsOptional()
-  @IsIn(['admin', 'adm', 'advogado', 'leitura'])
-  perfil?: 'admin' | 'adm' | 'advogado' | 'leitura';
+  @IsIn(['admin', 'adm', 'advogado', 'pautista', 'atendimento', 'leitura'])
+  perfil?:
+    | 'admin'
+    | 'adm'
+    | 'advogado'
+    | 'pautista'
+    | 'atendimento'
+    | 'leitura';
+
+  @IsOptional()
+  @IsBoolean()
+  ehPautista?: boolean;
 
   @IsOptional()
   @IsBoolean()

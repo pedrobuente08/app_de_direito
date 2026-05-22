@@ -163,7 +163,8 @@ export type Usuario = {
   id: string
   nome: string | null
   email: string
-  perfil: 'admin' | 'adm' | 'advogado' | 'leitura'
+  perfil: 'admin' | 'adm' | 'advogado' | 'pautista' | 'atendimento' | 'leitura'
+  ehPautista?: boolean
   ativo: boolean
   createdAt: string
   loginAliases: string[]
@@ -448,6 +449,16 @@ export type AuthMe = {
   escritorioId: string
   perfil: string
   email: string
+  nome?: string | null
+  /** true se perfil pautista ou advogado marcado como pautista no cadastro */
+  ehPautista?: boolean
+}
+
+export type OpcaoPautista = {
+  id: string
+  nome: string
+  email: string
+  perfil: string
 }
 
 export type ProcessosListMeta = {

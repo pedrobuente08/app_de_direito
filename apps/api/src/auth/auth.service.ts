@@ -20,6 +20,7 @@ import { usuario } from '../db/schema/usuario';
 import { MailService } from '../mail/mail.service';
 import type { CadastroEscritorioDto } from './dto/cadastro-escritorio.dto';
 import { hashToken } from './auth-hash';
+import type { AuthUser } from '../common/decorators/current-user.decorator';
 import type { AccessJwtPayload } from './jwt-payload';
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -54,6 +55,21 @@ export class AuthService {
   clearAuthCookies(res: Response) {
     res.clearCookie(COOKIE_ACCESS, { path: '/' });
     res.clearCookie(COOKIE_REFRESH, { path: '/' });
+  }
+
+  async me(user: AuthUser) {
+    const [row] = await this.drizzle.db
+      .select({ nome: usuario.nome, ehPautista: usuario.ehPautista })
+      .from(usuario)
+      .where(eq(usuario.id, user.userId))
+      .limit(1);
+    const ehPautista =
+      user.perfil === 'pautista' || (row?.ehPautista ?? false);
+    return {
+      ...user,
+      nome: row?.nome?.trim() || null,
+      ehPautista,
+    };
   }
 
   async login(email: string, senha: string) {

@@ -9,7 +9,13 @@ import {
 } from 'drizzle-orm/pg-core';
 import { escritorio } from './escritorio';
 
-export type Perfil = 'admin' | 'adm' | 'advogado' | 'leitura';
+export type Perfil =
+  | 'admin'
+  | 'adm'
+  | 'advogado'
+  | 'pautista'
+  | 'leitura'
+  | 'atendimento';
 
 export const usuario = pgTable('usuario', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -25,6 +31,8 @@ export const usuario = pgTable('usuario', {
     .notNull()
     .default(sql`'{}'::text[]`),
   perfil: varchar('perfil', { length: 20 }).notNull().$type<Perfil>(),
+  /** Advogado (ou outro) que também aparece no dropdown e na visão "Minhas" da Agenda. */
+  ehPautista: boolean('eh_pautista').default(false).notNull(),
   oabs: text('oabs').array(),
   ativo: boolean('ativo').default(true).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true })

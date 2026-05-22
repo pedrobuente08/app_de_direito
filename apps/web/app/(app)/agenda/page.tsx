@@ -7,7 +7,8 @@ import { Btn } from '@/components/ui/btn'
 import { FamiliaTabs } from '@/components/ui/familia-tabs'
 import { KpiCard } from '@/components/ui/kpi-card'
 import { getAudiencias, getAuthMe, getResumoAusentes6m } from '@/lib/api'
-import type { Audiencia, Ausentes6mResumo } from '@/lib/types'
+import { audienciaAtribuidaAoUsuario } from '@/lib/pautista-match'
+import type { Audiencia, Ausentes6mResumo, AuthMe } from '@/lib/types'
 
 function tituloDiaPt(isoYmd: string, total: number): string {
   const d = new Date(`${isoYmd}T12:00:00`)
@@ -31,6 +32,7 @@ function toYmd(date: Date): string {
 }
 
 type Periodo = 'hoje' | 'semana' | '4semanas' | 'tudo'
+type VisaoAgenda = 'todas' | 'minhas'
 
 const PERIODOS: { value: Periodo; label: string }[] = [
   { value: 'hoje', label: 'Hoje' },
@@ -44,6 +46,9 @@ export default function AgendaPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [readOnly, setReadOnly] = useState(false)
+  const [canEditPautista, setCanEditPautista] = useState(false)
+  const [me, setMe] = useState<AuthMe | null>(null)
+  const [visao, setVisao] = useState<VisaoAgenda>('todas')
   const [periodo, setPeriodo] = useState<Periodo>('4semanas')
   const [ausentesResumo, setAusentesResumo] = useState<Ausentes6mResumo | null>(null)
 
@@ -70,9 +75,39 @@ export default function AgendaPage() {
 
   useEffect(() => {
     getAuthMe()
-      .then((me) => setReadOnly(me.perfil === 'leitura'))
-      .catch(() => setReadOnly(false))
+      .then((auth) => {
+        setMe(auth)
+        setReadOnly(auth.perfil === 'leitura')
+        setCanEditPautista(
+          auth.perfil === 'admin' ||
+            auth.perfil === 'adm' ||
+            auth.perfil === 'advogado',
+        )
+        setVisao(auth.perfil === 'pautista' ? 'minhas' : 'todas')
+      })
+      .catch(() => {
+        setReadOnly(false)
+        setCanEditPautista(false)
+      })
   }, [])
+
+  const somentePautista = me?.perfil === 'pautista'
+  const podeVerTodas = !somentePautista
+  const podeVerMinhas = Boolean(me?.ehPautista)
+
+  const visaoTabs = useMemo(() => {
+    const tabs: { id: VisaoAgenda; label: string }[] = []
+    if (podeVerTodas) tabs.push({ id: 'todas', label: 'Todas' })
+    if (podeVerMinhas) tabs.push({ id: 'minhas', label: 'Minhas (como pautista)' })
+    return tabs
+  }, [podeVerTodas, podeVerMinhas])
+
+  const rowsFiltradas = useMemo(() => {
+    if (visao !== 'minhas' || !me) return rows
+    return rows.filter((a) =>
+      audienciaAtribuidaAoUsuario(a.pautista, me.nome, me.email),
+    )
+  }, [rows, visao, me])
 
   const agendadasPorDia = useMemo(() => {
     const hoje = toYmd(new Date())
@@ -82,7 +117,7 @@ export default function AgendaPage() {
     else if (periodo === 'semana') dataFim = toYmd(addDays(new Date(), 7))
     else if (periodo === '4semanas') dataFim = toYmd(addDays(new Date(), 28))
 
-    const ag = rows
+    const ag = rowsFiltradas
       .filter((a) => {
         if (a.status !== 'AGENDADA') return false
         const dia = a.data.slice(0, 10)
@@ -104,21 +139,28 @@ export default function AgendaPage() {
     }
     const dias = Array.from(map.keys()).sort()
     return { map, dias, total: ag.length }
-  }, [rows, periodo])
+  }, [rowsFiltradas, periodo])
 
   const hojeCount = useMemo(() => {
     const hoje = toYmd(new Date())
-    return rows.filter((a) => a.status === 'AGENDADA' && a.data.slice(0, 10) === hoje).length
-  }, [rows])
+    return rowsFiltradas.filter(
+      (a) => a.status === 'AGENDADA' && a.data.slice(0, 10) === hoje,
+    ).length
+  }, [rowsFiltradas])
+
+  const subtitulo =
+    somentePautista
+      ? 'Suas audiências atribuídas — registre o resultado após a audiência.'
+      : visao === 'minhas'
+        ? 'Audiências em que você está como pautista — finalize com o pop-up pós-audiência.'
+        : 'Todas as audiências — atribua o pautista e finalize com o pop-up pós-audiência.'
 
   return (
     <div className="animate-fade-in-up space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Agenda</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            Audiências agendadas — finalize com o pop-up pós-audiência.
-          </p>
+          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{subtitulo}</p>
         </div>
         <Btn variant="default" loading={loading} onClick={() => void load()}>
           Atualizar
@@ -127,11 +169,7 @@ export default function AgendaPage() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <KpiCard label="Hoje" value={hojeCount} variant="accent" />
-        <KpiCard
-          label="No período"
-          value={agendadasPorDia.total}
-          variant="default"
-        />
+        <KpiCard label="No período" value={agendadasPorDia.total} variant="default" />
         <KpiCard
           label="Dias com audiência"
           value={agendadasPorDia.dias.length}
@@ -139,7 +177,7 @@ export default function AgendaPage() {
         />
       </div>
 
-      {ausentesResumo && ausentesResumo.total > 0 && (
+      {!somentePautista && ausentesResumo && ausentesResumo.total > 0 && (
         <Link
           href="/ausentes"
           className="block rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-4 py-3 shadow-[var(--shadow-sm)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]"
@@ -153,6 +191,14 @@ export default function AgendaPage() {
             {ausentesResumo.reaproveitaveis} marcados para reprotocolar
           </p>
         </Link>
+      )}
+
+      {visaoTabs.length > 1 && (
+        <FamiliaTabs
+          tabs={visaoTabs}
+          activeId={visao}
+          onChange={(id) => setVisao(id as VisaoAgenda)}
+        />
       )}
 
       <FamiliaTabs
@@ -173,7 +219,9 @@ export default function AgendaPage() {
 
       {!loading && !error && agendadasPorDia.dias.length === 0 && (
         <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-6 py-10 text-center text-sm text-[var(--color-text-secondary)]">
-          Nenhuma audiência agendada no período selecionado.
+          {visao === 'minhas'
+            ? 'Nenhuma audiência atribuída a você como pautista neste período.'
+            : 'Nenhuma audiência agendada no período selecionado.'}
         </div>
       )}
 
@@ -188,7 +236,13 @@ export default function AgendaPage() {
               </h2>
               <div className="mx-auto flex max-w-xl flex-col gap-4">
                 {lista.map((a) => (
-                  <AgendaCard key={a.id} audiencia={a} readOnly={readOnly} onUpdated={load} />
+                  <AgendaCard
+                    key={a.id}
+                    audiencia={a}
+                    readOnly={readOnly}
+                    canEditPautista={canEditPautista}
+                    onUpdated={load}
+                  />
                 ))}
               </div>
             </section>

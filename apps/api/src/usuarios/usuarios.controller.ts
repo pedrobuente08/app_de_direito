@@ -18,6 +18,13 @@ export class UsuariosController {
     return this.usuarios.listar(user.escritorioId);
   }
 
+  @Get('opcoes-pautista')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.usuariosList)
+  opcoesPautista(@CurrentUser() user: AuthUser) {
+    return this.usuarios.listarOpcoesPautista(user.escritorioId);
+  }
+
   @Post()
   @Roles('admin', 'adm')
   @Throttle(ThrottlePresets.usuariosPost)

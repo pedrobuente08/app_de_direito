@@ -72,6 +72,7 @@ export const ROUTE_LABELS: Record<string, string> = {
 }
 
 const ATENDIMENTO_HREFS = new Set(['/pendencias', '/atendimento'])
+const PAUTISTA_HREFS = new Set(['/agenda'])
 
 export function navSectionsForPerfil(perfil: string | undefined): NavSection[] {
   if (perfil === 'atendimento') {
@@ -84,6 +85,16 @@ export function navSectionsForPerfil(perfil: string | undefined): NavSection[] {
       },
     ]
   }
+  if (perfil === 'pautista') {
+    return [
+      {
+        label: 'Operacional',
+        items: NAV_SECTIONS.flatMap((s) => s.items).filter((i) =>
+          PAUTISTA_HREFS.has(i.href),
+        ),
+      },
+    ]
+  }
   return NAV_SECTIONS
 }
 
@@ -92,6 +103,10 @@ export function atendimentoAllowedPath(pathname: string): boolean {
     pathname === '/pendencias' || pathname.startsWith('/pendencias/') ||
     pathname === '/atendimento' || pathname.startsWith('/atendimento/')
   )
+}
+
+export function pautistaAllowedPath(pathname: string): boolean {
+  return pathname === '/agenda' || pathname.startsWith('/agenda/')
 }
 
 export function labelForPath(pathname: string): string {

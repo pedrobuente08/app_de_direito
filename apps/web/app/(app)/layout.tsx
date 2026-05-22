@@ -13,6 +13,7 @@ import {
   labelForPath,
   navSectionsForPerfil,
   atendimentoAllowedPath,
+  pautistaAllowedPath,
 } from './_config/nav'
 
 function iniciaisDeEmail(email: string): string {
@@ -56,7 +57,13 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
     if (perfil === 'atendimento' && !atendimentoAllowedPath(pathname)) {
       router.replace('/pendencias')
     }
+    if (perfil === 'pautista' && !pautistaAllowedPath(pathname)) {
+      router.replace('/agenda')
+    }
   }, [perfil, pathname, router])
+
+  const shellRestrito =
+    perfil === 'pautista' || perfil === 'atendimento'
 
   const pageLabel = labelForPath(pathname)
 
@@ -136,22 +143,26 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
           {pageLabel}
         </h1>
 
-        <Btn
-          variant="default"
-          className="hidden shrink-0 sm:inline-flex"
-          onClick={() => setHabilitacaoOpen(true)}
-        >
-          + Habilitação adversária
-        </Btn>
-        <Btn
-          variant="primary"
-          className="shrink-0"
-          onClick={() => router.push('/importacao')}
-        >
-          + Importar PDF
-        </Btn>
+        {!shellRestrito && (
+          <>
+            <Btn
+              variant="default"
+              className="hidden shrink-0 sm:inline-flex"
+              onClick={() => setHabilitacaoOpen(true)}
+            >
+              + Habilitação adversária
+            </Btn>
+            <Btn
+              variant="primary"
+              className="shrink-0"
+              onClick={() => router.push('/importacao')}
+            >
+              + Importar PDF
+            </Btn>
+          </>
+        )}
 
-        <NotificacoesBell />
+        {!shellRestrito && <NotificacoesBell />}
 
         <span
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)] text-xs font-bold text-[var(--color-brand)]"
@@ -168,11 +179,13 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      <PopUpHabilitacaoAdversaria
-        open={habilitacaoOpen}
-        onClose={() => setHabilitacaoOpen(false)}
-        onSuccess={() => setHabilitacaoOpen(false)}
-      />
+      {!shellRestrito && (
+        <PopUpHabilitacaoAdversaria
+          open={habilitacaoOpen}
+          onClose={() => setHabilitacaoOpen(false)}
+          onSuccess={() => setHabilitacaoOpen(false)}
+        />
+      )}
     </div>
   )
 }

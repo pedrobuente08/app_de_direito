@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -21,12 +22,43 @@ import { audienciaAusente } from '../db/schema/audiencia-ausente';
 import { escritorioAdversario } from '../db/schema/escritorio-adversario';
 import { pendencia } from '../db/schema/pendencia';
 import { processo } from '../db/schema/processo';
+import { usuario } from '../db/schema/usuario';
+import type { AuthUser } from '../common/decorators/current-user.decorator';
 import { parseCsvSimple } from '../importacao/csv-parse';
 import type { CreateAudienciaDto } from './dto/create-audiencia.dto';
 import type { FinalizarAudienciaDto } from './dto/finalizar-audiencia.dto';
 import type { UpdateAudienciaDto } from './dto/update-audiencia.dto';
 
 const LIXEIRA = new Set(['CANCELADA', 'ADIADA', 'REDESIGNADA']);
+
+function rotulosPautistaUsuario(
+  nome: string | null | undefined,
+  email: string,
+): Set<string> {
+  const out = new Set<string>();
+  const n = nome?.trim().toUpperCase();
+  if (n) {
+    out.add(n);
+  }
+  const local = email.split('@')[0]?.trim().toUpperCase();
+  if (local) {
+    out.add(local);
+  }
+  out.add(email.trim().toUpperCase());
+  return out;
+}
+
+function audienciaAtribuidaAoPautista(
+  pautistaCampo: string | null | undefined,
+  nome: string | null | undefined,
+  email: string,
+): boolean {
+  const atrib = (pautistaCampo ?? '').trim().toUpperCase();
+  if (!atrib) {
+    return false;
+  }
+  return rotulosPautistaUsuario(nome, email).has(atrib);
+}
 
 function hojeIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -83,7 +115,27 @@ export class AudienciasService {
     private readonly prazos: CalcularPrazoProcessualService,
   ) {}
 
-  async listar(escritorioId: string, limit = 500) {
+  private async rotulosDoUsuario(userId: string): Promise<{
+    nome: string | null;
+    email: string;
+    rotulos: Set<string>;
+  }> {
+    const [row] = await this.drizzle.db
+      .select({ nome: usuario.nome, email: usuario.email })
+      .from(usuario)
+      .where(eq(usuario.id, userId))
+      .limit(1);
+    if (!row) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+    return {
+      nome: row.nome,
+      email: row.email,
+      rotulos: rotulosPautistaUsuario(row.nome, row.email),
+    };
+  }
+
+  async listar(escritorioId: string, actor?: AuthUser, limit = 500) {
     const rows = await this.drizzle.db
       .select({
         aud: audiencia,
@@ -114,7 +166,7 @@ export class AudienciasService {
       .orderBy(desc(audiencia.data), desc(audiencia.createdAt))
       .limit(limit);
 
-    return rows.map(
+    let mapped = rows.map(
       ({
         aud,
         procNumero,
@@ -145,6 +197,15 @@ export class AudienciasService {
         escritorioAdversarioNome: advNome?.trim() || null,
       }),
     );
+
+    if (actor?.perfil === 'pautista') {
+      const { nome, email } = await this.rotulosDoUsuario(actor.userId);
+      mapped = mapped.filter((a) =>
+        audienciaAtribuidaAoPautista(a.pautista, nome, email),
+      );
+    }
+
+    return mapped;
   }
 
   /** E7 — últimos 6 meses (`audiencia_ausente`). */
@@ -494,8 +555,17 @@ export class AudienciasService {
     escritorioId: string,
     id: string,
     dto: FinalizarAudienciaDto,
+    actor?: AuthUser,
   ) {
     const current = await this.obter(escritorioId, id);
+    if (actor?.perfil === 'pautista') {
+      const { nome, email } = await this.rotulosDoUsuario(actor.userId);
+      if (!audienciaAtribuidaAoPautista(current.pautista, nome, email)) {
+        throw new ForbiddenException(
+          'Esta audiência não está atribuída a você como pautista.',
+        );
+      }
+    }
     const obs = dto.obsPos.trim();
     if (!obs) {
       throw new BadRequestException('obsPos é obrigatório para finalizar.');

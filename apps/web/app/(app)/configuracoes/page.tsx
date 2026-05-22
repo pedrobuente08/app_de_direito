@@ -1,14 +1,16 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { FamiliaTabs } from '@/components/ui/familia-tabs'
 import { getEscritorioConfig, salvarEscritorioConfig } from '@/lib/api'
 import { ToastContainer, useToast } from '@/lib/toast'
 import { ComarcasSection } from './_components/comarcas-section'
+import { UsuariosSection } from './_components/usuarios-section'
 
 const CONFIG_TABS = [
   { id: 'geral', label: 'Geral' },
+  { id: 'usuarios', label: 'Usuários' },
+  { id: 'comarcas', label: 'Comarcas' },
   { id: 'materias', label: 'Matérias' },
   { id: 'dropdowns', label: 'Dropdowns' },
   { id: 'prazos', label: 'Prazos' },
@@ -16,8 +18,6 @@ const CONFIG_TABS = [
   { id: 'pendencias', label: 'Pendências' },
   { id: 'provisao', label: 'Provisão' },
   { id: 'comunica', label: 'Comunica' },
-  { id: 'links', label: 'Cadastros' },
-  { id: 'comarcas', label: 'Comarcas' },
 ] as const
 
 type ConfigTab = (typeof CONFIG_TABS)[number]['id']
@@ -417,33 +417,19 @@ export default function ConfiguracoesPage() {
 
         {aba === 'comarcas' && <ComarcasSection toast={toast} />}
 
-        {aba === 'links' && (
-          <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
-            <h2 className="mb-3 text-sm font-semibold">Cadastros auxiliares</h2>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/usuarios" className="text-[var(--color-brand)] hover:underline">
-                  Usuários
-                </Link>
-              </li>
-              <li>
-                <Link href="/comarcas" className="text-[var(--color-brand)] hover:underline">
-                  Comarcas
-                </Link>
-              </li>
-            </ul>
-          </section>
-        )}
+        {aba === 'usuarios' && <UsuariosSection toast={toast} />}
 
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-[var(--radius-md)] bg-[var(--color-brand)] px-6 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-50"
-          >
-            {saving ? 'Salvando…' : 'Salvar configurações'}
-          </button>
-        </div>
+        {aba !== 'usuarios' && aba !== 'comarcas' && (
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-[var(--radius-md)] bg-[var(--color-brand)] px-6 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-50"
+            >
+              {saving ? 'Salvando…' : 'Salvar configurações'}
+            </button>
+          </div>
+        )}
       </form>
 
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />

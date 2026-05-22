@@ -48,7 +48,7 @@ export class AudienciasController {
   @Get()
   @Throttle(ThrottlePresets.audienciasList)
   listar(@CurrentUser() user: AuthUser) {
-    return this.audiencias.listar(user.escritorioId);
+    return this.audiencias.listar(user.escritorioId, user);
   }
 
   @Post()
@@ -70,13 +70,13 @@ export class AudienciasController {
   }
 
   @Post(':id/finalizar')
-  @Roles('admin', 'adm', 'advogado')
+  @Roles('admin', 'adm', 'advogado', 'pautista')
   @Throttle(ThrottlePresets.audienciasWrite)
   finalizar(
     @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: FinalizarAudienciaDto,
   ) {
-    return this.audiencias.finalizar(user.escritorioId, id, dto);
+    return this.audiencias.finalizar(user.escritorioId, id, dto, user);
   }
 }

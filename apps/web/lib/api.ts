@@ -424,12 +424,17 @@ export async function getUsuarios(): Promise<Usuario[]> {
   return apiFetch<Usuario[]>('/usuarios')
 }
 
+export async function getOpcoesPautista(): Promise<import('@/lib/types').OpcaoPautista[]> {
+  return apiFetch('/usuarios/opcoes-pautista')
+}
+
 export async function criarUsuario(payload: {
-  nome: string
+  nome?: string
   email: string
   perfil: string
   senha: string
   loginAliases?: string[]
+  ehPautista?: boolean
 }): Promise<Usuario> {
   return apiFetch<Usuario>('/usuarios', {
     method: 'POST',
@@ -446,6 +451,8 @@ export async function editarUsuario(
     perfil: string
     senha: string
     loginAliases: string[]
+    ehPautista: boolean
+    ativo: boolean
   }>,
 ): Promise<Usuario> {
   return apiFetch<Usuario>(`/usuarios/${id}`, {
@@ -716,6 +723,24 @@ export async function criarAudiencia(payload: {
 }): Promise<Audiencia> {
   return apiFetch<Audiencia>('/audiencias', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function atualizarAudiencia(
+  id: string,
+  payload: Partial<{
+    pautista: string | null
+    link: string | null
+    obsPre: string | null
+    tipo: string | null
+    data: string
+    hora: string | null
+  }>,
+): Promise<Audiencia> {
+  return apiFetch<Audiencia>(`/audiencias/${id}`, {
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })

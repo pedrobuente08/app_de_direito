@@ -19,7 +19,7 @@ export class AuthController {
   /** Usuário autenticado (JWT). Útil para UI: perfil, modo leitura, etc. */
   @Get('me')
   me(@CurrentUser() user: AuthUser) {
-    return user;
+    return this.auth.me(user);
   }
 
   @Public()

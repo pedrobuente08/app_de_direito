@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
 import { usuario } from '../db/schema/usuario';
 import { EscritorioService } from '../escritorio/escritorio.service';
@@ -44,9 +44,38 @@ export class UsuariosService {
         ativo: usuario.ativo,
         createdAt: usuario.createdAt,
         loginAliases: usuario.loginAliases,
+        ehPautista: usuario.ehPautista,
       })
       .from(usuario)
       .where(eq(usuario.escritorioId, escritorioId));
+  }
+
+  /** Usuários que podem ser atribuídos como pautista em audiências (dropdown). */
+  async listarOpcoesPautista(escritorioId: string) {
+    const rows = await this.drizzle.db
+      .select({
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        perfil: usuario.perfil,
+        ehPautista: usuario.ehPautista,
+      })
+      .from(usuario)
+      .where(
+        and(
+          eq(usuario.escritorioId, escritorioId),
+          eq(usuario.ativo, true),
+          or(eq(usuario.perfil, 'pautista'), eq(usuario.ehPautista, true)),
+        ),
+      );
+    return rows
+      .map((r) => ({
+        id: r.id,
+        nome: r.nome?.trim() || r.email,
+        email: r.email,
+        perfil: r.perfil,
+      }))
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
   }
 
   async criar(escritorioId: string, dto: CreateUsuarioDto) {
@@ -64,6 +93,9 @@ export class UsuariosService {
 
     const senhaHash = await bcrypt.hash(dto.senha, 10);
 
+    const ehPautista =
+      dto.perfil === 'pautista' ? true : (dto.ehPautista ?? false);
+
     const [row] = await this.drizzle.db
       .insert(usuario)
       .values({
@@ -72,6 +104,7 @@ export class UsuariosService {
         senhaHash,
         nome: dto.nome?.trim() ?? null,
         perfil: dto.perfil,
+        ehPautista,
         ativo: true,
         loginAliases: normalizarLoginAliases(dto.loginAliases),
       })
@@ -80,6 +113,7 @@ export class UsuariosService {
         email: usuario.email,
         nome: usuario.nome,
         perfil: usuario.perfil,
+        ehPautista: usuario.ehPautista,
         ativo: usuario.ativo,
         createdAt: usuario.createdAt,
         loginAliases: usuario.loginAliases,
@@ -127,6 +161,17 @@ export class UsuariosService {
     }
     if (dto.perfil !== undefined) {
       patch.perfil = dto.perfil;
+      if (dto.perfil === 'pautista') {
+        patch.ehPautista = true;
+      } else if (dto.ehPautista === undefined && existing.perfil === 'pautista') {
+        patch.ehPautista = false;
+      }
+    }
+    if (dto.ehPautista !== undefined) {
+      patch.ehPautista =
+        (dto.perfil ?? existing.perfil) === 'pautista'
+          ? true
+          : dto.ehPautista;
     }
     if (dto.ativo !== undefined) {
       patch.ativo = dto.ativo;

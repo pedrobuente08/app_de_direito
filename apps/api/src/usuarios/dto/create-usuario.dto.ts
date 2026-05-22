@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsBoolean,
   IsEmail,
   IsIn,
   IsOptional,
@@ -26,6 +27,17 @@ export class CreateUsuarioDto {
   @IsString({ each: true })
   loginAliases?: string[];
 
-  @IsIn(['admin', 'adm', 'advogado', 'leitura'])
-  perfil!: 'admin' | 'adm' | 'advogado' | 'leitura';
+  @IsIn(['admin', 'adm', 'advogado', 'pautista', 'atendimento', 'leitura'])
+  perfil!:
+    | 'admin'
+    | 'adm'
+    | 'advogado'
+    | 'pautista'
+    | 'atendimento'
+    | 'leitura';
+
+  /** Marca advogado (etc.) que também conduz audiências. Ignorado se perfil = pautista (sempre true). */
+  @IsOptional()
+  @IsBoolean()
+  ehPautista?: boolean;
 }

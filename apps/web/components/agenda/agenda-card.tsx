@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { PautistaField } from '@/components/agenda/pautista-field'
 import { PopUpPosAudiencia } from '@/components/popups/pos-audiencia'
 import { Btn } from '@/components/ui/btn'
 import type { Audiencia } from '@/lib/types'
@@ -43,10 +44,17 @@ const Divisor = () => (
 type Props = {
   audiencia: Audiencia
   readOnly?: boolean
+  /** Admin/adm/adv podem atribuir pautista via dropdown. */
+  canEditPautista?: boolean
   onUpdated: () => void
 }
 
-export function AgendaCard({ audiencia: a, readOnly, onUpdated }: Props) {
+export function AgendaCard({
+  audiencia: a,
+  readOnly,
+  canEditPautista,
+  onUpdated,
+}: Props) {
   const p = a.processo
   const telDigits = digitosTel(p?.telefone)
   const wa = waHref(telDigits)
@@ -178,13 +186,24 @@ export function AgendaCard({ audiencia: a, readOnly, onUpdated }: Props) {
 
         <Divisor />
 
-        <p className="text-xs text-[var(--color-text-secondary)]">
-          <span className="font-semibold text-[var(--color-text-tertiary)]">Pautista:</span>{' '}
-          {a.pautista?.trim() || '—'}
-          <span className="mx-3 text-[var(--color-text-tertiary)]">·</span>
-          <span className="font-semibold text-[var(--color-text-tertiary)]">Login captação:</span>{' '}
-          {p?.login?.trim() || '—'}
-        </p>
+        <div className="space-y-1 text-xs text-[var(--color-text-secondary)]">
+          {canEditPautista ? (
+            <PautistaField
+              audienciaId={a.id}
+              value={a.pautista}
+              onSaved={onUpdated}
+            />
+          ) : (
+            <p>
+              <span className="font-semibold text-[var(--color-text-tertiary)]">Pautista:</span>{' '}
+              {a.pautista?.trim() || '—'}
+            </p>
+          )}
+          <p>
+            <span className="font-semibold text-[var(--color-text-tertiary)]">Login captação:</span>{' '}
+            {p?.login?.trim() || '—'}
+          </p>
+        </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
           {a.status === 'AGENDADA' && !readOnly && (
