@@ -11,7 +11,7 @@ Stack inalterada. Prioridade: BREAKING primeiro, depois aditivos independentes.
 | **B** — Schema aditivo | ✅ Concluída | `83251c7` — migration `008`, Drizzle + tipos web |
 | **H** — Aba ATENDIMENTO | ✅ Concluída | incluída em `85c85fc` |
 | **C** — Cenário pós-audiência | ✅ Concluída | `0f95833` |
-| **D** — 5º cenário 2º grau (E + E1–E4) | ✅ Concluída | migration `009`, `recursos.service.ts`, dialog Recursos |
+| **D** — 5º cenário 2º grau (E + E1–E4) | ✅ Concluída | `f270f92` — migration `009`, dialog + API |
 | **E–G, I** | ⏳ Pendente | — |
 
 **Próxima sprint:** E (workflow DAJE).
