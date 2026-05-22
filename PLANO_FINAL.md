@@ -10,10 +10,11 @@ Stack inalterada. Prioridade: BREAKING primeiro, depois aditivos independentes.
 | **A** — `fase_atual` UPPER_SNAKE_CASE | ✅ Concluída | `85c85fc` — migration `007`, `fase-label.ts`, UI + API |
 | **B** — Schema aditivo | ✅ Concluída | `83251c7` — migration `008`, Drizzle + tipos web |
 | **H** — Aba ATENDIMENTO | ✅ Concluída | incluída em `85c85fc` |
-| **C** — Cenário pós-audiência | ✅ Concluída | ver commit Sprint C |
-| **D–G, I** | ⏳ Pendente | — |
+| **C** — Cenário pós-audiência | ✅ Concluída | `0f95833` |
+| **D** — 5º cenário 2º grau (E + E1–E4) | ✅ Concluída | migration `009`, `recursos.service.ts`, dialog Recursos |
+| **E–G, I** | ⏳ Pendente | — |
 
-**Próxima sprint:** D (5º cenário 2º grau).
+**Próxima sprint:** E (workflow DAJE).
 
 ---
 
@@ -239,9 +240,9 @@ Incluir `cenario` e `cenario_observacao` no DTO e na lógica de processamento.
 | E3 | Só do réu provido (reforma) | Vai para IMPROCEDENTES |
 | E4 | Ambos negados | Mantém valor original em PROCEDENTES |
 
-### D.2 — Atualizar `sentencas.service.ts`
+### D.2 — Lógica no `recursos.service.ts` (endpoint `POST /recursos/segundo-grau`)
 
-Adicionar rota/case `PROCEDENTE_PARCIAL_AMBAS` com os 4 sub-cenários. Criar `sentenca` do tipo `SEGUNDO_GRAU` com o sub-resultado gravado em `observacao` ou em campo novo `sub_resultado VARCHAR(30)`.
+Cenário `E` + `subResultado` E1–E4; grava `sentenca.sub_resultado` (migration `009`). Destinos: E1/E2/E4 → PROCEDENTES; E3 → IMPROCEDENTES (como D).
 
 ---
 
@@ -340,8 +341,8 @@ Novo endpoint `GET /api/dashboards/litigancia-ma-fe`: lista processos com `litig
 - [x] C.3 Atualizar DTO e endpoint `/audiencias/:id/finalizar`
 
 ### Sprint D — 5º cenário 2º grau
-- [ ] D.1 Adicionar cenário E ao pop-up de acórdão
-- [ ] D.2 Lógica dos 4 sub-resultados em `sentencas.service.ts`
+- [x] D.1 Adicionar cenário E ao pop-up de acórdão (`registrar-segundo-grau-dialog.tsx`)
+- [x] D.2 Lógica dos 4 sub-resultados em `recursos.service.ts` + `sentenca.sub_resultado`
 
 ### Sprint E — DAJE
 - [ ] E.1 Módulo NestJS `daje` com 5 endpoints

@@ -772,18 +772,22 @@ export async function sincronizarProcedentesEmFalta(): Promise<{ criadas: number
   })
 }
 
-export type CenarioSegundoGrau = 'A' | 'B' | 'C' | 'D'
+export type CenarioSegundoGrau = 'A' | 'B' | 'C' | 'D' | 'E'
+
+export type SubResultadoSegundoGrau = 'E1' | 'E2' | 'E3' | 'E4'
 
 export type RegistrarSegundoGrauPayload = {
   processoId: string
   cenario: CenarioSegundoGrau
+  /** Obrigatório quando cenario = E (parcial, ambas recorreram). */
+  subResultado?: SubResultadoSegundoGrau
   data: string
   valor?: string | null
   observacoes?: string | null
   turma?: string | null
 }
 
-/** E4 — decisão de 2º grau (cenários A–D do PLANO_AJUSTES). */
+/** Decisão de 2º grau — cenários A–D e E (parcial, sub E1–E4). */
 export async function registrarSegundoGrau(
   payload: RegistrarSegundoGrauPayload,
 ): Promise<{ cenario: string; sentencas: unknown[] }> {

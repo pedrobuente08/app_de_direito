@@ -32,6 +32,7 @@ export const sentenca = pgTable(
     extincaoModalidade: varchar('extincao_modalidade', { length: 20 }),
     motivoExtincao: varchar('motivo_extincao', { length: 100 }),
     observacoes: text('observacoes'),
+    subResultado: varchar('sub_resultado', { length: 30 }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
   (t) => [

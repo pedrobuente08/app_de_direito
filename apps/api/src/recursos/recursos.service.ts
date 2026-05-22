@@ -16,6 +16,19 @@ import type { RegistrarSegundoGrauDto } from './dto/registrar-segundo-grau.dto';
 
 const SENT_PROC = new Set(['PROCEDENTE', 'PARCIAL', 'ACORDO']);
 
+const SUB_RESULTADO_DB = {
+  E1: 'E1_AMBOS_PARCIAIS',
+  E2: 'E2_SO_NOSSO',
+  E3: 'E3_SO_REU',
+  E4: 'E4_AMBOS_NEGADOS',
+} as const;
+
+function isParcial1g(resultado: string): boolean {
+  const u = resultado.trim().toUpperCase();
+  if (u === 'PARCIAL' || u === 'PROCEDENTE_PARCIAL') return true;
+  return u.includes('PARCIAL') && u.includes('PROCEDENTE');
+}
+
 function isPrimeiroGrau(grau: string | null | undefined): boolean {
   if (!grau?.trim()) {
     return true;
@@ -218,13 +231,38 @@ export class RecursosService {
         `Cenário ${cen} exige 1º grau IMPROCEDENTE (última de 1º grau: ${r1}).`,
       );
     }
-    if ((cen === 'C' || cen === 'D') && !SENT_PROC.has(r1)) {
+    if ((cen === 'C' || cen === 'D') && isParcial1g(r1)) {
       throw new BadRequestException(
-        `Cenário ${cen} exige 1º grau procedente, parcial ou acordo (última de 1º grau: ${r1}).`,
+        'Procedente parcial com ambas as partes recorrendo usa cenário E (E1–E4), não C/D.',
       );
     }
+    if ((cen === 'C' || cen === 'D') && !SENT_PROC.has(r1)) {
+      throw new BadRequestException(
+        `Cenário ${cen} exige 1º grau procedente ou acordo (última de 1º grau: ${r1}).`,
+      );
+    }
+    if (cen === 'E') {
+      if (!isParcial1g(r1)) {
+        throw new BadRequestException(
+          `Cenário E exige 1º grau PARCIAL ou PROCEDENTE_PARCIAL (última de 1º grau: ${r1}).`,
+        );
+      }
+      if (!dto.subResultado) {
+        throw new BadRequestException(
+          'Cenário E exige subResultado (E1, E2, E3 ou E4).',
+        );
+      }
+      if (
+        (dto.subResultado === 'E1' || dto.subResultado === 'E2') &&
+        !dto.valor?.trim()
+      ) {
+        throw new BadRequestException(
+          'Sub-resultados E1 e E2 exigem valor do acórdão.',
+        );
+      }
+    }
 
-    if (cen === 'C' || cen === 'D') {
+    if (cen === 'C' || cen === 'D' || cen === 'E') {
       const [pp] = await this.drizzle.db
         .select({ processoId: processoProcedente.processoId })
         .from(processoProcedente)
@@ -237,13 +275,18 @@ export class RecursosService {
       }
     }
 
-    const obsPadrao = {
-      A: '2º grau — provimento (E4-A)',
-      B: '2º grau — recurso negado (E4-B)',
-      C: '2º grau — manutenção (E4-C)',
-      D: '2º grau — reforma (E4-D)',
-    }[cen];
-    const observacoes = dto.observacoes?.trim() || obsPadrao;
+    const obsPadrao: Record<string, string> = {
+      A: '2º grau — provimento (cenário A)',
+      B: '2º grau — recurso negado (cenário B)',
+      C: '2º grau — manutenção (cenário C)',
+      D: '2º grau — reforma (cenário D)',
+      E: `2º grau — parcial ambas partes (${dto.subResultado ?? 'E'})`,
+    };
+    const observacoes = dto.observacoes?.trim() || obsPadrao[cen];
+    const subResDb =
+      cen === 'E' && dto.subResultado
+        ? SUB_RESULTADO_DB[dto.subResultado]
+        : null;
 
     const db = this.drizzle.db;
 
@@ -262,6 +305,7 @@ export class RecursosService {
           favoravelPara: 'AUTOR',
           turma: dto.turma?.trim() || null,
           observacoes,
+          subResultado: subResDb,
         });
         return;
       }
@@ -277,6 +321,7 @@ export class RecursosService {
           favoravelPara: 'REU',
           turma: dto.turma?.trim() || null,
           observacoes,
+          subResultado: subResDb,
         });
         await tx
           .delete(improcedente)
@@ -302,6 +347,7 @@ export class RecursosService {
           favoravelPara: 'AUTOR',
           turma: dto.turma?.trim() || null,
           observacoes,
+          subResultado: subResDb,
         });
         await tx
           .update(processoProcedente)
@@ -315,28 +361,107 @@ export class RecursosService {
         return;
       }
 
-      /* D */
+      if (cen === 'D') {
+        await tx.insert(sentenca).values({
+          escritorioId,
+          processoId: dto.processoId,
+          grau: 'SEGUNDO_GRAU',
+          data: dto.data,
+          valor: dto.valor ?? null,
+          resultado: 'IMPROCEDENTE',
+          favoravelPara: 'REU',
+          turma: dto.turma?.trim() || null,
+          observacoes,
+          subResultado: subResDb,
+        });
+        await tx
+          .delete(improcedente)
+          .where(eq(improcedente.processoId, dto.processoId));
+        await tx.insert(improcedente).values({
+          escritorioId,
+          processoId: dto.processoId,
+          valorSucumbencia: dto.valor ?? null,
+          statusPagamento: 'A_PAGAR',
+          decisaoRecurso: 'REFORMADA',
+        });
+        return;
+      }
+
+      /* E — PROCEDENTE_PARCIAL, ambas as partes recorreram */
+      const sub = dto.subResultado!;
+      const valorOriginal = s1.valor?.toString() ?? null;
+
+      if (sub === 'E3') {
+        await tx.insert(sentenca).values({
+          escritorioId,
+          processoId: dto.processoId,
+          grau: 'SEGUNDO_GRAU',
+          data: dto.data,
+          valor: dto.valor ?? valorOriginal,
+          resultado: 'IMPROCEDENTE',
+          favoravelPara: 'REU',
+          turma: dto.turma?.trim() || null,
+          observacoes,
+          subResultado: subResDb,
+        });
+        await tx
+          .delete(processoProcedente)
+          .where(eq(processoProcedente.processoId, dto.processoId));
+        await tx
+          .delete(improcedente)
+          .where(eq(improcedente.processoId, dto.processoId));
+        await tx.insert(improcedente).values({
+          escritorioId,
+          processoId: dto.processoId,
+          valorSucumbencia: dto.valor ?? valorOriginal,
+          statusPagamento: 'A_PAGAR',
+          decisaoRecurso: 'REFORMADA',
+        });
+        return;
+      }
+
+      const valor2g =
+        sub === 'E4'
+          ? (dto.valor?.trim() || valorOriginal)
+          : (dto.valor ?? null);
+      const resultado2g =
+        sub === 'E2' ? 'PROCEDENTE' : 'PARCIAL';
+      const recursoResultado =
+        sub === 'E1'
+          ? 'AMBOS_PARCIAIS'
+          : sub === 'E2'
+            ? 'MAJORADA'
+            : 'MANTIDA_ORIGINAL';
+      const situacao2g =
+        sub === 'E1'
+          ? 'DECISAO_2G_VALOR_AJUSTADO'
+          : sub === 'E2'
+            ? 'DECISAO_2G_MAJORADA'
+            : 'DECISAO_2G_MANTIDA_ORIGINAL';
+
       await tx.insert(sentenca).values({
         escritorioId,
         processoId: dto.processoId,
         grau: 'SEGUNDO_GRAU',
         data: dto.data,
-        valor: dto.valor ?? null,
-        resultado: 'IMPROCEDENTE',
-        favoravelPara: 'REU',
+        valor: valor2g,
+        resultado: resultado2g,
+        favoravelPara: 'AUTOR',
         turma: dto.turma?.trim() || null,
         observacoes,
+        subResultado: subResDb,
       });
       await tx
-        .delete(improcedente)
-        .where(eq(improcedente.processoId, dto.processoId));
-      await tx.insert(improcedente).values({
-        escritorioId,
-        processoId: dto.processoId,
-        valorSucumbencia: dto.valor ?? null,
-        statusPagamento: 'A_PAGAR',
-        decisaoRecurso: 'REFORMADA',
-      });
+        .update(processoProcedente)
+        .set({
+          recursoResultado,
+          situacao: situacao2g,
+          familiaSituacao:
+            sub === 'E2' ? 'EXEC_ATIVA' : 'AGUARDAR_TRANSITO',
+          obsCurta: observacoes,
+          updatedAt: new Date(),
+        })
+        .where(eq(processoProcedente.processoId, dto.processoId));
     });
 
     await this.processos.recalcularProcedenteAposSentenca(
@@ -345,6 +470,12 @@ export class RecursosService {
     );
 
     if (cen === 'C' || cen === 'D') {
+      await this.encadeamentos.dispatch(escritorioId, 'procedente_reu_recorre', {
+        processoId: dto.processoId,
+        observacao: observacoes,
+      });
+    }
+    if (cen === 'E' && dto.subResultado === 'E3') {
       await this.encadeamentos.dispatch(escritorioId, 'procedente_reu_recorre', {
         processoId: dto.processoId,
         observacao: observacoes,
@@ -362,7 +493,11 @@ export class RecursosService {
       )
       .orderBy(desc(sentenca.data), desc(sentenca.createdAt));
 
-    return { cenario: cen, sentencas: lista };
+    return {
+      cenario: cen,
+      subResultado: dto.subResultado ?? null,
+      sentencas: lista,
+    };
   }
 }
 

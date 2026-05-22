@@ -11,8 +11,13 @@ export class RegistrarSegundoGrauDto {
   @IsUUID('4')
   processoId!: string;
 
-  @IsIn(['A', 'B', 'C', 'D'])
-  cenario!: 'A' | 'B' | 'C' | 'D';
+  @IsIn(['A', 'B', 'C', 'D', 'E'])
+  cenario!: 'A' | 'B' | 'C' | 'D' | 'E';
+
+  /** Obrigatório quando cenario = E (ambas recorreram em parcial). */
+  @IsOptional()
+  @IsIn(['E1', 'E2', 'E3', 'E4'])
+  subResultado?: 'E1' | 'E2' | 'E3' | 'E4';
 
   @Matches(/^\d{4}-\d{2}-\d{2}$/)
   data!: string;
