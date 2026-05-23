@@ -13,13 +13,13 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Operacional',
     items: [
-      { href: '/intimacoes', label: 'INTIMAÇÕES' },
-      { href: '/procedentes', label: 'PROCEDENTES' },
-      { href: '/recursos', label: 'RECURSOS' },
-      { href: '/improcedentes', label: 'IMPROCEDENTES' },
-      { href: '/reprotocolo', label: 'REPROTOCOLO' },
-      { href: '/agenda', label: 'AGENDA' },
-      { href: '/pendencias', label: 'PENDÊNCIAS' },
+      { href: '/intimacoes', label: 'Intimações' },
+      { href: '/procedentes', label: 'Procedentes' },
+      { href: '/recursos', label: 'Recursos' },
+      { href: '/improcedentes', label: 'Improcedentes' },
+      { href: '/reprotocolo', label: 'Reprotocolo' },
+      { href: '/agenda', label: 'Agenda' },
+      { href: '/pendencias', label: 'Pendências' },
     ],
   },
   {
