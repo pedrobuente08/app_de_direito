@@ -752,7 +752,9 @@ export async function finalizarAudiencia(
     obsPos: string
     status?: string
     autorPresenca?: string
+    reuPresenca?: string
     motivoAusencia?: string
+    motivoCancelamento?: string
     novaData?: string
     novaHora?: string | null
     houvePendencia?: boolean
@@ -763,12 +765,54 @@ export async function finalizarAudiencia(
       observacao?: string | null
     }>
     escritorioAdversarioId?: string | null
+    cenario?: string
+    cenarioObservacao?: string | null
+    docPendenteTipo?: string
   },
 ): Promise<void> {
   await apiFetch<void>(`/audiencias/${id}/finalizar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+  })
+}
+
+export type AudienciaHistoricoItem = {
+  id: string
+  audienciaIdOrigem: string | null
+  escritorioId: string
+  processoId: string
+  escritorioAdversarioId: string | null
+  tipo: string | null
+  data: string
+  hora: string | null
+  pautista: string | null
+  status: string
+  autorPresenca: string | null
+  reuPresenca: string | null
+  motivoAusencia: string | null
+  cenario: string | null
+  cenarioObservacao: string | null
+  obsPre: string | null
+  obsPos: string | null
+  link: string | null
+  createdAtOrigem: string | null
+  archivedAt: string
+}
+
+export async function getHistoricoAudienciasProcesso(
+  processoId: string,
+): Promise<AudienciaHistoricoItem[]> {
+  return apiFetch<AudienciaHistoricoItem[]>(
+    `/audiencias/historico/processo/${processoId}`,
+  )
+}
+
+export async function desfazerFinalizacaoAudiencia(
+  historicoId: string,
+): Promise<{ restauradaId: string; processoId: string; avisos: string[] }> {
+  return apiFetch(`/audiencias/historico/${historicoId}/desfazer`, {
+    method: 'POST',
   })
 }
 

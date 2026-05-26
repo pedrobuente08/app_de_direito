@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { finalizarAudiencia, getEscritoriosAdversarios } from '@/lib/api'
 import type { Audiencia, EscritorioAdversario } from '@/lib/types'
@@ -24,7 +24,9 @@ export type FinalizarAudienciaPayload = {
   obsPos: string
   status: string
   autorPresenca?: string
+  reuPresenca?: string
   motivoAusencia?: string
+  motivoCancelamento?: string
   novaData?: string
   novaHora?: string | null
   houvePendencia?: boolean
@@ -32,17 +34,23 @@ export type FinalizarAudienciaPayload = {
   escritorioAdversarioId?: string | null
   cenario?: string
   cenarioObservacao?: string | null
+  docPendenteTipo?: string
 }
 
-const STATUS_OPCOES = ['REALIZADA', 'REDESIGNADA'] as const
+const STATUS_OPCOES: { value: string; label: string }[] = [
+  { value: 'REALIZADA', label: 'Realizada' },
+  { value: 'REDESIGNADA', label: 'Redesignada (vara marcou outra data)' },
+  { value: 'CANCELADA', label: 'Cancelada' },
+  { value: 'ADIADA', label: 'Adiada' },
+]
 
-const CENARIO_OPCOES: { value: string; label: string }[] = [
-  { value: 'TODOS_COMPARECERAM', label: 'Todos compareceram' },
-  { value: 'REVELIA', label: 'Revelia (réu não compareceu)' },
-  { value: 'SO_ADVOGADO', label: 'Só o advogado' },
-  { value: 'UNA', label: 'UNA' },
-  { value: 'FRACIONADA', label: 'Fracionada' },
-  { value: 'DOCUMENTACAO_PENDENTE', label: 'Documentação pendente' },
+const CENARIO_OPCOES: { value: string; label: string; descricao?: string }[] = [
+  { value: 'TODOS_COMPARECERAM', label: 'Todos compareceram', descricao: 'Trâmite normal' },
+  { value: 'REVELIA', label: 'Revelia', descricao: 'Réu faltou; autor compareceu' },
+  { value: 'SO_ADVOGADO', label: 'Só o advogado', descricao: 'Cliente faltou; cria pendência automática para o atendimento obter justificativa' },
+  { value: 'UNA', label: 'UNA', descricao: 'Conciliação + instrução + julgamento na mesma sessão' },
+  { value: 'FRACIONADA', label: 'Fracionada', descricao: 'Continuação em nova data — cria automaticamente nova audiência de INSTRUÇÃO' },
+  { value: 'DOCUMENTACAO_PENDENTE', label: 'Documentação pendente', descricao: 'Juiz solicitou juntada — cria pendência automática para o atendimento' },
 ]
 
 const MOTIVOS_AUSENCIA = [
@@ -50,6 +58,28 @@ const MOTIVOS_AUSENCIA = [
   { value: 'REPRESENTANTE_FALTOU', label: 'Representante faltou' },
   { value: 'ENDERECO_INVALIDO', label: 'Endereço inválido' },
   { value: 'OUTRO', label: 'Outro' },
+] as const
+
+const MOTIVOS_CANCELAMENTO = [
+  { value: 'AUSENCIA_CONTATO', label: 'Ausência de contato com o cliente' },
+  { value: 'CANCELAMENTO_VARA', label: 'Cancelamento pela vara' },
+  { value: 'OUTRO', label: 'Outro' },
+] as const
+
+const DOC_PENDENTE_OPCOES = [
+  { value: 'PROCURACAO', label: 'Procuração atualizada' },
+  { value: 'COMPROVANTE_RESIDENCIA', label: 'Comprovante de residência' },
+  { value: 'HIPOSSUFICIENCIA', label: 'Documentação de hipossuficiência' },
+  { value: 'CTPS', label: 'CTPS' },
+  { value: 'DILIGENCIA', label: 'Diligência' },
+  { value: 'OUTRO', label: 'Outro (descrever)' },
+] as const
+
+const RESPONSAVEIS_OPCOES = [
+  { value: 'ADV', label: 'ADV (advogado responsável)' },
+  { value: 'ATENDIMENTO', label: 'ATENDIMENTO (fila telemarketing)' },
+  { value: 'PAUTISTA', label: 'PAUTISTA' },
+  { value: 'ADMINISTRATIVO', label: 'ADMINISTRATIVO' },
 ] as const
 
 function addBusinessDays(fromIso: string, days: number): string {
@@ -102,8 +132,11 @@ export function PopUpPosAudiencia({
   const [obsPos, setObsPos] = useState('')
   const [status, setStatus] = useState<string>('REALIZADA')
   const [autorPresenca, setAutorPresenca] = useState('PRESENTE')
+  const [reuPresenca, setReuPresenca] = useState('PRESENTE')
   const [motivoAusenciaCodigo, setMotivoAusenciaCodigo] = useState('AUTOR_FALTOU')
   const [motivoAusenciaOutro, setMotivoAusenciaOutro] = useState('')
+  const [motivoCancelamento, setMotivoCancelamento] = useState('CANCELAMENTO_VARA')
+  const [docPendenteTipo, setDocPendenteTipo] = useState('PROCURACAO')
   const [novaData, setNovaData] = useState('')
   const [novaHora, setNovaHora] = useState('')
   const [houvePendencia, setHouvePendencia] = useState(false)
@@ -127,8 +160,11 @@ export function PopUpPosAudiencia({
     setObsPos('')
     setStatus('REALIZADA')
     setAutorPresenca('PRESENTE')
+    setReuPresenca('PRESENTE')
     setMotivoAusenciaCodigo('AUTOR_FALTOU')
     setMotivoAusenciaOutro('')
+    setMotivoCancelamento('CANCELAMENTO_VARA')
+    setDocPendenteTipo('PROCURACAO')
     setNovaData('')
     setNovaHora('')
     setHouvePendencia(false)
@@ -142,20 +178,86 @@ export function PopUpPosAudiencia({
       .catch(() => setAdversarios([]))
   }, [open, audiencia?.escritorioAdversarioId])
 
+  // Item B — saída sem perder dados: bloquear fechamento acidental quando há rascunho.
+  const formSujo =
+    obsPos.trim().length > 0 ||
+    cenarioObservacao.trim().length > 0 ||
+    novaData.trim().length > 0 ||
+    novaHora.trim().length > 0 ||
+    houvePendencia ||
+    pendencias.some(
+      (p) =>
+        p.tipo.trim() ||
+        (p.observacao ?? '').trim() ||
+        p.dataLimite.trim() ||
+        p.diasUteis.trim(),
+    )
+  const fecharComConfirmacao = useCallback(() => {
+    if (salvando) return
+    if (
+      !formSujo ||
+      window.confirm(
+        'Há informações preenchidas que serão descartadas. Fechar mesmo assim?',
+      )
+    ) {
+      onClose()
+    }
+  }, [formSujo, onClose, salvando])
+
   useEffect(() => {
     if (!open) return
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') fecharComConfirmacao()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+  }, [open, fecharComConfirmacao])
+
+  // Quando o cenário muda, alinhar automaticamente as presenças (consistência).
+  useEffect(() => {
+    if (status !== 'REALIZADA') return
+    if (cenario === 'SO_ADVOGADO') {
+      setAutorPresenca('AUSENTE')
+      setMotivoAusenciaCodigo('AUTOR_FALTOU')
+      setReuPresenca('PRESENTE')
+    } else if (cenario === 'REVELIA') {
+      setAutorPresenca('PRESENTE')
+      setReuPresenca('AUSENTE')
+    } else if (cenario === 'TODOS_COMPARECERAM') {
+      setAutorPresenca('PRESENTE')
+      setReuPresenca('PRESENTE')
+    }
+  }, [cenario, status])
+
+  // Item F — aviso quando a audiência está atrasada (mais de 7 dias no passado).
+  const diasDesdeAudiencia = useMemo(() => {
+    if (!audiencia?.data) return 0
+    const dataAud = new Date(`${audiencia.data.slice(0, 10)}T12:00:00`)
+    const hoje = new Date()
+    const ms = hoje.getTime() - dataAud.getTime()
+    return Math.floor(ms / (1000 * 60 * 60 * 24))
+  }, [audiencia?.data])
 
   if (!open || !audiencia || typeof document === 'undefined') return null
 
-  const precisaPresenca =
-    status === 'REALIZADA' || status === 'REDESIGNADA'
-  const precisaNovaData = status === 'REDESIGNADA'
+  const audienciaAtrasada = diasDesdeAudiencia > 7
+  const precisaPresenca = status === 'REALIZADA'
+  const precisaNovaData = status === 'REDESIGNADA' || cenario === 'FRACIONADA'
+  const precisaMotivoCancelamento = status === 'CANCELADA' || status === 'ADIADA'
+  const cenarioGeraPendenciaAutomatica =
+    status === 'REALIZADA' &&
+    (cenario === 'SO_ADVOGADO' || cenario === 'DOCUMENTACAO_PENDENTE')
+  const presencaAutorTravadaPorCenario =
+    cenario === 'SO_ADVOGADO' ||
+    cenario === 'REVELIA' ||
+    cenario === 'TODOS_COMPARECERAM'
+  const presencaReuTravadaPorCenario =
+    cenario === 'REVELIA' || cenario === 'TODOS_COMPARECERAM' || cenario === 'SO_ADVOGADO'
+  const cenarioAcaoAutomatica =
+    cenario === 'FRACIONADA' || cenario === 'REVELIA' || cenario === 'UNA'
+  const legendPendenciaAdicional = cenarioAcaoAutomatica
+    ? `Pendência adicional? (além da ação automática de ${cenario === 'FRACIONADA' ? 'criar nova audiência' : cenario === 'REVELIA' ? 'decretar revelia' : 'registrar UNA'})`
+    : 'Houve pendência adicional?'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -176,7 +278,15 @@ export function PopUpPosAudiencia({
       }
     }
     if (precisaNovaData && !novaData.trim()) {
-      setErro('Informe a nova data da audiência redesignada.')
+      setErro(
+        status === 'REDESIGNADA'
+          ? 'Informe a nova data da audiência redesignada.'
+          : 'Informe a nova data da audiência fracionada (continuação da instrução).',
+      )
+      return
+    }
+    if (precisaMotivoCancelamento && !motivoCancelamento.trim()) {
+      setErro('Informe o motivo do cancelamento/adiamento.')
       return
     }
     const pendenciasValidas = pendencias.filter((p) => p.tipo.trim())
@@ -195,9 +305,16 @@ export function PopUpPosAudiencia({
     if (
       status === 'REALIZADA' &&
       cenario === 'DOCUMENTACAO_PENDENTE' &&
+      docPendenteTipo === 'OUTRO' &&
       !cenarioObservacao.trim()
     ) {
-      setErro('Informe o documento necessário.')
+      setErro('Descreva o documento necessário (OUTRO).')
+      return
+    }
+    if (cenarioGeraPendenciaAutomatica && houvePendencia) {
+      setErro(
+        'Este cenário já cria a pendência automaticamente — desmarque "Houve pendência?" ou troque o cenário.',
+      )
       return
     }
 
@@ -210,6 +327,7 @@ export function PopUpPosAudiencia({
       }
       if (precisaPresenca) {
         body.autorPresenca = autorPresenca
+        body.reuPresenca = reuPresenca
         if (autorPresenca === 'AUSENTE') {
           const codigo = motivoAusenciaCodigo
           body.motivoAusencia =
@@ -222,10 +340,16 @@ export function PopUpPosAudiencia({
         body.novaData = novaData.slice(0, 10)
         body.novaHora = novaHora.trim() || null
       }
+      if (precisaMotivoCancelamento) {
+        body.motivoCancelamento = motivoCancelamento
+      }
       if (status === 'REALIZADA') {
         body.cenario = cenario.trim()
         body.cenarioObservacao = cenarioObservacao.trim() || null
         body.houvePendencia = houvePendencia
+        if (cenario === 'DOCUMENTACAO_PENDENTE') {
+          body.docPendenteTipo = docPendenteTipo
+        }
         if (houvePendencia) {
           const hoje = new Date().toISOString().slice(0, 10)
           body.pendencias = pendenciasValidas.map((p) => {
@@ -259,12 +383,12 @@ export function PopUpPosAudiencia({
       <div
         role="presentation"
         className="fixed inset-0 z-[60] bg-black/50"
-        onClick={onClose}
+        onClick={fecharComConfirmacao}
       />
       <div
         role="dialog"
         aria-modal="true"
-        className="fixed left-1/2 top-1/2 z-[61] flex max-h-[min(90vh,40rem)] w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shadow-[var(--shadow-lg)]"
+        className="fixed left-1/2 top-1/2 z-[61] flex max-h-[min(90vh,42rem)] w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shadow-[var(--shadow-lg)]"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="border-b border-[var(--color-border-default)] px-4 py-3">
@@ -284,94 +408,59 @@ export function PopUpPosAudiencia({
             <p className="mb-2 text-xs text-[var(--urgencia-vencida-text)]">{erro}</p>
           ) : null}
 
-          <div className="mb-3 grid grid-cols-2 gap-2">
-            {precisaPresenca ? (
-              <label className="text-xs text-[var(--color-text-secondary)]">
-                Autor presente? *
-                <select
-                  disabled={readOnly || salvando}
-                  value={autorPresenca}
-                  onChange={(e) => setAutorPresenca(e.target.value)}
-                  className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
-                >
-                  <option value="PRESENTE">Presente</option>
-                  <option value="AUSENTE">Ausente</option>
-                </select>
-              </label>
-            ) : null}
-            <label className="text-xs text-[var(--color-text-secondary)]">
-              Audiência *
-              <select
-                disabled={readOnly || salvando}
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
-              >
-                {STATUS_OPCOES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </label>
-          </div>
+          {audienciaAtrasada ? (
+            <div
+              role="alert"
+              className="mb-3 rounded border border-amber-400/50 bg-amber-100/40 px-2 py-1.5 text-[11px] leading-snug text-amber-900 dark:bg-amber-500/10 dark:text-amber-200"
+            >
+              <strong>Atenção:</strong> esta audiência ocorreu há {diasDesdeAudiencia} dias.
+              Confira a data antes de finalizar — registros muito antigos podem indicar audiência esquecida.
+            </div>
+          ) : null}
 
-          {precisaPresenca && autorPresenca === 'AUSENTE' ? (
-            <div className="mb-3 space-y-2">
+          <label className="mb-3 block text-xs text-[var(--color-text-secondary)]">
+            Status da audiência *
+            <select
+              disabled={readOnly || salvando}
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value)
+                if (e.target.value !== 'REALIZADA') {
+                  setCenario('')
+                  setHouvePendencia(false)
+                }
+              }}
+              className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
+            >
+              {STATUS_OPCOES.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </label>
+
+          {precisaMotivoCancelamento ? (
+            <div className="mb-3 space-y-1">
               <label className="block text-xs text-[var(--color-text-secondary)]">
-                Motivo da ausência *
+                Motivo do {status === 'CANCELADA' ? 'cancelamento' : 'adiamento'} *
                 <select
                   required
                   disabled={readOnly || salvando}
-                  value={motivoAusenciaCodigo}
-                  onChange={(e) => setMotivoAusenciaCodigo(e.target.value)}
+                  value={motivoCancelamento}
+                  onChange={(e) => setMotivoCancelamento(e.target.value)}
                   className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
                 >
-                  {MOTIVOS_AUSENCIA.map((m) => (
+                  {MOTIVOS_CANCELAMENTO.map((m) => (
                     <option key={m.value} value={m.value}>{m.label}</option>
                   ))}
                 </select>
               </label>
-              {motivoAusenciaCodigo === 'OUTRO' ? (
-                <label className="block text-xs text-[var(--color-text-secondary)]">
-                  Descreva *
-                  <input
-                    required
-                    disabled={readOnly || salvando}
-                    value={motivoAusenciaOutro}
-                    onChange={(e) => setMotivoAusenciaOutro(e.target.value)}
-                    className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
-                  />
-                </label>
-              ) : null}
+              <p className="text-[11px] text-[var(--color-text-tertiary)]">
+                Para encerrar o processo por desistência do cliente, use <strong>“Desistir do Processo”</strong> no detalhe do processo — isto aqui apenas remove a audiência da agenda.
+              </p>
             </div>
           ) : null}
 
-          {precisaNovaData ? (
-            <div className="mb-3 grid grid-cols-2 gap-2">
-              <label className="text-xs text-[var(--color-text-secondary)]">
-                Nova data *
-                <input
-                  type="date"
-                  required
-                  disabled={readOnly || salvando}
-                  value={novaData}
-                  onChange={(e) => setNovaData(e.target.value)}
-                  className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
-                />
-              </label>
-              <label className="text-xs text-[var(--color-text-secondary)]">
-                Nova hora
-                <input
-                  type="time"
-                  disabled={readOnly || salvando}
-                  value={novaHora}
-                  onChange={(e) => setNovaHora(e.target.value)}
-                  className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
-                />
-              </label>
-            </div>
-          ) : null}
-
-          {status === 'REALIZADA' ? (
+          {precisaPresenca ? (
             <fieldset className="mb-3 rounded border border-[var(--color-border-default)] p-3">
               <legend className="px-1 text-xs font-medium text-[var(--color-text-primary)]">
                 Cenário da audiência *
@@ -391,7 +480,14 @@ export function PopUpPosAudiencia({
                       onChange={() => setCenario(opt.value)}
                       className="mt-0.5"
                     />
-                    <span>{opt.label}</span>
+                    <span className="flex-1">
+                      <span className="font-medium">{opt.label}</span>
+                      {opt.descricao ? (
+                        <span className="block text-[11px] text-[var(--color-text-secondary)]">
+                          {opt.descricao}
+                        </span>
+                      ) : null}
+                    </span>
                   </label>
                 ))}
               </div>
@@ -404,46 +500,164 @@ export function PopUpPosAudiencia({
                     disabled={readOnly || salvando}
                     value={cenarioObservacao}
                     onChange={(e) => setCenarioObservacao(e.target.value)}
+                    placeholder="Ex.: cliente justificará por motivo médico"
                     className="mt-1 w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
                   />
                 </label>
               ) : null}
               {cenario === 'DOCUMENTACAO_PENDENTE' ? (
-                <label className="mt-3 block text-xs text-[var(--color-text-secondary)]">
-                  Documento necessário *
-                  <textarea
-                    required
-                    rows={2}
-                    disabled={readOnly || salvando}
-                    value={cenarioObservacao}
-                    onChange={(e) => setCenarioObservacao(e.target.value)}
-                    placeholder="Ex.: procuração atualizada, comprovante de residência…"
-                    className="mt-1 w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
-                  />
-                </label>
+                <div className="mt-3 space-y-2">
+                  <label className="block text-xs text-[var(--color-text-secondary)]">
+                    Documento necessário *
+                    <select
+                      required
+                      disabled={readOnly || salvando}
+                      value={docPendenteTipo}
+                      onChange={(e) => setDocPendenteTipo(e.target.value)}
+                      className="mt-1 w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
+                    >
+                      {DOC_PENDENTE_OPCOES.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {docPendenteTipo === 'OUTRO' ? (
+                    <label className="block text-xs text-[var(--color-text-secondary)]">
+                      Descreva o documento *
+                      <textarea
+                        required
+                        rows={2}
+                        disabled={readOnly || salvando}
+                        value={cenarioObservacao}
+                        onChange={(e) => setCenarioObservacao(e.target.value)}
+                        placeholder="Ex.: declaração de união estável, certidão específica…"
+                        className="mt-1 w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
+                      />
+                    </label>
+                  ) : null}
+                </div>
               ) : null}
             </fieldset>
           ) : null}
 
-          <label className="mb-3 block text-xs text-[var(--color-text-secondary)]">
-            Escritório adversário
-            <select
-              disabled={readOnly || salvando}
-              value={escritorioAdvId}
-              onChange={(e) => setEscritorioAdvId(e.target.value)}
-              className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
-            >
-              <option value="">— Não informado —</option>
-              {adversarios.map((a) => (
-                <option key={a.id} value={a.id}>{a.nomeCanonico}</option>
-              ))}
-            </select>
-          </label>
+          {precisaPresenca ? (
+            <div className="mb-3 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block text-xs text-[var(--color-text-secondary)]">
+                  Autor presente? *
+                  {presencaAutorTravadaPorCenario ? (
+                    <span className="ml-1 text-[11px] text-[var(--color-text-tertiary)]">
+                      (definido pelo cenário)
+                    </span>
+                  ) : null}
+                  <select
+                    disabled={readOnly || salvando || presencaAutorTravadaPorCenario}
+                    value={autorPresenca}
+                    onChange={(e) => setAutorPresenca(e.target.value)}
+                    className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm disabled:bg-[var(--color-bg-subtle)]"
+                  >
+                    <option value="PRESENTE">Presente</option>
+                    <option value="AUSENTE">Ausente</option>
+                  </select>
+                </label>
+                <label className="block text-xs text-[var(--color-text-secondary)]">
+                  Réu presente? *
+                  {presencaReuTravadaPorCenario ? (
+                    <span className="ml-1 text-[11px] text-[var(--color-text-tertiary)]">
+                      (definido pelo cenário)
+                    </span>
+                  ) : null}
+                  <select
+                    disabled={readOnly || salvando || presencaReuTravadaPorCenario}
+                    value={reuPresenca}
+                    onChange={(e) => setReuPresenca(e.target.value)}
+                    className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm disabled:bg-[var(--color-bg-subtle)]"
+                  >
+                    <option value="PRESENTE">Presente</option>
+                    <option value="AUSENTE">Ausente</option>
+                  </select>
+                </label>
+              </div>
+              {autorPresenca === 'AUSENTE' && cenario !== 'SO_ADVOGADO' ? (
+                <div className="space-y-2">
+                  <label className="block text-xs text-[var(--color-text-secondary)]">
+                    Motivo da ausência (autor) *
+                    <select
+                      required
+                      disabled={readOnly || salvando}
+                      value={motivoAusenciaCodigo}
+                      onChange={(e) => setMotivoAusenciaCodigo(e.target.value)}
+                      className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
+                    >
+                      {MOTIVOS_AUSENCIA.map((m) => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {motivoAusenciaCodigo === 'OUTRO' ? (
+                    <label className="block text-xs text-[var(--color-text-secondary)]">
+                      Descreva *
+                      <input
+                        required
+                        disabled={readOnly || salvando}
+                        value={motivoAusenciaOutro}
+                        onChange={(e) => setMotivoAusenciaOutro(e.target.value)}
+                        className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
+                      />
+                    </label>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
-          {status === 'REALIZADA' ? (
+          {precisaNovaData ? (
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              <label className="text-xs text-[var(--color-text-secondary)]">
+                {cenario === 'FRACIONADA' ? 'Data da continuação *' : 'Nova data *'}
+                <input
+                  type="date"
+                  required
+                  disabled={readOnly || salvando}
+                  value={novaData}
+                  onChange={(e) => setNovaData(e.target.value)}
+                  className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
+                />
+              </label>
+              <label className="text-xs text-[var(--color-text-secondary)]">
+                {cenario === 'FRACIONADA' ? 'Hora' : 'Nova hora'}
+                <input
+                  type="time"
+                  disabled={readOnly || salvando}
+                  value={novaHora}
+                  onChange={(e) => setNovaHora(e.target.value)}
+                  className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
+                />
+              </label>
+            </div>
+          ) : null}
+
+          {!precisaMotivoCancelamento ? (
+            <label className="mb-3 block text-xs text-[var(--color-text-secondary)]">
+              Escritório adversário
+              <select
+                disabled={readOnly || salvando}
+                value={escritorioAdvId}
+                onChange={(e) => setEscritorioAdvId(e.target.value)}
+                className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
+              >
+                <option value="">— Não informado —</option>
+                {adversarios.map((a) => (
+                  <option key={a.id} value={a.id}>{a.nomeCanonico}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          {status === 'REALIZADA' && !cenarioGeraPendenciaAutomatica ? (
             <fieldset className="mb-3 rounded border border-[var(--color-border-default)] p-3">
               <legend className="px-1 text-xs font-medium text-[var(--color-text-primary)]">
-                Houve pendência?
+                {legendPendenciaAdicional}
               </legend>
               <div className="mb-2 flex gap-4 text-sm">
                 <label className="flex items-center gap-1.5">
@@ -517,17 +731,20 @@ export function PopUpPosAudiencia({
                           className="rounded border border-[var(--color-border-default)] px-2 py-1 text-sm"
                         />
                       </div>
-                      <input
-                        placeholder="Responsável"
+                      <select
                         disabled={readOnly || salvando}
-                        value={p.responsavel ?? ''}
+                        value={p.responsavel ?? 'ADV'}
                         onChange={(e) => {
                           const next = [...pendencias]
                           next[i] = { ...next[i]!, responsavel: e.target.value }
                           setPendencias(next)
                         }}
                         className="rounded border border-[var(--color-border-default)] px-2 py-1 text-sm"
-                      />
+                      >
+                        {RESPONSAVEIS_OPCOES.map((r) => (
+                          <option key={r.value} value={r.value}>{r.label}</option>
+                        ))}
+                      </select>
                     </div>
                   ))}
                   {!readOnly ? (
@@ -545,8 +762,14 @@ export function PopUpPosAudiencia({
             </fieldset>
           ) : null}
 
+          {cenarioGeraPendenciaAutomatica ? (
+            <p className="mb-3 rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-[11px] text-[var(--color-text-secondary)]">
+              Pendência será criada automaticamente para a fila ATENDIMENTO (5 dias úteis).
+            </p>
+          ) : null}
+
           <label className="mb-3 block text-xs text-[var(--color-text-secondary)]">
-            Observações *
+            Observações da audiência *
             <textarea
               required
               minLength={10}
@@ -554,7 +777,7 @@ export function PopUpPosAudiencia({
               disabled={readOnly || salvando}
               value={obsPos}
               onChange={(e) => setObsPos(e.target.value)}
-              placeholder="Mínimo 10 caracteres"
+              placeholder="Relate o que ocorreu na sessão — quem falou, propostas de acordo, próximos passos. Não repita aqui o que já foi informado nos campos acima."
               className="mt-1 w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
             />
             <span className="mt-0.5 block text-[10px] text-[var(--color-text-secondary)]">
@@ -572,7 +795,7 @@ export function PopUpPosAudiencia({
             </button>
             <button
               type="button"
-              onClick={onClose}
+              onClick={fecharComConfirmacao}
               className="rounded border border-[var(--color-border-default)] px-4 py-2 text-sm"
             >
               Cancelar

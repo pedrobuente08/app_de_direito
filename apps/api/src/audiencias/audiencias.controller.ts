@@ -79,4 +79,26 @@ export class AudienciasController {
   ) {
     return this.audiencias.finalizar(user.escritorioId, id, dto, user);
   }
+
+  @Get('historico/processo/:processoId')
+  @Throttle(ThrottlePresets.audienciasList)
+  listarHistoricoProcesso(
+    @CurrentUser() user: AuthUser,
+    @Param('processoId', ParseUUIDPipe) processoId: string,
+  ) {
+    return this.audiencias.listarHistoricoProcesso(
+      user.escritorioId,
+      processoId,
+    );
+  }
+
+  @Post('historico/:id/desfazer')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.audienciasWrite)
+  desfazerFinalizacao(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.audiencias.desfazerFinalizacao(user.escritorioId, id, user);
+  }
 }

@@ -11,8 +11,22 @@ import { CalcularPrazoProcessualService } from '../encadeamentos/calcular-prazo-
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import {
   CENARIO_AUDIENCIA_OPCOES,
+  DOC_PENDENTE_TIPOS,
+  MOTIVO_CANCELAMENTO_OPCOES,
   type CenarioAudiencia,
+  type DocPendenteTipo,
+  type MotivoCancelamento,
 } from './dto/finalizar-audiencia.dto';
+
+/** Mapeia o tipo de documento (cenário DOC_PENDENTE) para o `pendencia.tipo` canônico. */
+const MAPA_DOC_PENDENTE_TIPO: Record<DocPendenteTipo, string> = {
+  PROCURACAO: 'SOLICITAR_PROCURACAO',
+  COMPROVANTE_RESIDENCIA: 'SOLICITAR_COMPROVANTE_RESIDENCIA',
+  HIPOSSUFICIENCIA: 'SOLICITAR_DOC_HIPOSSUFICIENCIA',
+  CTPS: 'SOLICITAR_CTPS',
+  DILIGENCIA: 'SOLICITAR_DILIGENCIA',
+  OUTRO: 'SOLICITAR_DOC_CONFORME_VARA',
+};
 import {
   audiencia,
   audienciaHistorico,
@@ -30,6 +44,46 @@ import type { FinalizarAudienciaDto } from './dto/finalizar-audiencia.dto';
 import type { UpdateAudienciaDto } from './dto/update-audiencia.dto';
 
 const LIXEIRA = new Set(['CANCELADA', 'ADIADA', 'REDESIGNADA']);
+
+/** Tipos de pendência que devem cair na fila ATENDIMENTO (telemarketing/Fláviana). */
+const TIPOS_FILA_ATENDIMENTO = [
+  'PROCURACAO',
+  'PROCURAÇÃO',
+  'HIPOSSUFICIENCIA',
+  'HIPOSSUFICIÊNCIA',
+  'CR',
+  'COMPROVANTE',
+  'JUSTIFICAR_AUSENCIA_CLIENTE',
+  'SOLICITAR_DOC',
+  'AUTOR_FALECIDO',
+  'CONTRACHEQUE',
+];
+
+function inferirFilaPorTipo(tipo: string | null | undefined): string | null {
+  const t = (tipo ?? '')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toUpperCase()
+    .trim();
+  if (!t) return null;
+  return TIPOS_FILA_ATENDIMENTO.some((alvo) => t.includes(alvo))
+    ? 'ATENDIMENTO'
+    : null;
+}
+
+/** Mapa de Responsável "lógico" → string a gravar na pendência. */
+const RESPONSAVEL_VALIDOS = new Set([
+  'ADV',
+  'ATENDIMENTO',
+  'PAUTISTA',
+  'ADMINISTRATIVO',
+]);
+
+function normalizarResponsavel(raw: string | null | undefined): string {
+  const v = (raw ?? '').trim().toUpperCase();
+  if (RESPONSAVEL_VALIDOS.has(v)) return v;
+  return raw?.trim() || 'ADV';
+}
 
 function rotulosPautistaUsuario(
   nome: string | null | undefined,
@@ -466,6 +520,14 @@ export class AudienciasService {
     processoId: string,
     cenario: CenarioAudiencia,
     cenarioObservacao: string | null | undefined,
+    audOrigem: {
+      tipo: string | null;
+      pautista: string | null;
+      escritorioAdversarioId: string | null;
+      novaData: string | null;
+      novaHora: string | null;
+      docPendenteTipo: DocPendenteTipo | null;
+    },
   ) {
     const hoje = hojeIso();
     if (cenario === 'REVELIA') {
@@ -498,10 +560,14 @@ export class AudienciasService {
     }
     if (cenario === 'DOCUMENTACAO_PENDENTE') {
       const dataLimite = await this.prazos.calcular(escritorioId, 5, hoje);
+      const tipoPendencia =
+        (audOrigem.docPendenteTipo &&
+          MAPA_DOC_PENDENTE_TIPO[audOrigem.docPendenteTipo]) ||
+        'SOLICITAR_DOC_CONFORME_VARA';
       await tx.insert(pendencia).values({
         escritorioId,
         processoId,
-        tipo: 'SOLICITAR_DOC_CONFORME_VARA',
+        tipo: tipoPendencia,
         dataAbertura: hoje,
         dataLimite,
         responsavel: 'ATENDIMENTO',
@@ -510,7 +576,42 @@ export class AudienciasService {
         origem: 'POS_AUDIENCIA',
         fila: 'ATENDIMENTO',
       });
+      return;
     }
+    if (cenario === 'FRACIONADA') {
+      const novaData = audOrigem.novaData?.trim();
+      if (!novaData) {
+        return;
+      }
+      const novaHora = audOrigem.novaHora?.trim() || null;
+      try {
+        await tx.insert(audiencia).values({
+          escritorioId,
+          processoId,
+          escritorioAdversarioId: audOrigem.escritorioAdversarioId ?? null,
+          tipo: 'INSTRUCAO',
+          data: novaData,
+          hora: novaHora,
+          pautista: audOrigem.pautista ?? null,
+          status: 'AGENDADA',
+          obsPre: `Audiência fracionada — continuação da sessão de ${hoje}`,
+        });
+        await tx
+          .update(processo)
+          .set({
+            dataAudiencia: novaData,
+            horaAudiencia: novaHora,
+            updatedAt: new Date(),
+          })
+          .where(eq(processo.id, processoId));
+      } catch {
+        // Constraint UNIQUE (escritorioId, processoId, data) — duplicidade silenciosa
+        // (já existe nova audiência nesta data; cenário fica registrado mesmo assim).
+      }
+      return;
+    }
+    // UNA / TODOS_COMPARECERAM: nenhum efeito automático extra
+    // (fase derivada cairá em AGUARDANDO_SENTENCA via FaseDerivacaoService).
   }
 
   private async registrarAusente(
@@ -582,6 +683,20 @@ export class AudienciasService {
     }
 
     const apRaw = dto.autorPresenca?.trim().toUpperCase();
+
+    if (status === 'CANCELADA' || status === 'ADIADA') {
+      const motivo = dto.motivoCancelamento?.trim().toUpperCase() as
+        | MotivoCancelamento
+        | undefined;
+      if (
+        !motivo ||
+        !(MOTIVO_CANCELAMENTO_OPCOES as readonly string[]).includes(motivo)
+      ) {
+        throw new BadRequestException(
+          'Informe motivoCancelamento (DESISTENCIA_PARTE, AUSENCIA_CONTATO, CANCELAMENTO_VARA ou OUTRO).',
+        );
+      }
+    }
 
     if (status === 'REDESIGNADA') {
       const novaData = dto.novaData?.trim();
@@ -692,12 +807,73 @@ export class AudienciasService {
           'Justificativa é obrigatória para cenário SÓ O ADVOGADO.',
         );
       }
-      if (
-        cenario === 'DOCUMENTACAO_PENDENTE' &&
-        !dto.cenarioObservacao?.trim()
-      ) {
+      if (cenario === 'DOCUMENTACAO_PENDENTE') {
+        const docTipo = dto.docPendenteTipo?.trim().toUpperCase() as
+          | DocPendenteTipo
+          | undefined;
+        if (
+          !docTipo ||
+          !(DOC_PENDENTE_TIPOS as readonly string[]).includes(docTipo)
+        ) {
+          throw new BadRequestException(
+            'Informe o tipo de documento exigido (docPendenteTipo).',
+          );
+        }
+        if (docTipo === 'OUTRO' && !dto.cenarioObservacao?.trim()) {
+          throw new BadRequestException(
+            'Descreva o documento necessário (cenarioObservacao) quando docPendenteTipo=OUTRO.',
+          );
+        }
+      }
+      if (cenario === 'FRACIONADA') {
+        const nd = dto.novaData?.trim();
+        if (!nd || !/^\d{4}-\d{2}-\d{2}$/.test(nd)) {
+          throw new BadRequestException(
+            'novaData (YYYY-MM-DD) é obrigatória para cenário FRACIONADA (continuação em outra sessão).',
+          );
+        }
+      }
+      // Consistência cenário ↔ presença do autor
+      if (cenario === 'REVELIA' && apRaw !== 'PRESENTE') {
         throw new BadRequestException(
-          'Documento necessário é obrigatório para DOCUMENTAÇÃO PENDENTE.',
+          'REVELIA exige autorPresenca=PRESENTE (autor compareceu; réu faltou).',
+        );
+      }
+      if (cenario === 'SO_ADVOGADO' && apRaw !== 'AUSENTE') {
+        throw new BadRequestException(
+          'SÓ O ADVOGADO exige autorPresenca=AUSENTE (cliente faltou; advogado compareceu sozinho).',
+        );
+      }
+      if (cenario === 'TODOS_COMPARECERAM' && apRaw !== 'PRESENTE') {
+        throw new BadRequestException(
+          'TODOS COMPARECERAM exige autorPresenca=PRESENTE.',
+        );
+      }
+
+      // Consistência cenário ↔ presença do réu (quando informada)
+      const rpRaw = dto.reuPresenca?.trim().toUpperCase();
+      if (rpRaw && rpRaw !== 'PRESENTE' && rpRaw !== 'AUSENTE') {
+        throw new BadRequestException(
+          'reuPresenca inválida (use PRESENTE ou AUSENTE).',
+        );
+      }
+      if (cenario === 'REVELIA' && rpRaw && rpRaw !== 'AUSENTE') {
+        throw new BadRequestException(
+          'REVELIA exige reuPresenca=AUSENTE (réu não compareceu).',
+        );
+      }
+      if (cenario === 'TODOS_COMPARECERAM' && rpRaw && rpRaw !== 'PRESENTE') {
+        throw new BadRequestException(
+          'TODOS COMPARECERAM exige reuPresenca=PRESENTE.',
+        );
+      }
+      // Evita duplicação: cenário que já cria pendência automática
+      // não pode coexistir com pendências manuais.
+      const cenarioGeraPendenciaAutomatica =
+        cenario === 'SO_ADVOGADO' || cenario === 'DOCUMENTACAO_PENDENTE';
+      if (cenarioGeraPendenciaAutomatica && dto.houvePendencia === true) {
+        throw new BadRequestException(
+          'Este cenário já cria a pendência automaticamente. Não adicione pendências extras pelo bloco "Houve pendência?".',
         );
       }
       const cenarioObs =
@@ -725,16 +901,21 @@ export class AudienciasService {
           for (const p of dto.pendencias ?? []) {
             const tipo = p.tipo?.trim();
             if (!tipo) continue;
+            const responsavel = normalizarResponsavel(p.responsavel);
+            const fila =
+              inferirFilaPorTipo(tipo) ??
+              (responsavel === 'ATENDIMENTO' ? 'ATENDIMENTO' : null);
             await tx.insert(pendencia).values({
               escritorioId,
               processoId: current.processoId,
               tipo,
               dataAbertura: hoje,
               dataLimite: p.dataLimite ?? null,
-              responsavel: p.responsavel?.trim() || null,
+              responsavel,
               status: 'ABERTA',
               observacao: p.observacao?.trim() || null,
               origem: 'POS_AUDIENCIA',
+              fila,
             });
           }
         }
@@ -744,23 +925,60 @@ export class AudienciasService {
           current.processoId,
           cenario,
           cenarioObs,
+          {
+            tipo: current.tipo,
+            pautista: current.pautista,
+            escritorioAdversarioId:
+              dto.escritorioAdversarioId ??
+              current.escritorioAdversarioId ??
+              null,
+            novaData: dto.novaData?.trim() || null,
+            novaHora: dto.novaHora?.trim() || null,
+            docPendenteTipo:
+              (dto.docPendenteTipo?.trim().toUpperCase() as
+                | DocPendenteTipo
+                | undefined) ?? null,
+          },
         );
+        const apFinal = apRaw === 'AUSENTE' ? 'AUSENTE' : 'PRESENTE';
+        const rpFinal =
+          rpRaw === 'PRESENTE' || rpRaw === 'AUSENTE'
+            ? rpRaw
+            : cenario === 'REVELIA'
+              ? 'AUSENTE'
+              : cenario === 'TODOS_COMPARECERAM'
+                ? 'PRESENTE'
+                : null;
+        const motivoAusenciaFinal =
+          apRaw === 'AUSENTE' ? dto.motivoAusencia?.trim() ?? null : null;
         await tx
           .update(audiencia)
           .set({
             cenario,
             cenarioObservacao: cenarioObs,
+            autorPresenca: apFinal,
+            reuPresenca: rpFinal,
+            motivoAusencia: motivoAusenciaFinal,
           })
           .where(eq(audiencia.id, id));
         await tx.insert(audienciaHistorico).values({
           audienciaIdOrigem: current.id,
           escritorioId,
           processoId: current.processoId,
+          escritorioAdversarioId:
+            dto.escritorioAdversarioId ??
+            current.escritorioAdversarioId ??
+            null,
           tipo: current.tipo,
           data: current.data,
           hora: current.hora,
           pautista: current.pautista,
           status,
+          autorPresenca: apFinal,
+          reuPresenca: rpFinal,
+          motivoAusencia: motivoAusenciaFinal,
+          cenario,
+          cenarioObservacao: cenarioObs,
           obsPre: current.obsPre,
           obsPos: obs,
           link: current.link,
@@ -789,6 +1007,12 @@ export class AudienciasService {
     }
 
     if (LIXEIRA.has(status)) {
+      const motivo = dto.motivoCancelamento?.trim().toUpperCase() as
+        | MotivoCancelamento
+        | undefined;
+      const obsComMotivo = motivo
+        ? `[${status}: ${motivo}] ${obs}`
+        : obs;
       await this.drizzle.db.transaction(async (tx) => {
         await tx.insert(audienciaLixeira).values({
           audienciaIdOrigem: current.id,
@@ -800,7 +1024,7 @@ export class AudienciasService {
           pautista: current.pautista,
           status,
           obsPre: current.obsPre,
-          obsPos: obs,
+          obsPos: obsComMotivo,
           link: current.link,
           createdAtOrigem: current.createdAt,
         });
@@ -827,7 +1051,7 @@ export class AudienciasService {
     }
 
     throw new BadRequestException(
-      'Status inválido para finalizar. Use REALIZADA, CANCELADA, ADIADA ou REDESIGNADA.',
+      'Status inválido. Use REALIZADA, REDESIGNADA, CANCELADA ou ADIADA (CANCELADA/ADIADA exigem motivoCancelamento).',
     );
   }
 
@@ -866,5 +1090,119 @@ export class AudienciasService {
     }
 
     return { importados, erros, totalLinhas: linhas.length };
+  }
+
+  /**
+   * Lista entradas do histórico de audiências de um processo (mais recentes primeiro).
+   * Usado para permitir "Desfazer finalização" na timeline.
+   */
+  async listarHistoricoProcesso(escritorioId: string, processoId: string) {
+    return this.drizzle.db
+      .select()
+      .from(audienciaHistorico)
+      .where(
+        and(
+          eq(audienciaHistorico.escritorioId, escritorioId),
+          eq(audienciaHistorico.processoId, processoId),
+        ),
+      )
+      .orderBy(desc(audienciaHistorico.archivedAt));
+  }
+
+  /**
+   * Desfaz a finalização de uma audiência: recria o registro em `audiencia`
+   * (status AGENDADA) e remove a entrada do histórico. Não remove pendências,
+   * audiências derivadas (FRACIONADA/REVELIA/etc.) ou efeitos de fase já gravados
+   * — esses casos são listados em `avisos` para o usuário avaliar.
+   */
+  async desfazerFinalizacao(
+    escritorioId: string,
+    historicoId: string,
+    _actor: AuthUser,
+  ) {
+    const [hist] = await this.drizzle.db
+      .select()
+      .from(audienciaHistorico)
+      .where(
+        and(
+          eq(audienciaHistorico.escritorioId, escritorioId),
+          eq(audienciaHistorico.id, historicoId),
+        ),
+      )
+      .limit(1);
+
+    if (!hist) {
+      throw new NotFoundException('Registro de histórico não encontrado.');
+    }
+
+    const origemId = hist.audienciaIdOrigem;
+    if (!origemId) {
+      throw new BadRequestException(
+        'Não é possível desfazer: registro de histórico sem audiência de origem.',
+      );
+    }
+
+    const [colisao] = await this.drizzle.db
+      .select({ id: audiencia.id })
+      .from(audiencia)
+      .where(
+        and(
+          eq(audiencia.escritorioId, escritorioId),
+          eq(audiencia.id, origemId),
+        ),
+      )
+      .limit(1);
+    if (colisao) {
+      throw new ConflictException(
+        'Já existe uma audiência ativa com este id — desfazer geraria duplicidade.',
+      );
+    }
+
+    await this.drizzle.db.transaction(async (tx) => {
+      await tx.insert(audiencia).values({
+        id: origemId,
+        escritorioId,
+        processoId: hist.processoId,
+        escritorioAdversarioId: hist.escritorioAdversarioId ?? null,
+        tipo: hist.tipo,
+        data: hist.data,
+        hora: hist.hora,
+        pautista: hist.pautista,
+        status: 'AGENDADA',
+        autorPresenca: null,
+        reuPresenca: null,
+        motivoAusencia: null,
+        cenario: null,
+        cenarioObservacao: null,
+        obsPre: hist.obsPre,
+        obsPos: null,
+        link: hist.link,
+        ...(hist.createdAtOrigem ? { createdAt: hist.createdAtOrigem } : {}),
+      });
+      await tx
+        .delete(audienciaHistorico)
+        .where(eq(audienciaHistorico.id, historicoId));
+    });
+
+    await this.faseDerivacao.aplicarAposMutacao(escritorioId, hist.processoId);
+
+    const avisos: string[] = [];
+    if (hist.cenario === 'FRACIONADA') {
+      avisos.push(
+        'A audiência de continuação criada automaticamente (cenário FRACIONADA) NÃO foi removida — verifique a agenda.',
+      );
+    }
+    if (hist.cenario === 'SO_ADVOGADO' || hist.cenario === 'DOCUMENTACAO_PENDENTE') {
+      avisos.push(
+        'A pendência criada automaticamente por este cenário NÃO foi removida — confira em Pendências do processo.',
+      );
+    }
+    if (hist.cenario === 'REVELIA') {
+      avisos.push(
+        'A revelia decretada permanece marcada no processo — ajuste manualmente se necessário.',
+      );
+    }
+
+    return { restauradaId: origemId, processoId: hist.processoId, avisos };
   }
 }

@@ -25,6 +25,29 @@ export const CENARIO_AUDIENCIA_OPCOES = [
 
 export type CenarioAudiencia = (typeof CENARIO_AUDIENCIA_OPCOES)[number];
 
+/** Motivos canônicos para audiência CANCELADA / ADIADA (FLUXO 1 — linhas 65-73).
+ *  Obs.: "Desistência do processo" foi removida — usar `POST /processos/:id/desistir`,
+ *  que encerra o processo e arquiva pendências corretamente. */
+export const MOTIVO_CANCELAMENTO_OPCOES = [
+  'AUSENCIA_CONTATO',
+  'CANCELAMENTO_VARA',
+  'OUTRO',
+] as const;
+
+export type MotivoCancelamento = (typeof MOTIVO_CANCELAMENTO_OPCOES)[number];
+
+/** Tipos de documento que o juiz pode exigir após audiência (cenário DOCUMENTACAO_PENDENTE). */
+export const DOC_PENDENTE_TIPOS = [
+  'PROCURACAO',
+  'COMPROVANTE_RESIDENCIA',
+  'HIPOSSUFICIENCIA',
+  'CTPS',
+  'DILIGENCIA',
+  'OUTRO',
+] as const;
+
+export type DocPendenteTipo = (typeof DOC_PENDENTE_TIPOS)[number];
+
 export class FinalizarAudienciaDto {
   @IsString()
   @MinLength(1)
@@ -37,11 +60,23 @@ export class FinalizarAudienciaDto {
   @MaxLength(30)
   status?: string;
 
+  /** Obrigatório quando `status` = CANCELADA ou ADIADA. */
+  @IsOptional()
+  @IsString()
+  @IsIn([...MOTIVO_CANCELAMENTO_OPCOES])
+  motivoCancelamento?: MotivoCancelamento;
+
   /** Obrigatório quando `status` é REALIZADA ou REDESIGNADA com controle de presença. */
   @IsOptional()
   @IsString()
   @IsIn(['PRESENTE', 'AUSENTE'])
   autorPresenca?: string;
+
+  /** Presença do réu na audiência (independente do autor). */
+  @IsOptional()
+  @IsString()
+  @IsIn(['PRESENTE', 'AUSENTE'])
+  reuPresenca?: string;
 
   @IsOptional()
   @IsString()
@@ -81,4 +116,10 @@ export class FinalizarAudienciaDto {
   @IsString()
   @MaxLength(8000)
   cenarioObservacao?: string | null;
+
+  /** Quando cenário = DOCUMENTACAO_PENDENTE, identifica qual documento foi exigido. */
+  @IsOptional()
+  @IsString()
+  @IsIn([...DOC_PENDENTE_TIPOS])
+  docPendenteTipo?: DocPendenteTipo;
 }

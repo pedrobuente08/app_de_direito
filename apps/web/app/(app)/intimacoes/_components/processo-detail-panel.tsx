@@ -31,6 +31,7 @@ import {
   type ToastApi,
 } from './processo-editable'
 import { CentroObservacoes } from '@/components/drawers/centro-observacoes'
+import { HistoricoAudiencias } from '@/components/drawers/historico-audiencias'
 import { PopUpSobrestamento } from '@/components/popups'
 import { Btn } from '@/components/ui/btn'
 import { RegistrarSentencaSection } from './registrar-sentenca-section'
@@ -197,6 +198,7 @@ export function ProcessoDetailPanel({
             )}
           </Field>
           <CentroObservacoes processoId={current.id} />
+          <HistoricoAudiencias processoId={current.id} />
         </Section>
 
         <Section title="Identificação">
