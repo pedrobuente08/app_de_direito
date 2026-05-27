@@ -34,7 +34,6 @@ export type FinalizarAudienciaPayload = {
   escritorioAdversarioId?: string | null
   cenario?: string
   cenarioObservacao?: string | null
-  docPendenteTipo?: string
 }
 
 const STATUS_OPCOES: { value: string; label: string }[] = [
@@ -50,7 +49,6 @@ const CENARIO_OPCOES: { value: string; label: string; descricao?: string }[] = [
   { value: 'SO_ADVOGADO', label: 'Só o advogado', descricao: 'Cliente faltou; cria pendência automática para o atendimento obter justificativa' },
   { value: 'UNA', label: 'UNA', descricao: 'Conciliação + instrução + julgamento na mesma sessão' },
   { value: 'FRACIONADA', label: 'Fracionada', descricao: 'Continuação em nova data — cria automaticamente nova audiência de INSTRUÇÃO' },
-  { value: 'DOCUMENTACAO_PENDENTE', label: 'Documentação pendente', descricao: 'Juiz solicitou juntada — cria pendência automática para o atendimento' },
 ]
 
 const MOTIVOS_AUSENCIA = [
@@ -66,14 +64,6 @@ const MOTIVOS_CANCELAMENTO = [
   { value: 'OUTRO', label: 'Outro' },
 ] as const
 
-const DOC_PENDENTE_OPCOES = [
-  { value: 'PROCURACAO', label: 'Procuração atualizada' },
-  { value: 'COMPROVANTE_RESIDENCIA', label: 'Comprovante de residência' },
-  { value: 'HIPOSSUFICIENCIA', label: 'Documentação de hipossuficiência' },
-  { value: 'CTPS', label: 'CTPS' },
-  { value: 'DILIGENCIA', label: 'Diligência' },
-  { value: 'OUTRO', label: 'Outro (descrever)' },
-] as const
 
 const RESPONSAVEIS_OPCOES = [
   { value: 'ADV', label: 'ADV (advogado responsável)' },
@@ -136,7 +126,6 @@ export function PopUpPosAudiencia({
   const [motivoAusenciaCodigo, setMotivoAusenciaCodigo] = useState('AUTOR_FALTOU')
   const [motivoAusenciaOutro, setMotivoAusenciaOutro] = useState('')
   const [motivoCancelamento, setMotivoCancelamento] = useState('CANCELAMENTO_VARA')
-  const [docPendenteTipo, setDocPendenteTipo] = useState('PROCURACAO')
   const [novaData, setNovaData] = useState('')
   const [novaHora, setNovaHora] = useState('')
   const [houvePendencia, setHouvePendencia] = useState(false)
@@ -164,7 +153,6 @@ export function PopUpPosAudiencia({
     setMotivoAusenciaCodigo('AUTOR_FALTOU')
     setMotivoAusenciaOutro('')
     setMotivoCancelamento('CANCELAMENTO_VARA')
-    setDocPendenteTipo('PROCURACAO')
     setNovaData('')
     setNovaHora('')
     setHouvePendencia(false)
@@ -244,20 +232,12 @@ export function PopUpPosAudiencia({
   const precisaPresenca = status === 'REALIZADA'
   const precisaNovaData = status === 'REDESIGNADA' || cenario === 'FRACIONADA'
   const precisaMotivoCancelamento = status === 'CANCELADA' || status === 'ADIADA'
-  const cenarioGeraPendenciaAutomatica =
-    status === 'REALIZADA' &&
-    (cenario === 'SO_ADVOGADO' || cenario === 'DOCUMENTACAO_PENDENTE')
   const presencaAutorTravadaPorCenario =
     cenario === 'SO_ADVOGADO' ||
     cenario === 'REVELIA' ||
     cenario === 'TODOS_COMPARECERAM'
   const presencaReuTravadaPorCenario =
     cenario === 'REVELIA' || cenario === 'TODOS_COMPARECERAM' || cenario === 'SO_ADVOGADO'
-  const cenarioAcaoAutomatica =
-    cenario === 'FRACIONADA' || cenario === 'REVELIA' || cenario === 'UNA'
-  const legendPendenciaAdicional = cenarioAcaoAutomatica
-    ? `Pendência adicional? (além da ação automática de ${cenario === 'FRACIONADA' ? 'criar nova audiência' : cenario === 'REVELIA' ? 'decretar revelia' : 'registrar UNA'})`
-    : 'Houve pendência adicional?'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -302,21 +282,6 @@ export function PopUpPosAudiencia({
       setErro('Informe a justificativa (só o advogado compareceu).')
       return
     }
-    if (
-      status === 'REALIZADA' &&
-      cenario === 'DOCUMENTACAO_PENDENTE' &&
-      docPendenteTipo === 'OUTRO' &&
-      !cenarioObservacao.trim()
-    ) {
-      setErro('Descreva o documento necessário (OUTRO).')
-      return
-    }
-    if (cenarioGeraPendenciaAutomatica && houvePendencia) {
-      setErro(
-        'Este cenário já cria a pendência automaticamente — desmarque "Houve pendência?" ou troque o cenário.',
-      )
-      return
-    }
 
     setSalvando(true)
     try {
@@ -347,9 +312,6 @@ export function PopUpPosAudiencia({
         body.cenario = cenario.trim()
         body.cenarioObservacao = cenarioObservacao.trim() || null
         body.houvePendencia = houvePendencia
-        if (cenario === 'DOCUMENTACAO_PENDENTE') {
-          body.docPendenteTipo = docPendenteTipo
-        }
         if (houvePendencia) {
           const hoje = new Date().toISOString().slice(0, 10)
           body.pendencias = pendenciasValidas.map((p) => {
@@ -505,38 +467,6 @@ export function PopUpPosAudiencia({
                   />
                 </label>
               ) : null}
-              {cenario === 'DOCUMENTACAO_PENDENTE' ? (
-                <div className="mt-3 space-y-2">
-                  <label className="block text-xs text-[var(--color-text-secondary)]">
-                    Documento necessário *
-                    <select
-                      required
-                      disabled={readOnly || salvando}
-                      value={docPendenteTipo}
-                      onChange={(e) => setDocPendenteTipo(e.target.value)}
-                      className="mt-1 w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
-                    >
-                      {DOC_PENDENTE_OPCOES.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
-                  </label>
-                  {docPendenteTipo === 'OUTRO' ? (
-                    <label className="block text-xs text-[var(--color-text-secondary)]">
-                      Descreva o documento *
-                      <textarea
-                        required
-                        rows={2}
-                        disabled={readOnly || salvando}
-                        value={cenarioObservacao}
-                        onChange={(e) => setCenarioObservacao(e.target.value)}
-                        placeholder="Ex.: declaração de união estável, certidão específica…"
-                        className="mt-1 w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
-                      />
-                    </label>
-                  ) : null}
-                </div>
-              ) : null}
             </fieldset>
           ) : null}
 
@@ -654,10 +584,10 @@ export function PopUpPosAudiencia({
             </label>
           ) : null}
 
-          {status === 'REALIZADA' && !cenarioGeraPendenciaAutomatica ? (
+          {status === 'REALIZADA' ? (
             <fieldset className="mb-3 rounded border border-[var(--color-border-default)] p-3">
               <legend className="px-1 text-xs font-medium text-[var(--color-text-primary)]">
-                {legendPendenciaAdicional}
+                Houve pendência de documento?
               </legend>
               <div className="mb-2 flex gap-4 text-sm">
                 <label className="flex items-center gap-1.5">
@@ -760,12 +690,6 @@ export function PopUpPosAudiencia({
                 </div>
               ) : null}
             </fieldset>
-          ) : null}
-
-          {cenarioGeraPendenciaAutomatica ? (
-            <p className="mb-3 rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-3 py-2 text-[11px] text-[var(--color-text-secondary)]">
-              Pendência será criada automaticamente para a fila ATENDIMENTO (5 dias úteis).
-            </p>
           ) : null}
 
           <label className="mb-3 block text-xs text-[var(--color-text-secondary)]">
