@@ -366,7 +366,7 @@ export default function ConfiguracoesPage() {
           </h2>
           <p className="mb-3 text-xs text-[var(--color-text-secondary)]">
             Liste abaixo as varas que operam em modalidade <strong>FRACIONADA</strong> (conciliação e instrução em sessões separadas). Uma vara por linha. As demais são tratadas como <strong>UNA</strong>.<br />
-            No pós-audiência, quando a vara do processo estiver nesta lista e não houver acordo, o sistema pré-seleciona automaticamente o cenário "Fracionada" e solicita apenas a data da próxima sessão de instrução.
+            No pós-audiência, quando a vara do processo estiver nesta lista e não houver acordo, o sistema pré-seleciona automaticamente o cenário &quot;Fracionada&quot; e solicita apenas a data da próxima sessão de instrução.
           </p>
           <textarea
             rows={8}
@@ -376,7 +376,7 @@ export default function ConfiguracoesPage() {
             className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
           />
           <p className="mt-1.5 text-[11px] text-[var(--color-text-tertiary)]">
-            Comparação sem diferenciar maiúsculas/minúsculas. Use o nome exato como aparece no campo "Vara" das Intimações.
+            Comparação sem diferenciar maiúsculas/minúsculas. Use o nome exato como aparece no campo &quot;Vara&quot; das Intimações.
           </p>
 
           <div className="mt-4 border-t border-[var(--color-border-default)] pt-4">
@@ -400,7 +400,7 @@ export default function ConfiguracoesPage() {
               Varas UNA condicional (viram FRACIONADA se ambas as partes pedirem AIJ)
             </h3>
             <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
-              Varas normalmente UNA que se tornam FRACIONADAS se ambas as partes solicitarem AIJ (Audiência de Instrução e Julgamento). No pós-audiência, o sistema perguntará "As partes solicitaram AIJ?" e criará a audiência de instrução automaticamente se a resposta for sim.
+              Varas normalmente UNA que se tornam FRACIONADAS se ambas as partes solicitarem AIJ (Audiência de Instrução e Julgamento). No pós-audiência, o sistema perguntará &quot;As partes solicitaram AIJ?&quot; e criará a audiência de instrução automaticamente se a resposta for sim.
             </p>
             <textarea
               rows={5}
