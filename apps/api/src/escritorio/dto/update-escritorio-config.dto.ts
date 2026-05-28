@@ -96,4 +96,20 @@ export class UpdateEscritorioConfigDto {
   @IsArray()
   @IsInt({ each: true })
   fatores_provisao_pct?: number[];
+
+  /** Varas que operam em modalidade FRACIONADA (conciliação + instrução separadas). */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  varas_fracionadas?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  varas_muda_sala?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  varas_una_condicional?: string[];
 }

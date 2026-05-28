@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { PautistaField } from '@/components/agenda/pautista-field'
 import { PopUpPosAudiencia } from '@/components/popups/pos-audiencia'
 import { Btn } from '@/components/ui/btn'
@@ -46,6 +46,12 @@ type Props = {
   readOnly?: boolean
   /** Admin/adm/adv podem atribuir pautista via dropdown. */
   canEditPautista?: boolean
+  /** Lista de varas configuradas como fracionadas (vem do config do escritório). */
+  varasFracionadas?: string[]
+  /** Lista de varas UNA onde o cliente troca de sala virtual durante a instrução. */
+  varasMudaSala?: string[]
+  /** Lista de varas UNA que viram FRACIONADAS se ambas as partes pedirem AIJ. */
+  varasUnaCondicional?: string[]
   onUpdated: () => void
 }
 
@@ -53,6 +59,9 @@ export function AgendaCard({
   audiencia: a,
   readOnly,
   canEditPautista,
+  varasFracionadas,
+  varasMudaSala,
+  varasUnaCondicional,
   onUpdated,
 }: Props) {
   const p = a.processo
@@ -73,6 +82,12 @@ export function AgendaCard({
   const banca = a.escritorioAdversarioNome?.trim()
 
   const [dialogOpen, setDialogOpen] = useState(false)
+
+  const mudaSala = useMemo(() => {
+    const varaCard = (p?.vara ?? '').trim().toUpperCase()
+    if (!varaCard || !varasMudaSala?.length) return false
+    return varasMudaSala.some((v) => v.trim().toUpperCase() === varaCard)
+  }, [p?.vara, varasMudaSala])
 
   return (
     <>
@@ -149,7 +164,14 @@ export function AgendaCard({
             <span className="w-20 shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
               Vara
             </span>
-            <span>{varaLinha}</span>
+            <span className="flex flex-wrap items-center gap-1">
+              {varaLinha}
+              {mudaSala ? (
+                <span className="ml-2 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200">
+                  troca de sala
+                </span>
+              ) : null}
+            </span>
           </div>
         </div>
 
@@ -218,6 +240,9 @@ export function AgendaCard({
         open={dialogOpen}
         audiencia={a}
         readOnly={readOnly}
+        varasFracionadas={varasFracionadas}
+        varasMudaSala={varasMudaSala}
+        varasUnaCondicional={varasUnaCondicional}
         onClose={() => setDialogOpen(false)}
         onSuccess={onUpdated}
       />

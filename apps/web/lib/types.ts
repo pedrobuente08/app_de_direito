@@ -211,6 +211,12 @@ export type EscritorioConfig = {
   tipos_pendencia?: string[]
   fatores_provisao_pct?: number[]
   comunica_digest?: { enabled?: boolean; emails?: string[]; dias?: number }
+  /** Varas que operam em modalidade FRACIONADA. Comparação case-insensitive. */
+  varas_fracionadas?: string[]
+  /** Varas UNA onde o cliente troca de sala virtual para instrução. */
+  varas_muda_sala?: string[]
+  /** Varas UNA que se tornam FRACIONADAS quando ambas as partes pedem AIJ. */
+  varas_una_condicional?: string[]
 }
 
 export type ImprocedenteRow = {

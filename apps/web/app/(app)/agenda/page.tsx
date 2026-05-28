@@ -6,7 +6,7 @@ import { AgendaCard } from '@/components/agenda/agenda-card'
 import { Btn } from '@/components/ui/btn'
 import { FamiliaTabs } from '@/components/ui/familia-tabs'
 import { KpiCard } from '@/components/ui/kpi-card'
-import { getAudiencias, getAuthMe, getResumoAusentes6m } from '@/lib/api'
+import { getAudiencias, getAuthMe, getEscritorioConfig, getResumoAusentes6m } from '@/lib/api'
 import { audienciaAtribuidaAoUsuario } from '@/lib/pautista-match'
 import type { Audiencia, Ausentes6mResumo, AuthMe } from '@/lib/types'
 
@@ -51,6 +51,9 @@ export default function AgendaPage() {
   const [visao, setVisao] = useState<VisaoAgenda>('todas')
   const [periodo, setPeriodo] = useState<Periodo>('4semanas')
   const [ausentesResumo, setAusentesResumo] = useState<Ausentes6mResumo | null>(null)
+  const [varasFracionadas, setVarasFracionadas] = useState<string[]>([])
+  const [varasMudaSala, setVarasMudaSala] = useState<string[]>([])
+  const [varasUnaCondicional, setVarasUnaCondicional] = useState<string[]>([])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -71,6 +74,13 @@ export default function AgendaPage() {
 
   useEffect(() => {
     void load()
+    getEscritorioConfig()
+      .then((cfg) => {
+        setVarasFracionadas(cfg.varas_fracionadas ?? [])
+        setVarasMudaSala(cfg.varas_muda_sala ?? [])
+        setVarasUnaCondicional(cfg.varas_una_condicional ?? [])
+      })
+      .catch(() => {})
   }, [load])
 
   useEffect(() => {
@@ -241,6 +251,9 @@ export default function AgendaPage() {
                     audiencia={a}
                     readOnly={readOnly}
                     canEditPautista={canEditPautista}
+                    varasFracionadas={varasFracionadas}
+                    varasMudaSala={varasMudaSala}
+                    varasUnaCondicional={varasUnaCondicional}
                     onUpdated={load}
                   />
                 ))}

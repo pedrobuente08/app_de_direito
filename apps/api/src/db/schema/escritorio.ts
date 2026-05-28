@@ -53,6 +53,20 @@ export type EscritorioConfig = {
   encadeamentos?: Partial<Record<string, boolean>>;
   /** Cálculo de prazos de pendências automáticas. */
   prazo_processual_tipo?: 'DIAS_UTEIS' | 'CORRIDOS';
+  /**
+   * Varas que operam em modalidade FRACIONADA (conciliação + instrução em sessões separadas).
+   * Todas as demais são tratadas como UNA.
+   * Comparação case-insensitive. Ex.: ["1ª VARA CÍVEL", "2ª VARA DE FAMÍLIA"].
+   */
+  varas_fracionadas?: string[];
+  /** Varas UNA onde o cliente precisa trocar de sala virtual durante a instrução. */
+  varas_muda_sala?: string[];
+  /**
+   * Varas UNA que viram FRACIONADAS se ambas as partes solicitarem AIJ.
+   * No pós-audiência, o sistema pergunta "As partes solicitaram AIJ?" e cria
+   * a audiência de instrução automaticamente se a resposta for sim.
+   */
+  varas_una_condicional?: string[];
 };
 
 export const escritorio = pgTable('escritorio', {

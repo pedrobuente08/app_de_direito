@@ -97,6 +97,12 @@ type Props = {
   audiencia: Audiencia | null
   readOnly?: boolean
   tiposPendencia?: string[]
+  /** Lista de varas configuradas como fracionadas no escritório. */
+  varasFracionadas?: string[]
+  /** Lista de varas UNA onde o cliente troca de sala virtual durante a instrução. */
+  varasMudaSala?: string[]
+  /** Lista de varas UNA que viram FRACIONADAS se ambas as partes pedirem AIJ. */
+  varasUnaCondicional?: string[]
   onClose: () => void
   onSuccess: () => void
 }
@@ -111,11 +117,18 @@ function emptyPendencia(): PendenciaPosAudienciaInput {
   }
 }
 
+function normalizarVara(v: string | null | undefined): string {
+  return (v ?? '').trim().toUpperCase()
+}
+
 export function PopUpPosAudiencia({
   open,
   audiencia,
   readOnly,
   tiposPendencia,
+  varasFracionadas,
+  varasMudaSala,
+  varasUnaCondicional,
   onClose,
   onSuccess,
 }: Props) {
@@ -135,9 +148,30 @@ export function PopUpPosAudiencia({
   const [escritorioAdvId, setEscritorioAdvId] = useState('')
   const [cenario, setCenario] = useState('')
   const [cenarioObservacao, setCenarioObservacao] = useState('')
+  /** 'sem_acordo' | 'com_acordo' | 'outro' — usado só quando vara é FRACIONADA */
+  const [resultadoFracionada, setResultadoFracionada] = useState<'sem_acordo' | 'com_acordo' | 'outro'>('sem_acordo')
   const [adversarios, setAdversarios] = useState<EscritorioAdversario[]>([])
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const [solicitouAij, setSolicitouAij] = useState<boolean | null>(null)
+
+  const varaEhFracionada = useMemo(() => {
+    const vara = normalizarVara(audiencia?.processo?.vara)
+    if (!vara || !varasFracionadas?.length) return false
+    return varasFracionadas.some((v) => normalizarVara(v) === vara)
+  }, [audiencia?.processo?.vara, varasFracionadas])
+
+  const varaEhMudaSala = useMemo(() => {
+    const vara = normalizarVara(audiencia?.processo?.vara)
+    if (!vara || !varasMudaSala?.length) return false
+    return varasMudaSala.some((v) => normalizarVara(v) === vara)
+  }, [audiencia?.processo?.vara, varasMudaSala])
+
+  const varaEhCondicional = useMemo(() => {
+    const vara = normalizarVara(audiencia?.processo?.vara)
+    if (!vara || !varasUnaCondicional?.length) return false
+    return varasUnaCondicional.some((v) => normalizarVara(v) === vara)
+  }, [audiencia?.processo?.vara, varasUnaCondicional])
 
   const tipoOpts = useMemo(() => {
     const set = new Set<string>([...PENDENCIA_TIPOS_PADRAO, ...(tiposPendencia ?? [])])
@@ -158,8 +192,10 @@ export function PopUpPosAudiencia({
     setHouvePendencia(false)
     setPendencias([emptyPendencia()])
     setEscritorioAdvId(audiencia?.escritorioAdversarioId ?? '')
-    setCenario('')
+    setCenario(varaEhFracionada ? 'FRACIONADA' : '')
     setCenarioObservacao('')
+    setResultadoFracionada('sem_acordo')
+    setSolicitouAij(null)
     setErro(null)
     getEscritoriosAdversarios()
       .then(setAdversarios)
@@ -201,9 +237,26 @@ export function PopUpPosAudiencia({
     return () => window.removeEventListener('keydown', onKey)
   }, [open, fecharComConfirmacao])
 
+  // Sincroniza cenário derivado quando vara é fracionada.
+  useEffect(() => {
+    if (!varaEhFracionada || status !== 'REALIZADA') return
+    if (resultadoFracionada === 'sem_acordo') {
+      setCenario('FRACIONADA')
+      setAutorPresenca('PRESENTE')
+      setReuPresenca('PRESENTE')
+    } else if (resultadoFracionada === 'com_acordo') {
+      setCenario('TODOS_COMPARECERAM')
+      setAutorPresenca('PRESENTE')
+      setReuPresenca('PRESENTE')
+    } else {
+      setCenario('')
+    }
+  }, [resultadoFracionada, varaEhFracionada, status])
+
   // Quando o cenário muda, alinhar automaticamente as presenças (consistência).
   useEffect(() => {
     if (status !== 'REALIZADA') return
+    if (varaEhFracionada) return  // já tratado acima
     if (cenario === 'SO_ADVOGADO') {
       setAutorPresenca('AUSENTE')
       setMotivoAusenciaCodigo('AUTOR_FALTOU')
@@ -215,7 +268,7 @@ export function PopUpPosAudiencia({
       setAutorPresenca('PRESENTE')
       setReuPresenca('PRESENTE')
     }
-  }, [cenario, status])
+  }, [cenario, status, varaEhFracionada])
 
   // Item F — aviso quando a audiência está atrasada (mais de 7 dias no passado).
   const diasDesdeAudiencia = useMemo(() => {
@@ -232,11 +285,14 @@ export function PopUpPosAudiencia({
   const precisaPresenca = status === 'REALIZADA'
   const precisaNovaData = status === 'REDESIGNADA' || cenario === 'FRACIONADA'
   const precisaMotivoCancelamento = status === 'CANCELADA' || status === 'ADIADA'
+  // Para vara fracionada sem acordo, presença é auto-definida (PRESENTE/PRESENTE).
   const presencaAutorTravadaPorCenario =
+    (varaEhFracionada && resultadoFracionada !== 'outro') ||
     cenario === 'SO_ADVOGADO' ||
     cenario === 'REVELIA' ||
     cenario === 'TODOS_COMPARECERAM'
   const presencaReuTravadaPorCenario =
+    (varaEhFracionada && resultadoFracionada !== 'outro') ||
     cenario === 'REVELIA' || cenario === 'TODOS_COMPARECERAM' || cenario === 'SO_ADVOGADO'
 
   async function handleSubmit(e: React.FormEvent) {
@@ -275,7 +331,11 @@ export function PopUpPosAudiencia({
       return
     }
     if (status === 'REALIZADA' && !cenario.trim()) {
-      setErro('Selecione o cenário da audiência.')
+      setErro(
+        varaEhFracionada
+          ? 'Selecione o resultado da sessão.'
+          : 'Selecione o cenário da audiência.',
+      )
       return
     }
     if (status === 'REALIZADA' && cenario === 'SO_ADVOGADO' && !cenarioObservacao.trim()) {
@@ -422,7 +482,138 @@ export function PopUpPosAudiencia({
             </div>
           ) : null}
 
-          {precisaPresenca ? (
+          {precisaPresenca && varaEhFracionada ? (
+            <fieldset className="mb-3 rounded border border-[var(--color-brand)]/30 bg-[var(--color-brand)]/5 p-3">
+              <legend className="px-1 text-xs font-semibold text-[var(--color-brand)]">
+                Vara fracionada — resultado da sessão *
+              </legend>
+              <div className="space-y-2">
+                <label className="flex cursor-pointer items-start gap-2 text-sm text-[var(--color-text-primary)]">
+                  <input
+                    type="radio"
+                    name="resultado-fracionada"
+                    value="sem_acordo"
+                    checked={resultadoFracionada === 'sem_acordo'}
+                    disabled={readOnly || salvando}
+                    onChange={() => setResultadoFracionada('sem_acordo')}
+                    className="mt-0.5"
+                  />
+                  <span className="flex-1">
+                    <span className="font-medium">Sem acordo — agendar instrução</span>
+                    <span className="block text-[11px] text-[var(--color-text-secondary)]">
+                      Cria automaticamente a próxima audiência de instrução na data informada abaixo
+                    </span>
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-2 text-sm text-[var(--color-text-primary)]">
+                  <input
+                    type="radio"
+                    name="resultado-fracionada"
+                    value="com_acordo"
+                    checked={resultadoFracionada === 'com_acordo'}
+                    disabled={readOnly || salvando}
+                    onChange={() => setResultadoFracionada('com_acordo')}
+                    className="mt-0.5"
+                  />
+                  <span className="flex-1">
+                    <span className="font-medium">Com acordo / encerrada</span>
+                    <span className="block text-[11px] text-[var(--color-text-secondary)]">
+                      Todos compareceram e a sessão foi concluída
+                    </span>
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-2 text-sm text-[var(--color-text-primary)]">
+                  <input
+                    type="radio"
+                    name="resultado-fracionada"
+                    value="outro"
+                    checked={resultadoFracionada === 'outro'}
+                    disabled={readOnly || salvando}
+                    onChange={() => setResultadoFracionada('outro')}
+                    className="mt-0.5"
+                  />
+                  <span className="flex-1">
+                    <span className="font-medium">Outro</span>
+                    <span className="block text-[11px] text-[var(--color-text-secondary)]">
+                      Revelia, só o advogado, documentação pendente, etc.
+                    </span>
+                  </span>
+                </label>
+              </div>
+              {resultadoFracionada === 'outro' ? (
+                <div className="mt-3 space-y-1.5 border-t border-[var(--color-border-default)] pt-3">
+                  {CENARIO_OPCOES.map((opt) => (
+                    <label
+                      key={opt.value}
+                      className="flex cursor-pointer items-start gap-2 text-sm text-[var(--color-text-primary)]"
+                    >
+                      <input
+                        type="radio"
+                        name="cenario-aud"
+                        value={opt.value}
+                        checked={cenario === opt.value}
+                        disabled={readOnly || salvando}
+                        onChange={() => setCenario(opt.value)}
+                        className="mt-0.5"
+                      />
+                      <span className="flex-1">
+                        <span className="font-medium">{opt.label}</span>
+                        {opt.descricao ? (
+                          <span className="block text-[11px] text-[var(--color-text-secondary)]">
+                            {opt.descricao}
+                          </span>
+                        ) : null}
+                      </span>
+                    </label>
+                  ))}
+                  {cenario === 'SO_ADVOGADO' ? (
+                    <label className="mt-3 block text-xs text-[var(--color-text-secondary)]">
+                      Justificativa *
+                      <textarea
+                        required
+                        rows={2}
+                        disabled={readOnly || salvando}
+                        value={cenarioObservacao}
+                        onChange={(e) => setCenarioObservacao(e.target.value)}
+                        placeholder="Ex.: cliente justificará por motivo médico"
+                        className="mt-1 w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
+                      />
+                    </label>
+                  ) : null}
+                </div>
+              ) : null}
+            </fieldset>
+          ) : null}
+
+          {precisaPresenca && varaEhMudaSala && !varaEhFracionada ? (
+            <div role="alert" className="mb-3 rounded border border-amber-400/50 bg-amber-100/40 px-2 py-1.5 text-[11px] leading-snug text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+              <strong>Atenção — vara muda de sala:</strong> se não houve acordo na conciliação e a instrução continuar hoje, oriente o cliente a aguardar o link da nova sala virtual antes de encerrar a sessão.
+            </div>
+          ) : null}
+
+          {precisaPresenca && varaEhCondicional && !varaEhFracionada ? (
+            <fieldset className="mb-3 rounded border border-[var(--color-border-default)] p-3">
+              <legend className="px-1 text-xs font-medium text-[var(--color-text-primary)]">
+                As partes solicitaram AIJ?
+              </legend>
+              <div className="flex gap-4 text-sm">
+                <label className="flex items-center gap-1.5">
+                  <input type="radio" name="solicitou-aij" checked={solicitouAij === true}
+                    disabled={readOnly || salvando}
+                    onChange={() => { setSolicitouAij(true); setCenario('FRACIONADA') }} />
+                  Sim — agendar instrução em nova data
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <input type="radio" name="solicitou-aij" checked={solicitouAij === false}
+                    disabled={readOnly || salvando}
+                    onChange={() => { setSolicitouAij(false); if (cenario === 'FRACIONADA') setCenario('') }} />
+                  Não — encerrada nesta sessão
+                </label>
+              </div>
+            </fieldset>
+          ) : null}
+
+          {precisaPresenca && !varaEhFracionada ? (
             <fieldset className="mb-3 rounded border border-[var(--color-border-default)] p-3">
               <legend className="px-1 text-xs font-medium text-[var(--color-text-primary)]">
                 Cenário da audiência *
@@ -544,7 +735,9 @@ export function PopUpPosAudiencia({
           {precisaNovaData ? (
             <div className="mb-3 grid grid-cols-2 gap-2">
               <label className="text-xs text-[var(--color-text-secondary)]">
-                {cenario === 'FRACIONADA' ? 'Data da continuação *' : 'Nova data *'}
+                {cenario === 'FRACIONADA'
+                  ? (varaEhFracionada ? 'Data da audiência de instrução *' : 'Data da continuação *')
+                  : 'Nova data *'}
                 <input
                   type="date"
                   required
