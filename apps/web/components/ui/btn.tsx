@@ -6,9 +6,9 @@ export type BtnVariant = 'default' | 'primary' | 'danger'
 
 const variants: Record<BtnVariant, string> = {
   default:
-    'border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]',
+    'border border-pauta-line bg-pauta-card text-pauta-ink hover:bg-pauta-paper-2',
   primary:
-    'border border-[var(--color-accent-dark)] bg-[var(--color-accent)] text-[var(--color-brand)] hover:bg-[var(--color-accent-dark)] hover:text-white',
+    'border border-pauta-forest bg-pauta-forest text-[#F3EEE1] shadow-pauta-xs hover:bg-pauta-forest-2 hover:border-pauta-forest-2',
   danger:
     'border border-[var(--urgencia-vencida-border)] bg-[var(--urgencia-vencida-bg)] text-[var(--urgencia-vencida-text)] hover:opacity-90',
 }
@@ -33,7 +33,7 @@ export function Btn({
     <button
       type="button"
       disabled={isDisabled}
-      className={`inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-pauta-md px-4 py-2 text-[13.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${className}`}
       {...rest}
     >
       {loading ? (

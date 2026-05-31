@@ -10,7 +10,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@fontsource/fraunces": "^5.2.9",
+    "@fontsource/hanken-grotesk": "^5.2.8",
     "@tanstack/react-table": "^8.21.3",
+    "geist": "^1.7.1",
     "next": "14.2.35",
     "react": "^18",
     "react-dom": "^18"

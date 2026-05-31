@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 
 /** Rotas da área logada (PLANO V3 — sidebar). */
 const ROTAS_AUTENTICADAS = [
+  '/painel',
   '/intimacoes',
   '/procedentes',
   '/recursos',
@@ -53,6 +54,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/painel/:path*',
     '/intimacoes/:path*',
     '/procedentes/:path*',
     '/recursos/:path*',

@@ -19,7 +19,7 @@ export function LoginForm() {
     setLoading(true);
     try {
       await loginRequest(email, senha);
-      const dest = searchParams.get('from') ?? '/intimacoes';
+      const dest = searchParams.get('from') ?? '/painel';
       // Navegação completa: garante que cookies da sessão (Set-Cookie) sejam enviados na próxima rota (middleware).
       window.location.assign(dest.startsWith('/') ? dest : `/${dest}`);
     } catch (err) {

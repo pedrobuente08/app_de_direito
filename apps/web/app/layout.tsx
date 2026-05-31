@@ -1,16 +1,18 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { GeistMono } from 'geist/font/mono';
+import '@fontsource/fraunces/400.css';
+import '@fontsource/fraunces/500.css';
+import '@fontsource/fraunces/600.css';
+import '@fontsource/fraunces/700.css';
+import '@fontsource/hanken-grotesk/400.css';
+import '@fontsource/hanken-grotesk/500.css';
+import '@fontsource/hanken-grotesk/600.css';
+import '@fontsource/hanken-grotesk/700.css';
 import './globals.css';
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
-
 export const metadata: Metadata = {
-  title: 'CONECTAR',
-  description: 'Gestão de captação massiva para escritórios',
+  title: 'Pauta',
+  description: 'Gestão jurídica para advogado autônomo e escritório pequeno',
 };
 
 export default function RootLayout({
@@ -20,7 +22,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${inter.variable} font-sans antialiased`}>{children}</body>
+      <body
+        className={`${GeistMono.variable} font-sans antialiased`}
+        style={
+          {
+            '--font-display': 'Fraunces, serif',
+            '--font-sans': 'Hanken Grotesk, sans-serif',
+            '--font-mono': `${GeistMono.style.fontFamily}, monospace`,
+          } as React.CSSProperties
+        }
+      >
+        <div className="pauta-grain" aria-hidden />
+        {children}
+      </body>
     </html>
   );
 }

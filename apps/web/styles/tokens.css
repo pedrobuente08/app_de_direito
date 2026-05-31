@@ -1,0 +1,64 @@
+:root {
+  /* Canvas */
+  --paper: #f2eee4;
+  --paper-2: #ebe5d7;
+  --card: #fcfbf6;
+  --card-2: #f7f4ec;
+
+  /* Texto */
+  --ink: #1b1c14;
+  --ink-soft: #45463b;
+  --muted: #83826f;
+  --faint: #a9a795;
+
+  /* Bordas */
+  --line: #e3ddcd;
+  --line-2: #d7d0bd;
+
+  /* Sidebar */
+  --forest-deep: #11362a;
+  --forest: #1c4435;
+  --forest-2: #2b5c47;
+  --sage: #9db3a4;
+
+  /* Acento */
+  --ochre: #bd7a34;
+  --clay: #ae4a30;
+  --pos: #3c7a55;
+  --pos-bg: #e6eee4;
+
+  /* WhatsApp / alertas */
+  --wa-bg: #0e2b22;
+  --alert-bg: #fbf3d9;
+  --alert-border: #ecdba5;
+  --alert-text: #6e591f;
+  --alert-icon: #a6791c;
+
+  /* Delta chips */
+  --delta-warn-text: #9a6322;
+  --delta-warn-bg: #f3e9d7;
+  --delta-crit-bg: #f3e3dc;
+
+  /* Layout */
+  --sidebar-width: 248px;
+  --header-height: 60px;
+  --content-max-width: 1440px;
+  --content-padding-x: 38px;
+  --content-padding-y: 26px;
+
+  /* Border radius */
+  --radius-pauta-sm: 9px;
+  --radius-pauta-md: 10px;
+  --radius-pauta-lg: 12px;
+  --radius-pauta-xl: 15px;
+
+  /* Font families (set by root layout) */
+  --font-display: 'Fraunces', serif;
+  --font-sans: 'Hanken Grotesk', sans-serif;
+  --font-mono: 'Geist Mono', monospace;
+
+  /* Sombras */
+  --shadow-pauta-xs: 0 1px 2px rgba(27, 28, 20, 0.06);
+  --shadow-pauta-sm: 0 1px 2px rgba(27, 28, 20, 0.12);
+  --shadow-pauta-md: 0 4px 6px rgba(27, 28, 20, 0.08);
+}

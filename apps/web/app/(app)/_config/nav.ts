@@ -11,8 +11,9 @@ export type NavSection = {
 
 export const NAV_SECTIONS: NavSection[] = [
   {
-    label: 'Operacional',
+    label: 'Operação',
     items: [
+      { href: '/painel', label: 'Painel' },
       { href: '/intimacoes', label: 'Intimações' },
       { href: '/procedentes', label: 'Procedentes' },
       { href: '/recursos', label: 'Recursos' },
@@ -46,6 +47,7 @@ export const NAV_SECTIONS: NavSection[] = [
 
 /** Rótulo da aba atual para breadcrumb (mais específico primeiro). */
 export const ROUTE_LABELS: Record<string, string> = {
+  '/painel': 'Painel',
   '/intimacoes': 'Intimações',
   '/procedentes': 'Procedentes',
   '/recursos': 'Recursos',
