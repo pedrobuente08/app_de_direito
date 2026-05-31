@@ -1133,6 +1133,41 @@ export async function resolverComunicacao(
   })
 }
 
+// ─── Captura DJEN ─────────────────────────────────────────────────────────────
+
+export async function getCapturaSaude(): Promise<import('@/lib/types').FonteSaude[]> {
+  return apiFetch('/captura/saude')
+}
+
+export async function getCapturaLogs(limit = 10): Promise<import('@/lib/types').CapturaLog[]> {
+  return apiFetch(`/captura/logs?limit=${limit}`)
+}
+
+export async function getCapturaAlerta(): Promise<import('@/lib/types').CapturaAlerta | null> {
+  return apiFetch('/captura/alerta')
+}
+
+export async function executarCapturaManual(): Promise<{
+  total: number
+  resultados: Array<{ oab: string; status: string; novosItems: number; totalItems: number }>
+}> {
+  return apiFetch('/captura/executar', { method: 'POST' })
+}
+
+// ─── AI Gateway ───────────────────────────────────────────────────────────────
+
+export async function getAiQuota(): Promise<import('@/lib/types').AiQuota> {
+  return apiFetch('/ai-gateway/quota')
+}
+
+export async function getAiHealth(): Promise<import('@/lib/types').AiHealth> {
+  return apiFetch('/ai-gateway/health')
+}
+
+export async function getAiUsage(limit = 50): Promise<import('@/lib/types').AiUsageRow[]> {
+  return apiFetch(`/ai-gateway/usage?limit=${limit}`)
+}
+
 // ─── Notificações ─────────────────────────────────────────────────────────────
 
 type NotificacaoRow = {

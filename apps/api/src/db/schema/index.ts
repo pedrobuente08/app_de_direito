@@ -17,6 +17,11 @@ export * from './audiencia';
 export * from './audiencia-ausente';
 export * from './comunicacao';
 export * from './oab-escuta';
+export * from './capturas-log';
+export * from './fontes-saude';
+export * from './ai-usage';
+export * from './ai-quota';
+export * from './model-registry';
 export * from './processo-procedente';
 export * from './sentenca';
 export * from './fase-historico';
@@ -29,6 +34,11 @@ import { auditLog } from './audit-log';
 import { audiencia, audienciaHistorico, audienciaLixeira } from './audiencia';
 import { audienciaAusente } from './audiencia-ausente';
 import { comarca } from './comarca';
+import { capturasLog } from './capturas-log';
+import { fontesSaude } from './fontes-saude';
+import { aiUsage } from './ai-usage';
+import { aiQuota } from './ai-quota';
+import { modelRegistry } from './model-registry';
 import { comunicacao } from './comunicacao';
 import { escritorio } from './escritorio';
 import {
@@ -85,6 +95,11 @@ export const schema = {
   audienciaAusente,
   comunicacao,
   oabEscuta,
+  capturasLog,
+  fontesSaude,
+  aiUsage,
+  aiQuota,
+  modelRegistry,
   processoProcedente,
   procedenteTransicao,
   sentenca,

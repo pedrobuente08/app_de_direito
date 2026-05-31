@@ -740,6 +740,44 @@ export type CapturaAlerta = {
   ultimaFalhaEm: string | null
 }
 
+export type AiQuota = {
+  periodo: string
+  periodoLabel?: string
+  plano: string
+  creditosTotal: number
+  creditosUsados: number
+  creditosRestantes: number
+  percentualUsado: number
+  overagePolicy: string
+}
+
+export type AiUsageByFeature = {
+  feature: string
+  totalCreditos: number
+  totalChamadas: number
+}
+
+export type AiUsageRow = {
+  id: string
+  feature: string
+  model: string
+  inputTokens: number
+  outputTokens: number
+  creditos: number
+  custoBrl: string
+  cacheHit: boolean
+  latencyMs: number | null
+  createdAt: string
+}
+
+export type AiHealth = {
+  quota: AiQuota
+  usoPorFeature: AiUsageByFeature[]
+  ultimasChamadas: AiUsageRow[]
+  redisAtivo: boolean
+  anthropicConfigurado: boolean
+}
+
 export type Comunicacao = {
   id: string
   processoId?: string | null

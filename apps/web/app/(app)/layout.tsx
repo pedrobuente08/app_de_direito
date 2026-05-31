@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { PopUpHabilitacaoAdversaria } from '@/components/popups'
 import { Btn } from '@/components/ui/btn'
 import { NotificacoesBell } from '@/components/notificacoes/notificacoes-bell'
+import { AiUsageMeter } from '@/components/ai/ai-usage-meter'
 import { getAuthMe } from '@/lib/api'
 import { LogoutButton } from './logout-button'
 import {
@@ -140,21 +141,7 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        {!shellRestrito ? (
-          <div className="relative z-[2] mt-4 rounded-pauta-lg border border-[rgba(157,179,164,0.25)] bg-white/[0.025] p-[14px]">
-            <p className="mb-1.5 text-xs font-medium text-pauta-sage">Uso de IA · maio</p>
-            <div className="mb-2 h-[6px] overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: '64%',
-                  background: 'linear-gradient(90deg, var(--sage), var(--ochre))',
-                }}
-              />
-            </div>
-            <p className="font-mono text-[11px] text-[#B9BBAB]">1.420 / 2.200 resumos</p>
-          </div>
-        ) : null}
+        {!shellRestrito ? <AiUsageMeter /> : null}
 
         <div className="relative z-[2] mt-[18px]">
           <div className="mb-3 flex items-center gap-[11px]">

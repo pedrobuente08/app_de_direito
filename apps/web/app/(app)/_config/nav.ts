@@ -41,6 +41,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: '/reus', label: 'Réus canônicos' },
       { href: '/bancas', label: 'Bancas adversárias' },
       { href: '/configuracoes', label: 'Configurações' },
+      { href: '/configuracoes/ia-plano', label: 'IA & Plano' },
     ],
   },
 ]
@@ -68,6 +69,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   '/reus': 'Réus canônicos',
   '/bancas': 'Bancas adversárias',
   '/configuracoes': 'Configurações',
+  '/configuracoes/ia-plano': 'IA & Plano',
   '/ausentes': 'Ausentes 6m',
   '/audit-log': 'Audit log',
   '/migracao-procedentes': 'Migração planilha',

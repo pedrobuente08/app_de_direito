@@ -23,6 +23,8 @@ export const comunicacao = pgTable('comunicacao', {
     onDelete: 'set null',
   }),
   status: varchar('status', { length: 20 }).notNull().default('NAO_LIDA'),
+  /** Hash do DJEN/Comunica — dedup na captura ativa. */
+  hashExterno: varchar('hash_externo', { length: 64 }),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

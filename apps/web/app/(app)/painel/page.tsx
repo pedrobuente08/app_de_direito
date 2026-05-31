@@ -7,7 +7,8 @@ import { Btn } from '@/components/ui/btn'
 import { KpiCard } from '@/components/ui/kpi-card'
 import { NotificacoesBell } from '@/components/notificacoes/notificacoes-bell'
 import { mockData } from '@/lib/design-system'
-import { getAuthMe } from '@/lib/api'
+import { getAuthMe, getCapturaAlerta } from '@/lib/api'
+import type { CapturaAlerta } from '@/lib/types'
 
 function saudacaoPorHorario(): string {
   const h = new Date().getHours()
@@ -71,6 +72,7 @@ export default function PainelPage() {
   const router = useRouter()
   const [nome, setNome] = useState<string>('Pedro')
   const [periodo, setPeriodo] = useState<'mes' | 'acervo'>('acervo')
+  const [alertaCaptura, setAlertaCaptura] = useState<CapturaAlerta | null>(null)
 
   useEffect(() => {
     getAuthMe()
@@ -79,6 +81,9 @@ export default function PainelPage() {
         if (n) setNome(n)
       })
       .catch(() => {})
+    getCapturaAlerta()
+      .then(setAlertaCaptura)
+      .catch(() => setAlertaCaptura(null))
   }, [])
 
   const maxMeses = 24
@@ -373,15 +378,16 @@ export default function PainelPage() {
             })}
           </div>
 
-          <div className="mt-3 flex items-start gap-2.5 rounded-pauta-md border border-[var(--alert-border)] bg-[var(--alert-bg)] px-[13px] py-[11px]">
-            <svg className="mt-0.5 h-[17px] w-[17px] shrink-0 text-[var(--alert-icon)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
-              <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
-            </svg>
-            <p className="text-[12.5px] leading-relaxed text-[var(--alert-text)]">
-              <b className="font-semibold">TJBA não respondeu na captura das 06h.</b> 2 processos podem
-              ter publicações pendentes — confira manualmente ou aguarde a nova tentativa às 14h.
-            </p>
-          </div>
+          {alertaCaptura?.ativo ? (
+            <div className="mt-3 flex items-start gap-2.5 rounded-pauta-md border border-[var(--alert-border)] bg-[var(--alert-bg)] px-[13px] py-[11px]">
+              <svg className="mt-0.5 h-[17px] w-[17px] shrink-0 text-[var(--alert-icon)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+                <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+              </svg>
+              <p className="text-[12.5px] leading-relaxed text-[var(--alert-text)]">
+                <b className="font-semibold">{alertaCaptura.titulo}.</b> {alertaCaptura.mensagem}
+              </p>
+            </div>
+          ) : null}
         </div>
 
         {/* WhatsApp / IA */}

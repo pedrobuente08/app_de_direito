@@ -10,5 +10,6 @@ import { ComunicacoesService } from './comunicacoes.service';
   imports: [PendenciasModule, AudienciasModule, ProcessosModule],
   controllers: [ComunicacoesController],
   providers: [ComunicacoesService, ComunicacoesDigestCronService],
+  exports: [ComunicacoesService],
 })
 export class ComunicacoesModule {}

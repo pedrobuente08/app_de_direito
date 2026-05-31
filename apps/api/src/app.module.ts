@@ -15,6 +15,8 @@ import { AuthModule } from './auth/auth.module';
 import { ClientesModule } from './clientes/clientes.module';
 import { ComarcasModule } from './comarcas/comarcas.module';
 import { DajeModule } from './daje/daje.module';
+import { CapturaModule } from './captura/captura.module';
+import { AiGatewayModule } from './ai-gateway/ai-gateway.module';
 import { ComunicacoesModule } from './comunicacoes/comunicacoes.module';
 import { EscritorioConfigApiModule } from './config/config.module';
 import { DashboardsModule } from './dashboards/dashboards.module';
@@ -86,6 +88,8 @@ const adminImports = process.env.PLATFORM_JWT_SECRET?.trim()
     PendenciasModule,
     AudienciasModule,
     ComunicacoesModule,
+    CapturaModule,
+    AiGatewayModule,
     DashboardsModule,
     ImportacaoModule,
     MigracaoModule,

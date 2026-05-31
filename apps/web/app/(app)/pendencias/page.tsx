@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { NovaPendenciaManualDialog } from '@/components/pendencias/nova-pendencia-manual-dialog'
+import { CapturaSaudeWidget } from '@/components/captura/captura-saude-widget'
 import { PopUpPosPendencia } from '@/components/popups'
 import { FilterBar, FilterField, filterControlClass } from '@/components/ui/filter-bar'
 import { FamiliaTabs } from '@/components/ui/familia-tabs'
@@ -104,6 +105,8 @@ export default function PendenciasPage() {
           Nova pendência
         </button>
       </div>
+
+      <CapturaSaudeWidget />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {[
