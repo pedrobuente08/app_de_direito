@@ -50,13 +50,6 @@ const CENARIO_OPCOES: { value: string; label: string; descricao?: string }[] = [
   { value: 'SO_ADVOGADO', label: 'Só o advogado', descricao: 'Cliente faltou; cria pendência automática para o atendimento obter justificativa' },
 ]
 
-const MOTIVOS_AUSENCIA = [
-  { value: 'AUTOR_FALTOU', label: 'Autor faltou' },
-  { value: 'REPRESENTANTE_FALTOU', label: 'Representante faltou' },
-  { value: 'ENDERECO_INVALIDO', label: 'Endereço inválido' },
-  { value: 'OUTRO', label: 'Outro' },
-] as const
-
 const MOTIVOS_CANCELAMENTO = [
   { value: 'AUSENCIA_CONTATO', label: 'Ausência de contato com o cliente' },
   { value: 'CANCELAMENTO_VARA', label: 'Cancelamento pela vara' },
