@@ -30,6 +30,7 @@ import { faseHistorico } from '../db/schema/fase-historico';
 import { pendencia } from '../db/schema/pendencia';
 import { processo } from '../db/schema/processo';
 import { sentenca } from '../db/schema/sentenca';
+import { statusHistorico } from '../db/schema/status-historico';
 import { processoProcedente } from '../db/schema/processo-procedente';
 import { reu } from '../db/schema/reu';
 import { reuAlias } from '../db/schema/reu-alias';
@@ -457,6 +458,7 @@ export class ProcessosService {
   ) {
     const antes = await this.obterPorId(escritorioId, id);
     const faseAntes = antes.faseAtual?.trim() ?? null;
+    const statusAntes = antes.statusProcesso?.trim() ?? null;
 
     if (dto.faseAtual !== undefined) {
       const n = await this.faseDerivacao.contarPendenciasAbertas(
@@ -646,6 +648,22 @@ export class ProcessosService {
         faseNova: patch.faseAtual ?? '(sem fase)',
         origem: 'MANUAL',
         usuarioId,
+      });
+      // Mudança manual de fase remove o trava de automação
+      await this.faseDerivacao.destravrarFase(escritorioId, id);
+    }
+
+    if (
+      patch.statusProcesso !== undefined &&
+      patch.statusProcesso !== statusAntes
+    ) {
+      await this.drizzle.db.insert(statusHistorico).values({
+        processoId: id,
+        escritorioId,
+        statusAnterior: statusAntes,
+        statusNovo: patch.statusProcesso,
+        origem: usuarioId ? 'MANUAL' : 'SISTEMA',
+        usuarioId: usuarioId ?? null,
       });
     }
 

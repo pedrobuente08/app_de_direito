@@ -29,8 +29,10 @@ export * from './improcedente';
 export * from './audit-log';
 export * from './password-reset-token';
 export * from './platform-admin';
+export * from './status-historico';
 
 import { auditLog } from './audit-log';
+import { statusHistorico } from './status-historico';
 import { audiencia, audienciaHistorico, audienciaLixeira } from './audiencia';
 import { audienciaAusente } from './audiencia-ausente';
 import { comarca } from './comarca';
@@ -108,4 +110,5 @@ export const schema = {
   auditLog,
   passwordResetToken,
   platformAdmin,
+  statusHistorico,
 };
