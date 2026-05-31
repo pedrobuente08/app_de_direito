@@ -319,8 +319,22 @@ export class ComunicacoesService {
       })
       .where(eq(comunicacao.id, comRow.id));
 
-    if (resultado === 'FALHA' || resultado === 'PARCIAL') {
-      try {
+    try {
+      if (resultado === 'OK') {
+        const acoes: string[] = [];
+        if (rule.criar_pendencia && rule.tipo_pendencia) acoes.push(`pendência "${rule.tipo_pendencia}"`);
+        if (rule.sincronizar_audiencia) acoes.push('audiência criada');
+        if (rule.avancar_fase) acoes.push(`fase → ${rule.avancar_fase}`);
+        await this.notificacoes.criar({
+          escritorioId,
+          tipoGatilho: 'REGRA_COMUNICA_OK',
+          entidade: 'comunicacao',
+          entidadeId: comRow.id,
+          titulo: 'Automação aplicada',
+          mensagem: `Publicação "${comRow.tipo ?? 'sem tipo'}" (${comRow.numeroProcessoBruto ?? 'sem nº'}): ${acoes.join(', ')}.`,
+          prioridade: 'BAIXA',
+        });
+      } else if (resultado === 'FALHA' || resultado === 'PARCIAL') {
         await this.notificacoes.criar({
           escritorioId,
           tipoGatilho: 'REGRA_COMUNICA_FALHA',
@@ -330,9 +344,9 @@ export class ComunicacoesService {
           mensagem: `Publicação "${comRow.tipo ?? 'sem tipo'}" do processo ${comRow.numeroProcessoBruto ?? comRow.processoId}: ${erros.join('; ')}`,
           prioridade: 'MEDIA',
         });
-      } catch {
-        /* não bloqueia */
       }
+    } catch {
+      /* não bloqueia o fluxo principal */
     }
   }
 
