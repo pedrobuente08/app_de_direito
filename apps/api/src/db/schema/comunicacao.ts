@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { index, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { escritorio } from './escritorio';
 import { pendencia } from './pendencia';
 import { processo } from './processo';
@@ -32,4 +32,10 @@ export const comunicacao = pgTable('comunicacao', {
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+},
+(t) => [
+  index('idx_comunicacao_escritorio_created').on(t.escritorioId, t.createdAt),
+  index('idx_comunicacao_status_created').on(t.escritorioId, t.status, t.createdAt),
+  index('idx_comunicacao_hash').on(t.escritorioId, t.hashExterno),
+  index('idx_comunicacao_processo').on(t.processoId),
+]);

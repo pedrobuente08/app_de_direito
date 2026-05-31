@@ -1,5 +1,6 @@
 import {
   date,
+  index,
   pgTable,
   text,
   timestamp,
@@ -37,7 +38,11 @@ export const pendencia = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (t) => [unique().on(t.escritorioId, t.processoId, t.tipo, t.dataAbertura)],
+  (t) => [
+    unique().on(t.escritorioId, t.processoId, t.tipo, t.dataAbertura),
+    index('idx_pendencia_escritorio_status').on(t.escritorioId, t.status, t.dataLimite),
+    index('idx_pendencia_processo').on(t.processoId, t.status),
+  ],
 );
 
 export const pendenciaHistorico = pgTable('pendencia_historico', {

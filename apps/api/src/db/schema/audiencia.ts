@@ -1,5 +1,6 @@
 import {
   date,
+  index,
   pgTable,
   text,
   time,
@@ -48,7 +49,11 @@ export const audiencia = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (t) => [unique().on(t.escritorioId, t.processoId, t.data)],
+  (t) => [
+    unique().on(t.escritorioId, t.processoId, t.data),
+    index('idx_audiencia_escritorio_data').on(t.escritorioId, t.data),
+    index('idx_audiencia_status').on(t.escritorioId, t.status, t.data),
+  ],
 );
 
 export const audienciaHistorico = pgTable('audiencia_historico', {

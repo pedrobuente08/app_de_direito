@@ -1,6 +1,7 @@
 import {
   boolean,
   date,
+  index,
   jsonb,
   numeric,
   pgTable,
@@ -102,5 +103,10 @@ export const processo = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (t) => [unique().on(t.escritorioId, t.numero)],
+  (t) => [
+    unique().on(t.escritorioId, t.numero),
+    index('idx_processo_escritorio_status').on(t.escritorioId, t.statusProcesso),
+    index('idx_processo_escritorio_fase').on(t.escritorioId, t.faseAtual),
+    index('idx_processo_escritorio_updated').on(t.escritorioId, t.updatedAt),
+  ],
 );
