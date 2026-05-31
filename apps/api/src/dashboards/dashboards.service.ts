@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { CacheService } from '../cache/cache.service';
 import {
   and,
   count,
@@ -33,9 +34,16 @@ function addDaysYmd(base: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+const TTL_DASH = 10 * 60; // 10 minutos
+
 @Injectable()
 export class DashboardsService {
-  constructor(private readonly drizzle: DrizzleService) {}
+  private readonly log = new Logger(DashboardsService.name);
+
+  constructor(
+    private readonly drizzle: DrizzleService,
+    private readonly cache: CacheService,
+  ) {}
 
   async porVaras(escritorioId: string, _cidade?: string) {
     void _cidade;
@@ -58,6 +66,14 @@ export class DashboardsService {
 
   /** Dashboard PENDÊNCIAS — responsável, tipo, SLA. */
   async pendenciasDashboard(escritorioId: string) {
+    return this.cache.wrap(
+      `dash:pendencias:${escritorioId}`,
+      TTL_DASH,
+      () => this._pendenciasDashboard(escritorioId),
+    );
+  }
+
+  private async _pendenciasDashboard(escritorioId: string) {
     const hoje = hojeYmd();
 
     const porStatus = await this.drizzle.db
@@ -378,6 +394,14 @@ export class DashboardsService {
 
   /** Dashboard AUDIÊNCIAS — próximos 7d, heatmap pautista, OBS pré. */
   async audienciasDashboard(escritorioId: string) {
+    return this.cache.wrap(
+      `dash:audiencias:${escritorioId}`,
+      TTL_DASH,
+      () => this._audienciasDashboard(escritorioId),
+    );
+  }
+
+  private async _audienciasDashboard(escritorioId: string) {
     const hoje = hojeYmd();
     const ate7 = addDaysYmd(hoje, 7);
 
@@ -475,6 +499,14 @@ export class DashboardsService {
 
   /** Dashboard GERAL — funil, órfãs, sem movimento. */
   async geral(escritorioId: string) {
+    return this.cache.wrap(
+      `dash:geral:${escritorioId}`,
+      TTL_DASH,
+      () => this._geral(escritorioId),
+    );
+  }
+
+  private async _geral(escritorioId: string) {
     const funilPorFase = await this.drizzle.db
       .select({
         fase: sql<string>`coalesce(nullif(trim(${processo.faseAtual}), ''), '(sem fase)')`,

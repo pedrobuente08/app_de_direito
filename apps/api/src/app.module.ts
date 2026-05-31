@@ -46,6 +46,7 @@ import { VaraDocumentoRegrasModule } from './vara-documento-regras/vara-document
 import { TenantInterceptor } from './tenant/tenant.interceptor';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { WorkersModule } from './workers/workers.module';
+import { AppCacheModule } from './cache/cache.module';
 
 const redisUrl = process.env.REDIS_URL?.trim();
 
@@ -66,6 +67,7 @@ const adminImports = process.env.PLATFORM_JWT_SECRET?.trim()
       isGlobal: true,
       envFilePath: join(__dirname, '..', '.env'),
     }),
+    AppCacheModule,
     DrizzleModule,
     MailModule,
     StorageModule,
