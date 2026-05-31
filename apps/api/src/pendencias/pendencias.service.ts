@@ -456,6 +456,47 @@ export class PendenciasService {
     }
   }
 
+  /**
+   * Marca um conjunto de pendências como CUMPRIDA de uma vez.
+   * Ignora IDs que não pertencem ao escritório ou já estão encerradas.
+   */
+  async cumprirLote(
+    escritorioId: string,
+    ids: string[],
+    motivoCumprimento: string,
+  ): Promise<{ processadas: number; ignoradas: number }> {
+    if (!ids.length) return { processadas: 0, ignoradas: 0 };
+    const motivo = motivoCumprimento.trim() || 'Cumprimento em lote';
+    let processadas = 0;
+    let ignoradas = 0;
+
+    for (const id of ids.slice(0, 100)) {
+      try {
+        const [row] = await this.drizzle.db
+          .select()
+          .from(pendencia)
+          .where(
+            and(
+              eq(pendencia.id, id),
+              eq(pendencia.escritorioId, escritorioId),
+              eq(pendencia.status, 'ABERTA'),
+            ),
+          )
+          .limit(1);
+
+        if (!row) { ignoradas++; continue; }
+        await this.moverParaHistorico(escritorioId, row, 'CUMPRIDA', {
+          dataCumprimento: hojeIso(),
+          observacao: `[Cumprimento em lote] ${motivo}`,
+        });
+        processadas++;
+      } catch {
+        ignoradas++;
+      }
+    }
+    return { processadas, ignoradas };
+  }
+
   async importarCsv(escritorioId: string, csv: string) {
     const linhas = parseCsvSimple(csv);
     const erros: { linha: number; mensagem: string }[] = [];

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -77,6 +78,23 @@ export class PendenciasController {
     @Body() dto: EncerrarPendenciaDto,
   ) {
     return this.pendencias.encerrar(user.escritorioId, id, dto);
+  }
+
+  @Post('lote/cumprir')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.pendenciasWrite)
+  cumprirLote(
+    @CurrentUser() user: AuthUser,
+    @Body() body: { ids: string[]; motivoCumprimento?: string },
+  ) {
+    if (!Array.isArray(body.ids) || body.ids.length === 0) {
+      throw new BadRequestException('ids deve ser um array não vazio.');
+    }
+    return this.pendencias.cumprirLote(
+      user.escritorioId,
+      body.ids,
+      body.motivoCumprimento ?? 'Cumprimento em lote',
+    );
   }
 
   /**

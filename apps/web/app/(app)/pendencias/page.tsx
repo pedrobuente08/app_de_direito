@@ -7,7 +7,7 @@ import { PopUpPosPendencia } from '@/components/popups'
 import { FilterBar, FilterField, filterControlClass } from '@/components/ui/filter-bar'
 import { FamiliaTabs } from '@/components/ui/familia-tabs'
 import { KpiCard } from '@/components/ui/kpi-card'
-import { getPendencias, getPendenciasResumo } from '@/lib/api'
+import { cumprirPendenciasLote, getPendencias, getPendenciasResumo } from '@/lib/api'
 import { labelOrigemPendencia, urgenciaPendencia } from '@/lib/pendencia-urgencia'
 import type { Pendencia, PendenciasResumo } from '@/lib/types'
 import { ToastContainer, useToast } from '@/lib/toast'
@@ -42,6 +42,8 @@ export default function PendenciasPage() {
   const [filtroUrgencia, setFiltroUrgencia] = useState<FiltroUrgencia>('')
   const [filtroResponsavel, setFiltroResponsavel] = useState('')
   const [filtroFila, setFiltroFila] = useState('')
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
+  const [cumprindoLote, setCumprindoLote] = useState(false)
   const toast = useToast()
 
   const load = useCallback(async () => {
@@ -67,6 +69,21 @@ export default function PendenciasPage() {
   useEffect(() => {
     void load()
   }, [load])
+
+  const handleCumprirLote = async () => {
+    if (!selecionados.size) return
+    setCumprindoLote(true)
+    try {
+      const { processadas, ignoradas } = await cumprirPendenciasLote(Array.from(selecionados))
+      toast.success(`${processadas} pendência(s) cumprida(s).${ignoradas > 0 ? ` ${ignoradas} ignorada(s).` : ''}`)
+      setSelecionados(new Set())
+      void load()
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setCumprindoLote(false)
+    }
+  }
 
   const listaFiltrada = useMemo(() => {
     return pendencias.filter((p) => {
@@ -199,91 +216,132 @@ export default function PendenciasPage() {
           Nenhuma pendência aberta com estes filtros.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)]">
-          <table className="w-full text-sm">
-            <thead className="bg-[var(--color-bg-muted)]">
-              <tr>
-                {[
-                  'Nº processo',
-                  'Tipo',
-                  'Origem',
-                  'Prazo',
-                  'Dias',
-                  'Responsável / Fila',
-                  'Status',
-                  '',
-                ].map((col) => (
-                  <th
-                    key={col}
-                    className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]"
-                  >
-                    {col}
+        <>
+          {selecionados.size > 0 && (
+            <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-brand)] bg-[var(--color-bg-subtle)] px-4 py-2.5">
+              <span className="text-sm text-[var(--color-text-primary)]">
+                {selecionados.size} selecionada(s)
+              </span>
+              <button
+                type="button"
+                onClick={() => void handleCumprirLote()}
+                disabled={cumprindoLote}
+                className="rounded bg-[var(--color-brand)] px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
+              >
+                {cumprindoLote ? 'Processando…' : 'Cumprir selecionadas'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelecionados(new Set())}
+                className="ml-auto text-xs text-[var(--color-text-tertiary)] hover:underline"
+              >
+                Limpar seleção
+              </button>
+            </div>
+          )}
+
+          <div className="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)]">
+            <table className="w-full text-sm">
+              <thead className="bg-[var(--color-bg-muted)]">
+                <tr>
+                  <th className="w-8 px-3 py-2.5">
+                    <input
+                      type="checkbox"
+                      className="h-3.5 w-3.5 rounded"
+                      checked={selecionados.size === listaFiltrada.length && listaFiltrada.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelecionados(new Set(listaFiltrada.map((p) => p.id)))
+                        } else {
+                          setSelecionados(new Set())
+                        }
+                      }}
+                    />
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--color-border-default)]">
-              {listaFiltrada.map((p) => {
-                const urg = urgenciaPendencia(p.dataLimite)
-                return (
-                  <tr key={p.id} className="hover:bg-[var(--color-bg-hover)]">
-                    <td className="px-4 py-2.5">
-                      <span className="font-mono text-xs text-[var(--color-text-primary)]">
-                        {p.processo?.numero ?? p.processoId.slice(0, 8) + '…'}
-                      </span>
-                      {p.processo?.clienteNome ? (
-                        <p className="text-xs text-[var(--color-text-secondary)]">
-                          {p.processo.clienteNome}
-                        </p>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-2.5 font-medium">{p.tipo}</td>
-                    <td className="px-4 py-2.5 text-xs text-[var(--color-text-secondary)]">
-                      {labelOrigemPendencia(p.origem)}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs">
-                      {p.dataLimite
-                        ? p.dataLimite.slice(5).replace('-', '/')
-                        : '—'}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span
-                        className="rounded-full px-2 py-0.5 text-xs font-medium"
-                        style={{
-                          background: urg.bg,
-                          color: urg.text,
-                          border: `1px solid ${urg.border}`,
-                        }}
-                      >
-                        {urg.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 text-xs">
-                      <p>{p.responsavel ?? '—'}</p>
-                      {p.fila ? (
-                        <p className="text-[var(--color-text-tertiary)]">Fila: {p.fila}</p>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span className="rounded-full bg-[var(--urgencia-normal-bg)] px-2 py-0.5 text-xs text-[var(--urgencia-normal-text)]">
-                        {p.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 text-right">
-                      <button
-                        type="button"
-                        onClick={() => setPendenciaEncerrar(p)}
-                        className="text-xs font-medium text-[var(--color-brand)] hover:underline"
-                      >
-                        Cumprir
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                  {['Nº processo', 'Tipo', 'Origem', 'Prazo', 'Dias', 'Responsável / Fila', 'Status', ''].map((col) => (
+                    <th
+                      key={col}
+                      className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]"
+                    >
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border-default)]">
+                {listaFiltrada.map((p) => {
+                  const urg = urgenciaPendencia(p.dataLimite)
+                  const checked = selecionados.has(p.id)
+                  return (
+                    <tr
+                      key={p.id}
+                      className={`hover:bg-[var(--color-bg-hover)] ${checked ? 'bg-[var(--color-bg-subtle)]' : ''}`}
+                    >
+                      <td className="px-3 py-2.5">
+                        <input
+                          type="checkbox"
+                          className="h-3.5 w-3.5 rounded"
+                          checked={checked}
+                          onChange={(e) => {
+                            setSelecionados((prev) => {
+                              const next = new Set(prev)
+                              if (e.target.checked) next.add(p.id)
+                              else next.delete(p.id)
+                              return next
+                            })
+                          }}
+                        />
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span className="font-mono text-xs text-[var(--color-text-primary)]">
+                          {p.processo?.numero ?? p.processoId.slice(0, 8) + '…'}
+                        </span>
+                        {p.processo?.clienteNome ? (
+                          <p className="text-xs text-[var(--color-text-secondary)]">
+                            {p.processo.clienteNome}
+                          </p>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-2.5 font-medium">{p.tipo}</td>
+                      <td className="px-4 py-2.5 text-xs text-[var(--color-text-secondary)]">
+                        {labelOrigemPendencia(p.origem)}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs">
+                        {p.dataLimite ? p.dataLimite.slice(5).replace('-', '/') : '—'}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span
+                          className="rounded-full px-2 py-0.5 text-xs font-medium"
+                          style={{ background: urg.bg, color: urg.text, border: `1px solid ${urg.border}` }}
+                        >
+                          {urg.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs">
+                        <p>{p.responsavel ?? '—'}</p>
+                        {p.fila ? <p className="text-[var(--color-text-tertiary)]">Fila: {p.fila}</p> : null}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span className="rounded-full bg-[var(--urgencia-normal-bg)] px-2 py-0.5 text-xs text-[var(--urgencia-normal-text)]">
+                          {p.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => setPendenciaEncerrar(p)}
+                          className="text-xs font-medium text-[var(--color-brand)] hover:underline"
+                        >
+                          Cumprir
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <NovaPendenciaManualDialog

@@ -633,6 +633,17 @@ export async function cumprirPendencia(
   })
 }
 
+export async function cumprirPendenciasLote(
+  ids: string[],
+  motivoCumprimento = 'Cumprimento em lote',
+): Promise<{ processadas: number; ignoradas: number }> {
+  return apiFetch<{ processadas: number; ignoradas: number }>('/pendencias/lote/cumprir', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids, motivoCumprimento }),
+  })
+}
+
 export async function getEscritoriosAdversarios(): Promise<
   import('@/lib/types').EscritorioAdversario[]
 > {
