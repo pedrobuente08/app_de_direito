@@ -355,8 +355,8 @@ export class ComunicacoesService {
     regras: Record<string, ComunicaRegra> | undefined,
     tipoBruto: string | null | undefined,
   ): boolean {
-    if (!regras || !tipoBruto?.trim()) return false;
-    const rule = regras[tipoBruto.trim().toUpperCase()];
+    if (!regras) return false;
+    const rule = resolverRegra(regras, tipoBruto);
     return Boolean(rule?.criar_pendencia && rule.tipo_pendencia?.trim());
   }
 
