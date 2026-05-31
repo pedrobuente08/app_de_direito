@@ -5,7 +5,9 @@ import { FamiliaTabs } from '@/components/ui/familia-tabs'
 import { getEscritorioConfig, salvarEscritorioConfig } from '@/lib/api'
 import { ToastContainer, useToast } from '@/lib/toast'
 import { ComarcasSection } from './_components/comarcas-section'
+import { RegrasComunicaSection } from './_components/regras-comunica-section'
 import { UsuariosSection } from './_components/usuarios-section'
+import type { ComunicaRegra } from '@/lib/types'
 
 const CONFIG_TABS = [
   { id: 'geral', label: 'Geral' },
@@ -39,6 +41,7 @@ export default function ConfiguracoesPage() {
   const [varasMudaSalaRaw, setVarasMudaSalaRaw] = useState('')
   const [varasUnaCondicionalRaw, setVarasUnaCondicionalRaw] = useState('')
   const [fatoresProvisaoRaw, setFatoresProvisaoRaw] = useState('60\n85\n100')
+  const [regras, setRegras] = useState<Record<string, ComunicaRegra>>({})
   const [digestEnabled, setDigestEnabled] = useState(false)
   const [digestEmails, setDigestEmails] = useState('')
   const [digestDias, setDigestDias] = useState('1')
@@ -69,6 +72,7 @@ export default function ConfiguracoesPage() {
         setVarasMudaSalaRaw((cfg.varas_muda_sala ?? []).join('\n'))
         setVarasUnaCondicionalRaw((cfg.varas_una_condicional ?? []).join('\n'))
         setFatoresProvisaoRaw((cfg.fatores_provisao_pct ?? [60, 85, 100]).join('\n'))
+        setRegras((cfg.comunica_regras as Record<string, ComunicaRegra>) ?? {})
         setDigestEnabled(cfg.comunica_digest?.enabled ?? false)
         setDigestEmails((cfg.comunica_digest?.emails ?? []).join('\n'))
         setDigestDias(String(cfg.comunica_digest?.dias ?? 1))
@@ -151,6 +155,7 @@ export default function ConfiguracoesPage() {
           .split('\n')
           .map((s) => Number(s.trim()))
           .filter((n) => !Number.isNaN(n) && n > 0),
+        comunica_regras: regras,
         comunica_digest: {
           enabled: digestEnabled,
           emails: digestEmails
@@ -427,32 +432,49 @@ export default function ConfiguracoesPage() {
 
         {aba === 'comunica' && (
         <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
-          <h2 className="mb-2 text-sm font-semibold">Comunica — digest por e-mail</h2>
-          <label className="mb-2 flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={digestEnabled}
-              onChange={(e) => setDigestEnabled(e.target.checked)}
-            />
-            Ativar resumo diário
-          </label>
-          <textarea
-            rows={2}
-            value={digestEmails}
-            onChange={(e) => setDigestEmails(e.target.value)}
-            placeholder="email@escritorio.com"
-            className="mb-2 w-full rounded border px-2 py-1.5 text-sm"
+          <h2 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">
+            Comunica
+          </h2>
+
+          {/* Regras de automação */}
+          <RegrasComunicaSection
+            regras={regras}
+            tiposPendencia={tiposPendenciaRaw.split('\n').map((s) => s.trim()).filter(Boolean)}
+            onChange={setRegras}
           />
-          <label className="text-xs text-[var(--color-text-secondary)]">
-            Janela (dias)
-            <input
-              type="number"
-              min={1}
-              value={digestDias}
-              onChange={(e) => setDigestDias(e.target.value)}
-              className="ml-2 w-16 rounded border px-2 py-1 text-sm"
+
+          {/* Digest por e-mail */}
+          <div className="mt-4 border-t border-[var(--color-border-default)] pt-4">
+            <h3 className="mb-2 text-sm font-semibold text-[var(--color-text-primary)]">
+              Digest por e-mail
+            </h3>
+            <label className="mb-2 flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={digestEnabled}
+                onChange={(e) => setDigestEnabled(e.target.checked)}
+                className="h-4 w-4 rounded"
+              />
+              Ativar resumo diário
+            </label>
+            <textarea
+              rows={2}
+              value={digestEmails}
+              onChange={(e) => setDigestEmails(e.target.value)}
+              placeholder="email@escritorio.com"
+              className="mb-2 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none"
             />
-          </label>
+            <label className="text-xs text-[var(--color-text-secondary)]">
+              Janela (dias)
+              <input
+                type="number"
+                min={1}
+                value={digestDias}
+                onChange={(e) => setDigestDias(e.target.value)}
+                className="ml-2 w-16 rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2 py-1 text-sm focus:border-[var(--color-brand)] focus:outline-none"
+              />
+            </label>
+          </div>
         </section>
         )}
 

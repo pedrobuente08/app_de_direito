@@ -197,6 +197,15 @@ export type DropdownsProcessoConfig = {
   fase_atual?: string[]
 }
 
+export type ComunicaRegra = {
+  criar_pendencia?: boolean
+  tipo_pendencia?: string
+  prazo_dias?: number
+  sincronizar_audiencia?: boolean
+  /** Tipo gravado na audiência criada (default: tipo da comunicação). */
+  audiencia_tipo?: string
+}
+
 export type EscritorioConfig = {
   materias_validas?: string[]
   fase_inicial?: string
@@ -210,6 +219,8 @@ export type EscritorioConfig = {
   prazo_elaborar_recurso_dias?: number
   tipos_pendencia?: string[]
   fatores_provisao_pct?: number[]
+  /** Chave = tipo da publicação em MAIÚSCULAS. Data e hora extraídas do texto. */
+  comunica_regras?: Record<string, ComunicaRegra>
   comunica_digest?: { enabled?: boolean; emails?: string[]; dias?: number }
   /** Varas que operam em modalidade FRACIONADA. Comparação case-insensitive. */
   varas_fracionadas?: string[]
@@ -694,6 +705,41 @@ export type AuditLogList = {
   meta: { page: number; limit: number; total: number; totalPages: number }
 }
 
+export type OabEscuta = {
+  id: string
+  oab: string
+  createdAt: string
+}
+
+export type FonteSaude = {
+  fonte: string
+  ultimoOkEm: string | null
+  ultimaFalhaEm: string | null
+  falhasConsecutivas: number
+  saudavel: boolean
+}
+
+export type CapturaLog = {
+  id: string
+  oab: string
+  fonte: string
+  iniciadoEm: string
+  concluidoEm?: string | null
+  status: string
+  totalItems?: number | null
+  novosItems?: number | null
+  erroMsg?: string | null
+}
+
+export type CapturaAlerta = {
+  ativo: boolean
+  titulo: string
+  mensagem: string
+  fonte: string
+  falhasConsecutivas: number
+  ultimaFalhaEm: string | null
+}
+
 export type Comunicacao = {
   id: string
   processoId?: string | null
@@ -737,12 +783,6 @@ export type AtendimentoLinha = {
     clienteNome: string | null
     telefone: string | null
   }
-}
-
-export type OabEscuta = {
-  id: string
-  oab: string
-  createdAt: string
 }
 
 export type Notificacao = {
