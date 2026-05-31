@@ -238,6 +238,10 @@ export type EscritorioConfig = {
   varas_una_condicional?: string[]
   /** Mapa vara → config (tipo, muda_sala, una_condicional). Fonte de verdade. */
   varas_config?: Record<string, VaraConfig>
+  /** Janela de dias para captura DJEN. Sobrepõe variável de ambiente (default 7). */
+  captura_djen_janela_dias?: number
+  /** Fuso horário IANA do escritório (ex: "America/Manaus"). Default: "America/Sao_Paulo". */
+  timezone?: string
 }
 
 export type ImprocedenteRow = {

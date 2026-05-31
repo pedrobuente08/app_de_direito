@@ -79,6 +79,14 @@ export type EscritorioConfig = {
    * são mantidos como fallback derivado para backward compat.
    */
   varas_config?: Record<string, VaraConfig>;
+  /**
+   * Janela de dias para buscar publicações na captura DJEN.
+   * Padrão: variável de ambiente CAPTURA_DJEN_DIAS_JANELA (default 7).
+   * Valor por escritório sobrepõe o padrão do ambiente.
+   */
+  captura_djen_janela_dias?: number;
+  /** Fuso horário do escritório (IANA, ex: "America/Manaus"). Default: "America/Sao_Paulo". */
+  timezone?: string;
 };
 
 export const escritorio = pgTable('escritorio', {

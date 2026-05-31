@@ -16,6 +16,8 @@ import type {
   FonteSaudeView,
 } from './captura.types';
 import { addDays, isoDate, parseOab } from './captura.utils';
+import type { EscritorioConfig } from '../db/schema/escritorio';
+import { escritorio as escritorioSchema } from '../db/schema/escritorio';
 
 const FONTE_DJEN = 'djen';
 
@@ -80,9 +82,23 @@ export class CapturaService {
       logId = log.id;
     }
 
-    const hoje = new Date();
-    const dataInicio = isoDate(addDays(hoje, -this.diasJanela));
-    const dataFim = isoDate(hoje);
+    // Janela e timezone por escritório sobrepõem o padrão do ambiente
+    const [eRow] = await this.drizzle.db
+      .select({ config: escritorioSchema.config })
+      .from(escritorioSchema)
+      .where(eq(escritorioSchema.id, escritorioId))
+      .limit(1);
+    const cfg = eRow?.config as EscritorioConfig | undefined;
+    const cfgJanela = cfg?.captura_djen_janela_dias;
+    const janela = cfgJanela && cfgJanela > 0 ? Math.min(cfgJanela, 90) : this.diasJanela;
+    const tz = cfg?.timezone?.trim() || 'America/Sao_Paulo';
+
+    // Calcula "hoje" no timezone do escritório para a dataFim
+    const hojeStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date());
+    const hojeLocal = new Date(`${hojeStr}T23:59:59`);
+    const hoje = hojeLocal;
+    const dataInicio = isoDate(addDays(hoje, -janela));
+    const dataFim = hojeStr;
 
     let totalItems = 0;
     let novosItems = 0;
