@@ -19,8 +19,8 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends ca-certifica
 ARG API_INTERNAL_URL
 ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 
-COPY package.json ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci --prefer-offline
 
 COPY . .
 
