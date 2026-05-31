@@ -418,9 +418,9 @@ export class ComunicacoesService {
     escritorioId: string,
     oab: string,
     item: ComunicaApiItem,
-  ): Promise<{ nova: boolean; comunicacaoId?: string }> {
+  ): Promise<{ nova: boolean; orfa: boolean; comunicacaoId?: string }> {
     if (!item.hash?.trim()) {
-      return { nova: false };
+      return { nova: false, orfa: false };
     }
 
     const [existing] = await this.drizzle.db
@@ -435,7 +435,7 @@ export class ComunicacoesService {
       .limit(1);
 
     if (existing) {
-      return { nova: false, comunicacaoId: existing.id };
+      return { nova: false, orfa: false, comunicacaoId: existing.id };
     }
 
     const numeroProcessoBruto =
@@ -465,10 +465,10 @@ export class ComunicacoesService {
 
     if (row) {
       await this.aplicarRegras(escritorioId, row, tipo);
-      return { nova: true, comunicacaoId: row.id };
+      return { nova: true, comunicacaoId: row.id, orfa: row.status === 'ORFA' };
     }
 
-    return { nova: false };
+    return { nova: false, orfa: false };
   }
 
   async registrarWebhook(dto: ComunicacaoWebhookDto) {

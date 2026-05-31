@@ -16,6 +16,7 @@ export type CapturaResult = {
   status: 'ok' | 'falha' | 'parcial';
   totalItems: number;
   novosItems: number;
+  orfasGeradas: number;
   erroMsg?: string;
 };
 

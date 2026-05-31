@@ -4,10 +4,24 @@ import type { AuthUser } from '../common/decorators/current-user.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ThrottlePresets } from '../common/throttle-presets';
 import { DashboardsService } from './dashboards.service';
+import { PainelService, type PainelPeriodo } from './painel.service';
 
 @Controller('dashboards')
 export class DashboardsController {
-  constructor(private readonly dashboards: DashboardsService) {}
+  constructor(
+    private readonly dashboards: DashboardsService,
+    private readonly painelService: PainelService,
+  ) {}
+
+  @Get('painel')
+  @Throttle(ThrottlePresets.dashboardRead)
+  obterPainel(
+    @CurrentUser() user: AuthUser,
+    @Query('periodo') periodo?: string,
+  ) {
+    const p: PainelPeriodo = periodo === 'mes' ? 'mes' : 'acervo';
+    return this.painelService.obterPainel(user.escritorioId, user.userId, p);
+  }
 
   @Get('varas')
   @Throttle(ThrottlePresets.dashboardRead)

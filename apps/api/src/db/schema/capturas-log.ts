@@ -13,5 +13,7 @@ export const capturasLog = pgTable('capturas_log', {
   status: varchar('status', { length: 20 }).notNull(),
   totalItems: integer('total_items').default(0),
   novosItems: integer('novos_items').default(0),
+  /** Publicações novas que não encontraram processo — ficaram ÓRFÃ. */
+  orfasGeradas: integer('orfas_geradas').default(0),
   erroMsg: text('erro_msg'),
 });

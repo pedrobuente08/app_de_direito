@@ -86,6 +86,7 @@ export class CapturaService {
 
     let totalItems = 0;
     let novosItems = 0;
+    let orfasGeradas = 0;
     let erroMsg: string | undefined;
     let status: CapturaResult['status'] = 'ok';
 
@@ -102,21 +103,27 @@ export class CapturaService {
 
       for (const item of items) {
         if (item.ativo === false) continue;
-        const { nova } = await this.comunicacoes.ingestFromCaptura(
+        const result = await this.comunicacoes.ingestFromCaptura(
           escritorioId,
           oabNorm,
           item,
         );
-        if (nova) novosItems += 1;
+        if (result.nova) {
+          novosItems += 1;
+          if (result.orfa) orfasGeradas += 1;
+        }
       }
 
+      this.log.log(
+        `Captura OK oab=${oabNorm} escritorio=${escritorioId} total=${totalItems} novos=${novosItems} orfas=${orfasGeradas}`,
+      );
       await this.registrarSucessoFonte(escritorioId, FONTE_DJEN);
     } catch (err) {
       status = 'falha';
       erroMsg = err instanceof Error ? err.message : String(err);
       await this.registrarFalhaFonte(escritorioId, FONTE_DJEN, erroMsg);
       await this.notificarFalha(escritorioId, oabNorm, erroMsg);
-      this.log.error(`Captura falhou escritorio=${escritorioId} oab=${oabNorm}: ${erroMsg}`);
+      this.log.error(`Captura falhou oab=${oabNorm} escritorio=${escritorioId}: ${erroMsg}`);
     }
 
     await this.drizzle.db
@@ -126,11 +133,12 @@ export class CapturaService {
         status,
         totalItems,
         novosItems,
+        orfasGeradas,
         erroMsg: erroMsg ?? null,
       })
       .where(eq(capturasLog.id, logId));
 
-    return { capturaLogId: logId, status, totalItems, novosItems, erroMsg };
+    return { capturaLogId: logId, status, totalItems, novosItems, orfasGeradas, erroMsg };
   }
 
   async processarJob(payload: CapturaJobPayload): Promise<CapturaResult> {
