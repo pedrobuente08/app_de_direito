@@ -197,6 +197,12 @@ export type DropdownsProcessoConfig = {
   fase_atual?: string[]
 }
 
+export type VaraConfig = {
+  tipo: 'una' | 'fracionada'
+  muda_sala?: boolean
+  una_condicional?: boolean
+}
+
 export type ComunicaRegra = {
   criar_pendencia?: boolean
   tipo_pendencia?: string
@@ -228,6 +234,8 @@ export type EscritorioConfig = {
   varas_muda_sala?: string[]
   /** Varas UNA que se tornam FRACIONADAS quando ambas as partes pedem AIJ. */
   varas_una_condicional?: string[]
+  /** Mapa vara → config (tipo, muda_sala, una_condicional). Fonte de verdade. */
+  varas_config?: Record<string, VaraConfig>
 }
 
 export type ImprocedenteRow = {
@@ -776,6 +784,61 @@ export type AiHealth = {
   ultimasChamadas: AiUsageRow[]
   redisAtivo: boolean
   anthropicConfigurado: boolean
+}
+
+export type PainelKpi = {
+  label: string
+  value: string
+  delta: string
+  deltaLabel: string
+  icon: 'file' | 'calendar' | 'shield' | 'clock'
+  type: 'up' | 'warn' | 'ochre'
+}
+
+export type PainelJurimetriaRow = {
+  comarca: string
+  subtext: string
+  seu: number
+  media: number
+  acima?: boolean
+}
+
+export type PainelPrazo = {
+  id: string
+  dia: number
+  mes: string
+  tipo: string
+  caso: string
+  fonte: string
+  responsavel: string
+  responsavelCor: string
+  criticidade: 'crit' | 'soon' | 'ok'
+}
+
+export type PainelPrevisao = {
+  disponivel: boolean
+  caso: string
+  numero: string
+  tipo: string
+  probabilidade: number
+  valor: string | null
+  duracao: string | null
+  vara: string
+  tendencia: string | null
+  amostra: number
+}
+
+export type PainelData = {
+  periodo: 'mes' | 'acervo'
+  resumoUrgencias: string
+  kpis: PainelKpi[]
+  jurimetria: {
+    rows: PainelJurimetriaRow[]
+    insight: string
+    insightIa: boolean
+  }
+  previsao: PainelPrevisao
+  prazos: PainelPrazo[]
 }
 
 export type Comunicacao = {

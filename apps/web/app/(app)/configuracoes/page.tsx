@@ -7,7 +7,8 @@ import { ToastContainer, useToast } from '@/lib/toast'
 import { ComarcasSection } from './_components/comarcas-section'
 import { RegrasComunicaSection } from './_components/regras-comunica-section'
 import { UsuariosSection } from './_components/usuarios-section'
-import type { ComunicaRegra } from '@/lib/types'
+import { VarasSection } from './_components/varas-section'
+import type { ComunicaRegra, VaraConfig } from '@/lib/types'
 
 const CONFIG_TABS = [
   { id: 'geral', label: 'Geral' },
@@ -37,9 +38,7 @@ export default function ConfiguracoesPage() {
   const [prazoAvaliar, setPrazoAvaliar] = useState('7')
   const [prazoElaborar, setPrazoElaborar] = useState('10')
   const [tiposPendenciaRaw, setTiposPendenciaRaw] = useState('')
-  const [varasFracionadasRaw, setVarasFracionadasRaw] = useState('')
-  const [varasMudaSalaRaw, setVarasMudaSalaRaw] = useState('')
-  const [varasUnaCondicionalRaw, setVarasUnaCondicionalRaw] = useState('')
+  const [varasConfig, setVarasConfig] = useState<Record<string, VaraConfig>>({})
   const [fatoresProvisaoRaw, setFatoresProvisaoRaw] = useState('60\n85\n100')
   const [regras, setRegras] = useState<Record<string, ComunicaRegra>>({})
   const [digestEnabled, setDigestEnabled] = useState(false)
@@ -68,9 +67,19 @@ export default function ConfiguracoesPage() {
         setPrazoAvaliar(String(cfg.prazo_avaliacao_recurso_dias ?? 7))
         setPrazoElaborar(String(cfg.prazo_elaborar_recurso_dias ?? 10))
         setTiposPendenciaRaw((cfg.tipos_pendencia ?? []).join('\n'))
-        setVarasFracionadasRaw((cfg.varas_fracionadas ?? []).join('\n'))
-        setVarasMudaSalaRaw((cfg.varas_muda_sala ?? []).join('\n'))
-        setVarasUnaCondicionalRaw((cfg.varas_una_condicional ?? []).join('\n'))
+        const vc = (cfg.varas_config as Record<string, VaraConfig> | undefined) ?? {}
+        if (Object.keys(vc).length === 0) {
+          for (const v of cfg.varas_fracionadas ?? []) {
+            const k = v.trim().toUpperCase(); if (k) vc[k] = { tipo: 'fracionada' }
+          }
+          for (const v of cfg.varas_muda_sala ?? []) {
+            const k = v.trim().toUpperCase(); if (k) { vc[k] ??= { tipo: 'una' }; vc[k].muda_sala = true }
+          }
+          for (const v of cfg.varas_una_condicional ?? []) {
+            const k = v.trim().toUpperCase(); if (k) { vc[k] ??= { tipo: 'una' }; vc[k].una_condicional = true }
+          }
+        }
+        setVarasConfig(vc)
         setFatoresProvisaoRaw((cfg.fatores_provisao_pct ?? [60, 85, 100]).join('\n'))
         setRegras((cfg.comunica_regras as Record<string, ComunicaRegra>) ?? {})
         setDigestEnabled(cfg.comunica_digest?.enabled ?? false)
@@ -139,18 +148,16 @@ export default function ConfiguracoesPage() {
           .split('\n')
           .map((s) => s.trim())
           .filter(Boolean),
-        varas_fracionadas: varasFracionadasRaw
-          .split('\n')
-          .map((s) => s.trim())
-          .filter(Boolean),
-        varas_muda_sala: varasMudaSalaRaw
-          .split('\n')
-          .map((s) => s.trim())
-          .filter(Boolean),
-        varas_una_condicional: varasUnaCondicionalRaw
-          .split('\n')
-          .map((s) => s.trim())
-          .filter(Boolean),
+        varas_config: varasConfig,
+        varas_fracionadas: Object.entries(varasConfig)
+          .filter(([, c]) => c.tipo === 'fracionada')
+          .map(([k]) => k),
+        varas_muda_sala: Object.entries(varasConfig)
+          .filter(([, c]) => c.muda_sala)
+          .map(([k]) => k),
+        varas_una_condicional: Object.entries(varasConfig)
+          .filter(([, c]) => c.una_condicional)
+          .map(([k]) => k),
         fatores_provisao_pct: fatoresProvisaoRaw
           .split('\n')
           .map((s) => Number(s.trim()))
@@ -365,57 +372,7 @@ export default function ConfiguracoesPage() {
         )}
 
         {aba === 'varas' && (
-        <section className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-4">
-          <h2 className="mb-2 text-sm font-semibold text-[var(--color-text-primary)]">
-            Modalidade das varas
-          </h2>
-          <p className="mb-3 text-xs text-[var(--color-text-secondary)]">
-            Liste abaixo as varas que operam em modalidade <strong>FRACIONADA</strong> (conciliação e instrução em sessões separadas). Uma vara por linha. As demais são tratadas como <strong>UNA</strong>.<br />
-            No pós-audiência, quando a vara do processo estiver nesta lista e não houver acordo, o sistema pré-seleciona automaticamente o cenário &quot;Fracionada&quot; e solicita apenas a data da próxima sessão de instrução.
-          </p>
-          <textarea
-            rows={8}
-            value={varasFracionadasRaw}
-            onChange={(e) => setVarasFracionadasRaw(e.target.value)}
-            placeholder={'1ª VARA CÍVEL DE SALVADOR\n2ª VARA DO JUIZADO ESPECIAL\n3ª VARA DE FAMÍLIA'}
-            className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
-          />
-          <p className="mt-1.5 text-[11px] text-[var(--color-text-tertiary)]">
-            Comparação sem diferenciar maiúsculas/minúsculas. Use o nome exato como aparece no campo &quot;Vara&quot; das Intimações.
-          </p>
-
-          <div className="mt-4 border-t border-[var(--color-border-default)] pt-4">
-            <h3 className="mb-1 text-sm font-semibold text-[var(--color-text-primary)]">
-              Varas que mudam de sala virtual (muda sala)
-            </h3>
-            <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
-              Varas UNA onde o cliente precisa trocar de sala virtual durante a instrução. Uma vara por linha. O sistema exibirá um alerta no card e no pós-audiência para orientar o cliente a aguardar o link da nova sala.
-            </p>
-            <textarea
-              rows={5}
-              value={varasMudaSalaRaw}
-              onChange={(e) => setVarasMudaSalaRaw(e.target.value)}
-              placeholder={'1ª VARA CÍVEL DE SALVADOR\n2ª VARA DO JUIZADO ESPECIAL'}
-              className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
-            />
-          </div>
-
-          <div className="mt-4 border-t border-[var(--color-border-default)] pt-4">
-            <h3 className="mb-1 text-sm font-semibold text-[var(--color-text-primary)]">
-              Varas UNA condicional (viram FRACIONADA se ambas as partes pedirem AIJ)
-            </h3>
-            <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
-              Varas normalmente UNA que se tornam FRACIONADAS se ambas as partes solicitarem AIJ (Audiência de Instrução e Julgamento). No pós-audiência, o sistema perguntará &quot;As partes solicitaram AIJ?&quot; e criará a audiência de instrução automaticamente se a resposta for sim.
-            </p>
-            <textarea
-              rows={5}
-              value={varasUnaCondicionalRaw}
-              onChange={(e) => setVarasUnaCondicionalRaw(e.target.value)}
-              placeholder={'3ª VARA DE FAMÍLIA\n4ª VARA CÍVEL'}
-              className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-2.5 py-1.5 font-mono text-sm focus:border-[var(--color-brand)] focus:outline-none"
-            />
-          </div>
-        </section>
+          <VarasSection varas={varasConfig} onChange={setVarasConfig} />
         )}
 
         {aba === 'provisao' && (

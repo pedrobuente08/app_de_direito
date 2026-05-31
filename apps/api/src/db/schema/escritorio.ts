@@ -7,6 +7,12 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 
+export type VaraConfig = {
+  tipo: 'una' | 'fracionada';
+  muda_sala?: boolean;
+  una_condicional?: boolean;
+};
+
 /** Digest automático de comunicações (e-mail diário via cron). */
 export type ComunicaDigestConfig = {
   enabled?: boolean;
@@ -67,6 +73,12 @@ export type EscritorioConfig = {
    * a audiência de instrução automaticamente se a resposta for sim.
    */
   varas_una_condicional?: string[];
+  /**
+   * Mapa vara → config (tipo UNA|FRACIONADA, muda_sala, una_condicional).
+   * Chave = nome da vara em MAIÚSCULAS. Fonte de verdade; os arrays acima
+   * são mantidos como fallback derivado para backward compat.
+   */
+  varas_config?: Record<string, VaraConfig>;
 };
 
 export const escritorio = pgTable('escritorio', {

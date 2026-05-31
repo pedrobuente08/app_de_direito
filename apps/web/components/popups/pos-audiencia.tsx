@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { finalizarAudiencia, getEscritoriosAdversarios } from '@/lib/api'
-import type { Audiencia, EscritorioAdversario } from '@/lib/types'
+import type { Audiencia, EscritorioAdversario, VaraConfig } from '@/lib/types'
 
 export type PendenciaPosAudienciaInput = {
   tipo: string
@@ -23,9 +23,10 @@ export type PendenciaPosAudienciaApi = {
 export type FinalizarAudienciaPayload = {
   obsPos: string
   status: string
+  /** Derivado do cenário — enviado para backward compat com a API. */
   autorPresenca?: string
+  /** Derivado do cenário — enviado para backward compat com a API. */
   reuPresenca?: string
-  motivoAusencia?: string
   motivoCancelamento?: string
   novaData?: string
   novaHora?: string | null
@@ -97,11 +98,13 @@ type Props = {
   audiencia: Audiencia | null
   readOnly?: boolean
   tiposPendencia?: string[]
-  /** Lista de varas configuradas como fracionadas no escritório. */
+  /** Mapa vara → config (fonte de verdade). */
+  varasConfig?: Record<string, VaraConfig>
+  /** Fallback legado: lista de varas FRACIONADAS. */
   varasFracionadas?: string[]
-  /** Lista de varas UNA onde o cliente troca de sala virtual durante a instrução. */
+  /** Fallback legado: lista de varas que mudam de sala virtual. */
   varasMudaSala?: string[]
-  /** Lista de varas UNA que viram FRACIONADAS se ambas as partes pedirem AIJ. */
+  /** Fallback legado: lista de varas UNA condicional. */
   varasUnaCondicional?: string[]
   onClose: () => void
   onSuccess: () => void
@@ -126,6 +129,7 @@ export function PopUpPosAudiencia({
   audiencia,
   readOnly,
   tiposPendencia,
+  varasConfig,
   varasFracionadas,
   varasMudaSala,
   varasUnaCondicional,
@@ -134,10 +138,6 @@ export function PopUpPosAudiencia({
 }: Props) {
   const [obsPos, setObsPos] = useState('')
   const [status, setStatus] = useState<string>('REALIZADA')
-  const [autorPresenca, setAutorPresenca] = useState('PRESENTE')
-  const [reuPresenca, setReuPresenca] = useState('PRESENTE')
-  const [motivoAusenciaCodigo, setMotivoAusenciaCodigo] = useState('AUTOR_FALTOU')
-  const [motivoAusenciaOutro, setMotivoAusenciaOutro] = useState('')
   const [motivoCancelamento, setMotivoCancelamento] = useState('CANCELAMENTO_VARA')
   const [novaData, setNovaData] = useState('')
   const [novaHora, setNovaHora] = useState('')
@@ -155,23 +155,33 @@ export function PopUpPosAudiencia({
   const [erro, setErro] = useState<string | null>(null)
   const [solicitouAij, setSolicitouAij] = useState<boolean | null>(null)
 
+  const varaCfgEntry = useMemo(() => {
+    const vara = normalizarVara(audiencia?.processo?.vara)
+    if (!vara || !varasConfig) return null
+    const entry = Object.entries(varasConfig).find(([k]) => normalizarVara(k) === vara)
+    return entry ? entry[1] : null
+  }, [audiencia?.processo?.vara, varasConfig])
+
   const varaEhFracionada = useMemo(() => {
+    if (varaCfgEntry) return varaCfgEntry.tipo === 'fracionada'
     const vara = normalizarVara(audiencia?.processo?.vara)
     if (!vara || !varasFracionadas?.length) return false
     return varasFracionadas.some((v) => normalizarVara(v) === vara)
-  }, [audiencia?.processo?.vara, varasFracionadas])
+  }, [varaCfgEntry, audiencia?.processo?.vara, varasFracionadas])
 
   const varaEhMudaSala = useMemo(() => {
+    if (varaCfgEntry) return !!varaCfgEntry.muda_sala
     const vara = normalizarVara(audiencia?.processo?.vara)
     if (!vara || !varasMudaSala?.length) return false
     return varasMudaSala.some((v) => normalizarVara(v) === vara)
-  }, [audiencia?.processo?.vara, varasMudaSala])
+  }, [varaCfgEntry, audiencia?.processo?.vara, varasMudaSala])
 
   const varaEhCondicional = useMemo(() => {
+    if (varaCfgEntry) return !!varaCfgEntry.una_condicional
     const vara = normalizarVara(audiencia?.processo?.vara)
     if (!vara || !varasUnaCondicional?.length) return false
     return varasUnaCondicional.some((v) => normalizarVara(v) === vara)
-  }, [audiencia?.processo?.vara, varasUnaCondicional])
+  }, [varaCfgEntry, audiencia?.processo?.vara, varasUnaCondicional])
 
   const tipoOpts = useMemo(() => {
     const set = new Set<string>([...PENDENCIA_TIPOS_PADRAO, ...(tiposPendencia ?? [])])
@@ -182,10 +192,6 @@ export function PopUpPosAudiencia({
     if (!open) return
     setObsPos('')
     setStatus('REALIZADA')
-    setAutorPresenca('PRESENTE')
-    setReuPresenca('PRESENTE')
-    setMotivoAusenciaCodigo('AUTOR_FALTOU')
-    setMotivoAusenciaOutro('')
     setMotivoCancelamento('CANCELAMENTO_VARA')
     setNovaData('')
     setNovaHora('')
@@ -242,33 +248,12 @@ export function PopUpPosAudiencia({
     if (!varaEhFracionada || status !== 'REALIZADA') return
     if (resultadoFracionada === 'sem_acordo') {
       setCenario('FRACIONADA')
-      setAutorPresenca('PRESENTE')
-      setReuPresenca('PRESENTE')
     } else if (resultadoFracionada === 'com_acordo') {
       setCenario('TODOS_COMPARECERAM')
-      setAutorPresenca('PRESENTE')
-      setReuPresenca('PRESENTE')
     } else {
       setCenario('')
     }
   }, [resultadoFracionada, varaEhFracionada, status])
-
-  // Quando o cenário muda, alinhar automaticamente as presenças (consistência).
-  useEffect(() => {
-    if (status !== 'REALIZADA') return
-    if (varaEhFracionada) return  // já tratado acima
-    if (cenario === 'SO_ADVOGADO') {
-      setAutorPresenca('AUSENTE')
-      setMotivoAusenciaCodigo('AUTOR_FALTOU')
-      setReuPresenca('PRESENTE')
-    } else if (cenario === 'REVELIA') {
-      setAutorPresenca('PRESENTE')
-      setReuPresenca('AUSENTE')
-    } else if (cenario === 'TODOS_COMPARECERAM') {
-      setAutorPresenca('PRESENTE')
-      setReuPresenca('PRESENTE')
-    }
-  }, [cenario, status, varaEhFracionada])
 
   // Item F — aviso quando a audiência está atrasada (mais de 7 dias no passado).
   const diasDesdeAudiencia = useMemo(() => {
@@ -282,18 +267,8 @@ export function PopUpPosAudiencia({
   if (!open || !audiencia || typeof document === 'undefined') return null
 
   const audienciaAtrasada = diasDesdeAudiencia > 7
-  const precisaPresenca = status === 'REALIZADA'
   const precisaNovaData = status === 'REDESIGNADA' || cenario === 'FRACIONADA'
   const precisaMotivoCancelamento = status === 'CANCELADA' || status === 'ADIADA'
-  // Para vara fracionada sem acordo, presença é auto-definida (PRESENTE/PRESENTE).
-  const presencaAutorTravadaPorCenario =
-    (varaEhFracionada && resultadoFracionada !== 'outro') ||
-    cenario === 'SO_ADVOGADO' ||
-    cenario === 'REVELIA' ||
-    cenario === 'TODOS_COMPARECERAM'
-  const presencaReuTravadaPorCenario =
-    (varaEhFracionada && resultadoFracionada !== 'outro') ||
-    cenario === 'REVELIA' || cenario === 'TODOS_COMPARECERAM' || cenario === 'SO_ADVOGADO'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -303,15 +278,6 @@ export function PopUpPosAudiencia({
     if (obs.length < 10) {
       setErro('Observações devem ter no mínimo 10 caracteres.')
       return
-    }
-    if (precisaPresenca && autorPresenca === 'AUSENTE') {
-      if (
-        motivoAusenciaCodigo === 'OUTRO' &&
-        !motivoAusenciaOutro.trim()
-      ) {
-        setErro('Descreva o motivo da ausência.')
-        return
-      }
     }
     if (precisaNovaData && !novaData.trim()) {
       setErro(
@@ -350,15 +316,13 @@ export function PopUpPosAudiencia({
         status,
         escritorioAdversarioId: escritorioAdvId.trim() || null,
       }
-      if (precisaPresenca) {
-        body.autorPresenca = autorPresenca
-        body.reuPresenca = reuPresenca
-        if (autorPresenca === 'AUSENTE') {
-          const codigo = motivoAusenciaCodigo
-          body.motivoAusencia =
-            codigo === 'OUTRO'
-              ? `OUTRO: ${motivoAusenciaOutro.trim()}`
-              : codigo
+      if (status === 'REALIZADA') {
+        if (cenario === 'REVELIA') {
+          body.autorPresenca = 'PRESENTE'; body.reuPresenca = 'AUSENTE'
+        } else if (cenario === 'SO_ADVOGADO') {
+          body.autorPresenca = 'AUSENTE'; body.reuPresenca = 'PRESENTE'
+        } else {
+          body.autorPresenca = 'PRESENTE'; body.reuPresenca = 'PRESENTE'
         }
       }
       if (precisaNovaData) {
@@ -482,7 +446,7 @@ export function PopUpPosAudiencia({
             </div>
           ) : null}
 
-          {precisaPresenca && varaEhFracionada ? (
+          {status === 'REALIZADA' && varaEhFracionada ? (
             <fieldset className="mb-3 rounded border border-[var(--color-brand)]/30 bg-[var(--color-brand)]/5 p-3">
               <legend className="px-1 text-xs font-semibold text-[var(--color-brand)]">
                 Vara fracionada — resultado da sessão *
@@ -585,13 +549,13 @@ export function PopUpPosAudiencia({
             </fieldset>
           ) : null}
 
-          {precisaPresenca && varaEhMudaSala && !varaEhFracionada ? (
-            <div role="alert" className="mb-3 rounded border border-amber-400/50 bg-amber-100/40 px-2 py-1.5 text-[11px] leading-snug text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+          {status === 'REALIZADA' && varaEhMudaSala && !varaEhFracionada ? (
+            <div role="alert" className="mb-3 rounded border border-amber-400 bg-amber-100 px-2 py-1.5 text-[11px] leading-snug text-amber-900 dark:border-amber-600/70 dark:bg-amber-900/50 dark:text-amber-100">
               <strong>Atenção — vara muda de sala:</strong> se não houve acordo na conciliação e a instrução continuar hoje, oriente o cliente a aguardar o link da nova sala virtual antes de encerrar a sessão.
             </div>
           ) : null}
 
-          {precisaPresenca && varaEhCondicional && !varaEhFracionada ? (
+          {status === 'REALIZADA' && varaEhCondicional && !varaEhFracionada ? (
             <fieldset className="mb-3 rounded border border-[var(--color-border-default)] p-3">
               <legend className="px-1 text-xs font-medium text-[var(--color-text-primary)]">
                 As partes solicitaram AIJ?
@@ -613,7 +577,7 @@ export function PopUpPosAudiencia({
             </fieldset>
           ) : null}
 
-          {precisaPresenca && !varaEhFracionada ? (
+          {status === 'REALIZADA' && !varaEhFracionada ? (
             <fieldset className="mb-3 rounded border border-[var(--color-border-default)] p-3">
               <legend className="px-1 text-xs font-medium text-[var(--color-text-primary)]">
                 Cenário da audiência *
@@ -661,76 +625,6 @@ export function PopUpPosAudiencia({
             </fieldset>
           ) : null}
 
-          {precisaPresenca ? (
-            <div className="mb-3 space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                <label className="block text-xs text-[var(--color-text-secondary)]">
-                  Autor presente? *
-                  {presencaAutorTravadaPorCenario ? (
-                    <span className="ml-1 text-[11px] text-[var(--color-text-tertiary)]">
-                      (definido pelo cenário)
-                    </span>
-                  ) : null}
-                  <select
-                    disabled={readOnly || salvando || presencaAutorTravadaPorCenario}
-                    value={autorPresenca}
-                    onChange={(e) => setAutorPresenca(e.target.value)}
-                    className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm disabled:bg-[var(--color-bg-subtle)]"
-                  >
-                    <option value="PRESENTE">Presente</option>
-                    <option value="AUSENTE">Ausente</option>
-                  </select>
-                </label>
-                <label className="block text-xs text-[var(--color-text-secondary)]">
-                  Réu presente? *
-                  {presencaReuTravadaPorCenario ? (
-                    <span className="ml-1 text-[11px] text-[var(--color-text-tertiary)]">
-                      (definido pelo cenário)
-                    </span>
-                  ) : null}
-                  <select
-                    disabled={readOnly || salvando || presencaReuTravadaPorCenario}
-                    value={reuPresenca}
-                    onChange={(e) => setReuPresenca(e.target.value)}
-                    className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm disabled:bg-[var(--color-bg-subtle)]"
-                  >
-                    <option value="PRESENTE">Presente</option>
-                    <option value="AUSENTE">Ausente</option>
-                  </select>
-                </label>
-              </div>
-              {autorPresenca === 'AUSENTE' && cenario !== 'SO_ADVOGADO' ? (
-                <div className="space-y-2">
-                  <label className="block text-xs text-[var(--color-text-secondary)]">
-                    Motivo da ausência (autor) *
-                    <select
-                      required
-                      disabled={readOnly || salvando}
-                      value={motivoAusenciaCodigo}
-                      onChange={(e) => setMotivoAusenciaCodigo(e.target.value)}
-                      className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
-                    >
-                      {MOTIVOS_AUSENCIA.map((m) => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
-                      ))}
-                    </select>
-                  </label>
-                  {motivoAusenciaCodigo === 'OUTRO' ? (
-                    <label className="block text-xs text-[var(--color-text-secondary)]">
-                      Descreva *
-                      <input
-                        required
-                        disabled={readOnly || salvando}
-                        value={motivoAusenciaOutro}
-                        onChange={(e) => setMotivoAusenciaOutro(e.target.value)}
-                        className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
-                      />
-                    </label>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
 
           {precisaNovaData ? (
             <div className="mb-3 grid grid-cols-2 gap-2">

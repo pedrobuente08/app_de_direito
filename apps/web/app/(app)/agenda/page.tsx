@@ -8,7 +8,7 @@ import { FamiliaTabs } from '@/components/ui/familia-tabs'
 import { KpiCard } from '@/components/ui/kpi-card'
 import { getAudiencias, getAuthMe, getEscritorioConfig, getResumoAusentes6m } from '@/lib/api'
 import { audienciaAtribuidaAoUsuario } from '@/lib/pautista-match'
-import type { Audiencia, Ausentes6mResumo, AuthMe } from '@/lib/types'
+import type { Audiencia, Ausentes6mResumo, AuthMe, VaraConfig } from '@/lib/types'
 
 function tituloDiaPt(isoYmd: string, total: number): string {
   const d = new Date(`${isoYmd}T12:00:00`)
@@ -51,6 +51,7 @@ export default function AgendaPage() {
   const [visao, setVisao] = useState<VisaoAgenda>('todas')
   const [periodo, setPeriodo] = useState<Periodo>('4semanas')
   const [ausentesResumo, setAusentesResumo] = useState<Ausentes6mResumo | null>(null)
+  const [varasConfig, setVarasConfig] = useState<Record<string, VaraConfig>>({})
   const [varasFracionadas, setVarasFracionadas] = useState<string[]>([])
   const [varasMudaSala, setVarasMudaSala] = useState<string[]>([])
   const [varasUnaCondicional, setVarasUnaCondicional] = useState<string[]>([])
@@ -76,6 +77,7 @@ export default function AgendaPage() {
     void load()
     getEscritorioConfig()
       .then((cfg) => {
+        setVarasConfig((cfg.varas_config as Record<string, VaraConfig> | undefined) ?? {})
         setVarasFracionadas(cfg.varas_fracionadas ?? [])
         setVarasMudaSala(cfg.varas_muda_sala ?? [])
         setVarasUnaCondicional(cfg.varas_una_condicional ?? [])
@@ -251,6 +253,7 @@ export default function AgendaPage() {
                     audiencia={a}
                     readOnly={readOnly}
                     canEditPautista={canEditPautista}
+                    varasConfig={varasConfig}
                     varasFracionadas={varasFracionadas}
                     varasMudaSala={varasMudaSala}
                     varasUnaCondicional={varasUnaCondicional}
