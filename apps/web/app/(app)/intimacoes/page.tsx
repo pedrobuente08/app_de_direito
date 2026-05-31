@@ -6,6 +6,7 @@ import {
   confirmarBatchPdf,
   getAuthMe,
   getComarcas,
+  getComunicacoesOrfas,
   getEscritorioConfig,
   getProcesso,
   getProcessos,
@@ -16,6 +17,7 @@ import {
 import { ToastContainer, useToast } from '@/lib/toast'
 import type {
   Comarca,
+  Comunicacao,
   ConfirmarBatchItem,
   DropdownsProcessoConfig,
   PdfPreviewItem,
@@ -28,6 +30,7 @@ import { NovaPendenciaDialog } from '@/components/pendencias/nova-pendencia-dial
 import { FASE_OPCOES_CANONICAS, faseLabel } from '@/lib/fase-label'
 import { FilterBar, FilterField, filterControlClass } from '@/components/ui/filter-bar'
 import { KpiCard } from '@/components/ui/kpi-card'
+import { OrfasSection } from './_components/orfas-section'
 import { PdfRevisaoModal, type PdfRevisaoCatalogo } from './_components/pdf-revisao-modal'
 import { ProcessosGrid } from './_components/processos-grid'
 import { ProcessoModal } from './_components/processo-modal'
@@ -91,6 +94,7 @@ export default function IntimacoesPage() {
   const [appliedSortOrder, setAppliedSortOrder] = useState<'asc' | 'desc'>('desc')
   const [page, setPage] = useState(1)
 
+  const [orfas, setOrfas] = useState<Comunicacao[]>([])
   const [readOnly, setReadOnly] = useState(false)
   const [dropdowns, setDropdowns] = useState<DropdownsProcessoConfig | null>(null)
   const [selectedProcesso, setSelectedProcesso] = useState<Processo | null>(null)
@@ -198,9 +202,8 @@ export default function IntimacoesPage() {
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
-    getProcessosResumo()
-      .then(setResumo)
-      .catch(() => setResumo(null))
+    getProcessosResumo().then(setResumo).catch(() => setResumo(null))
+    getComunicacoesOrfas().then(setOrfas).catch(() => setOrfas([]))
   }, [])
 
   const onRowUpdated = useCallback((row: Processo) => {
@@ -381,6 +384,15 @@ export default function IntimacoesPage() {
           )}
         </div>
       </div>
+
+      <OrfasSection
+        orfas={orfas}
+        materias={pdfCatalogo.materias}
+        onResolved={() => {
+          getComunicacoesOrfas().then(setOrfas).catch(() => setOrfas([]))
+          load()
+        }}
+      />
 
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {cards.map((c) => (

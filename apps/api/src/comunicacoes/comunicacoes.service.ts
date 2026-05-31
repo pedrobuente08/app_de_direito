@@ -413,6 +413,20 @@ export class ComunicacoesService {
       .limit(limit);
   }
 
+  async listarOrfas(escritorioId: string) {
+    return this.drizzle.db
+      .select()
+      .from(comunicacao)
+      .where(
+        and(
+          eq(comunicacao.escritorioId, escritorioId),
+          eq(comunicacao.status, 'ORFA'),
+        ),
+      )
+      .orderBy(desc(comunicacao.createdAt))
+      .limit(100);
+  }
+
   async cadastrarOab(escritorioId: string, dto: CadastrarOabDto) {
     const oab = dto.oab.trim().toUpperCase();
     const [existing] = await this.drizzle.db

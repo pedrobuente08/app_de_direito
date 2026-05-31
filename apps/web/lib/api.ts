@@ -1110,6 +1110,10 @@ export async function getComunicacoes(): Promise<Comunicacao[]> {
   return apiFetch<Comunicacao[]>('/comunicacoes')
 }
 
+export async function getComunicacoesOrfas(): Promise<Comunicacao[]> {
+  return apiFetch<Comunicacao[]>('/comunicacoes/orfas')
+}
+
 export async function getOabs(): Promise<OabEscuta[]> {
   return apiFetch<OabEscuta[]>('/comunicacoes/oabs')
 }
@@ -1166,6 +1170,14 @@ export async function getAiHealth(): Promise<import('@/lib/types').AiHealth> {
 
 export async function getAiUsage(limit = 50): Promise<import('@/lib/types').AiUsageRow[]> {
   return apiFetch(`/ai-gateway/usage?limit=${limit}`)
+}
+
+// ─── Painel (Fase 3) ──────────────────────────────────────────────────────────
+
+export async function getPainel(
+  periodo: 'mes' | 'acervo' = 'acervo',
+): Promise<import('@/lib/types').PainelData> {
+  return apiFetch(`/dashboards/painel?periodo=${periodo}`)
 }
 
 // ─── Notificações ─────────────────────────────────────────────────────────────

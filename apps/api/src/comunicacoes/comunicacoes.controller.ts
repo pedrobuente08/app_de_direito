@@ -37,6 +37,12 @@ export class ComunicacoesController {
     return this.comunicacoes.listar(user.escritorioId);
   }
 
+  @Get('orfas')
+  @Throttle(ThrottlePresets.comunicaList)
+  listarOrfas(@CurrentUser() user: AuthUser) {
+    return this.comunicacoes.listarOrfas(user.escritorioId);
+  }
+
   @Get('oabs')
   @Throttle(ThrottlePresets.comunicaList)
   listarOabs(@CurrentUser() user: AuthUser) {
