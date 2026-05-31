@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { and, count, desc, eq, gte, sql } from 'drizzle-orm';
@@ -13,6 +14,7 @@ import { processo } from '../db/schema/processo';
 import { DrizzleService } from '../db/drizzle.service';
 import { AudienciasService } from '../audiencias/audiencias.service';
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
+import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { PendenciasService } from '../pendencias/pendencias.service';
 import { ProcessosService } from '../processos/processos.service';
 import type { CadastrarOabDto } from './dto/cadastrar-oab.dto';
@@ -165,12 +167,15 @@ function resolverRegra(
 
 @Injectable()
 export class ComunicacoesService {
+  private readonly log = new Logger(ComunicacoesService.name);
+
   constructor(
     private readonly drizzle: DrizzleService,
     private readonly pendencias: PendenciasService,
     private readonly audiencias: AudienciasService,
     private readonly processos: ProcessosService,
     private readonly faseDerivacao: FaseDerivacaoService,
+    private readonly notificacoes: NotificacoesService,
   ) {}
 
   private async validarTokenEscritorio(
@@ -222,7 +227,12 @@ export class ComunicacoesService {
       return;
     }
 
+    const erros: string[] = [];
+    let acoesTentadas = 0;
+    let acoesOk = 0;
+
     if (rule.criar_pendencia && rule.tipo_pendencia?.trim()) {
+      acoesTentadas++;
       const prazo = Number(rule.prazo_dias);
       const dataLimite =
         Number.isFinite(prazo) && prazo > 0 ? addDaysIso(prazo) : undefined;
@@ -240,14 +250,17 @@ export class ComunicacoesService {
           .update(comunicacao)
           .set({ pendenciaGeradaId: pend.id })
           .where(eq(comunicacao.id, comRow.id));
-      } catch {
-        /* duplicata / conflito: não quebra webhook */
+        acoesOk++;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        erros.push(`pendencia: ${msg.slice(0, 200)}`);
+        this.log.warn(`aplicarRegras pendencia falhou comId=${comRow.id}: ${msg}`);
       }
     }
 
     if (rule.sincronizar_audiencia) {
+      acoesTentadas++;
       const { data: dataExtraida, hora: horaExtraida } = extrairDataHoraDeResumo(comRow.resumo);
-      // Fallback para data de disponibilização se o texto não trouxer data explícita
       const dataStr =
         dataExtraida ??
         (comRow.dataDisponibilizacao
@@ -268,20 +281,57 @@ export class ComunicacoesService {
           status: 'AGENDADA',
           obsPre: comRow.resumo?.slice(0, 2000) ?? null,
         });
-      } catch {
-        /* duplicata processo+data ou validação */
+        acoesOk++;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        erros.push(`audiencia: ${msg.slice(0, 200)}`);
+        this.log.warn(`aplicarRegras audiencia falhou comId=${comRow.id}: ${msg}`);
       }
     }
 
     if (rule.avancar_fase?.trim()) {
+      acoesTentadas++;
       try {
         await this.faseDerivacao.forcarFase(
           escritorioId,
           comRow.processoId,
           rule.avancar_fase.trim(),
         );
+        acoesOk++;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        erros.push(`fase: ${msg.slice(0, 200)}`);
+        this.log.warn(`aplicarRegras fase falhou comId=${comRow.id}: ${msg}`);
+      }
+    }
+
+    const resultado =
+      acoesTentadas === 0 ? null
+      : erros.length === 0 ? 'OK'
+      : acoesOk > 0 ? 'PARCIAL'
+      : 'FALHA';
+
+    await this.drizzle.db
+      .update(comunicacao)
+      .set({
+        regrasResultado: resultado,
+        regrasErro: erros.length > 0 ? erros.join(' | ') : null,
+      })
+      .where(eq(comunicacao.id, comRow.id));
+
+    if (resultado === 'FALHA' || resultado === 'PARCIAL') {
+      try {
+        await this.notificacoes.criar({
+          escritorioId,
+          tipoGatilho: 'REGRA_COMUNICA_FALHA',
+          entidade: 'comunicacao',
+          entidadeId: comRow.id,
+          titulo: 'Automação aplicada com erro',
+          mensagem: `Publicação "${comRow.tipo ?? 'sem tipo'}" do processo ${comRow.numeroProcessoBruto ?? comRow.processoId}: ${erros.join('; ')}`,
+          prioridade: 'MEDIA',
+        });
       } catch {
-        /* não interrompe o fluxo se a transição falhar */
+        /* não bloqueia */
       }
     }
   }
