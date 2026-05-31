@@ -106,6 +106,45 @@ export class FaseDerivacaoService {
     return nova;
   }
 
+  /**
+   * Força uma fase específica sem recalcular pelo estado do processo.
+   * Usado por automações externas (ex.: regra DJEN) onde a fase alvo
+   * é determinada pela publicação, não pelo estado interno.
+   */
+  async forcarFase(
+    escritorioId: string,
+    processoId: string,
+    novaFase: string,
+  ): Promise<void> {
+    const db = this.drizzle.db;
+    const [proc] = await db
+      .select({ faseAtual: processo.faseAtual })
+      .from(processo)
+      .where(
+        and(eq(processo.escritorioId, escritorioId), eq(processo.id, processoId)),
+      )
+      .limit(1);
+    if (!proc) return;
+
+    const atual = proc.faseAtual?.trim() ?? null;
+    if (atual === novaFase) return;
+
+    const now = new Date();
+    await db
+      .update(processo)
+      .set({ faseAtual: novaFase, faseUpdatedAt: now, updatedAt: now })
+      .where(eq(processo.id, processoId));
+
+    await db.insert(faseHistorico).values({
+      processoId,
+      escritorioId,
+      faseAnterior: atual,
+      faseNova: novaFase,
+      origem: 'COMUNICA',
+      usuarioId: null,
+    });
+  }
+
   /** Apenas cálculo, sem persistir. */
   async derivar(
     escritorioId: string,

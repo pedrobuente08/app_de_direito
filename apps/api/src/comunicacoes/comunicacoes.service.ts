@@ -12,6 +12,7 @@ import { oabEscuta } from '../db/schema/oab-escuta';
 import { processo } from '../db/schema/processo';
 import { DrizzleService } from '../db/drizzle.service';
 import { AudienciasService } from '../audiencias/audiencias.service';
+import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import { PendenciasService } from '../pendencias/pendencias.service';
 import { ProcessosService } from '../processos/processos.service';
 import type { CadastrarOabDto } from './dto/cadastrar-oab.dto';
@@ -40,6 +41,8 @@ type ComunicaRegra = {
   sincronizar_audiencia?: boolean;
   /** Tipo gravado na audiência (default: tipo da comunicação ou `COMUNICA`). */
   audiencia_tipo?: string;
+  /** Fase para a qual o processo deve avançar ao receber este tipo de publicação. */
+  avancar_fase?: string;
 };
 
 const MESES_PT: Record<string, string> = {
@@ -133,6 +136,7 @@ export class ComunicacoesService {
     private readonly pendencias: PendenciasService,
     private readonly audiencias: AudienciasService,
     private readonly processos: ProcessosService,
+    private readonly faseDerivacao: FaseDerivacaoService,
   ) {}
 
   private async validarTokenEscritorio(
@@ -233,6 +237,18 @@ export class ComunicacoesService {
         });
       } catch {
         /* duplicata processo+data ou validação */
+      }
+    }
+
+    if (rule.avancar_fase?.trim()) {
+      try {
+        await this.faseDerivacao.forcarFase(
+          escritorioId,
+          comRow.processoId,
+          rule.avancar_fase.trim(),
+        );
+      } catch {
+        /* não interrompe o fluxo se a transição falhar */
       }
     }
   }

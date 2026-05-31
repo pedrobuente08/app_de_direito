@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { ComunicaRegra } from '@/lib/types'
+import { FASE_OPCOES_CANONICAS, faseLabel } from '@/lib/fase-label'
 
 const TIPOS_SUGERIDOS = [
   'INTIMAÇÃO',
@@ -29,6 +30,7 @@ type FormState = {
   prazoDias: string
   sincAudiencia: boolean
   audienciaTipo: string
+  avancarFase: string
 }
 
 const FORM_VAZIO: FormState = {
@@ -38,6 +40,7 @@ const FORM_VAZIO: FormState = {
   prazoDias: '',
   sincAudiencia: false,
   audienciaTipo: '',
+  avancarFase: '',
 }
 
 function regraParaForm(tipo: string, r: ComunicaRegra): FormState {
@@ -48,6 +51,7 @@ function regraParaForm(tipo: string, r: ComunicaRegra): FormState {
     prazoDias: r.prazo_dias != null ? String(r.prazo_dias) : '',
     sincAudiencia: r.sincronizar_audiencia ?? false,
     audienciaTipo: r.audiencia_tipo ?? '',
+    avancarFase: r.avancar_fase ?? '',
   }
 }
 
@@ -92,6 +96,9 @@ export function RegrasComunicaSection({ regras, tiposPendencia, onChange }: Prop
       regra.sincronizar_audiencia = true
       if (form.audienciaTipo.trim()) regra.audiencia_tipo = form.audienciaTipo.trim()
     }
+    if (form.avancarFase.trim()) {
+      regra.avancar_fase = form.avancarFase.trim()
+    }
 
     const novas = { ...regras }
     if (editandoTipo && editandoTipo !== tipoKey) {
@@ -117,12 +124,16 @@ export function RegrasComunicaSection({ regras, tiposPendencia, onChange }: Prop
     if (r.sincronizar_audiencia) {
       partes.push(`Audiência${r.audiencia_tipo ? ` → ${r.audiencia_tipo}` : ''}`)
     }
+    if (r.avancar_fase) {
+      partes.push(`Fase → ${faseLabel(r.avancar_fase)}`)
+    }
     return partes.join('  +  ') || '—'
   }
 
+  const temAcao = form.criarPendencia || form.sincAudiencia || form.avancarFase.trim() !== ''
   const formValido =
     form.tipo.trim() !== '' &&
-    (form.criarPendencia || form.sincAudiencia) &&
+    temAcao &&
     (!form.criarPendencia || form.tipoPendencia.trim() !== '')
 
   return (
@@ -299,6 +310,26 @@ export function RegrasComunicaSection({ regras, tiposPendencia, onChange }: Prop
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Avançar fase */}
+          <div className="mb-3">
+            <label className="mb-1 block text-xs font-medium text-[var(--color-text-primary)]">
+              Avançar fase do processo
+            </label>
+            <select
+              value={form.avancarFase}
+              onChange={(e) => setForm((f) => ({ ...f, avancarFase: e.target.value }))}
+              className="w-full rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-2.5 py-1.5 text-sm focus:border-[var(--color-brand)] focus:outline-none"
+            >
+              <option value="">— Não alterar —</option>
+              {FASE_OPCOES_CANONICAS.map((f) => (
+                <option key={f} value={f}>{faseLabel(f)}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-[10px] text-[var(--color-text-tertiary)]">
+              Quando configurado, a fase do processo é atualizada automaticamente ao receber este tipo de publicação.
+            </p>
           </div>
 
           {/* Sincronizar audiência */}

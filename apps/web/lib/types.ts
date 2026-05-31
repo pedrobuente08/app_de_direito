@@ -210,6 +210,8 @@ export type ComunicaRegra = {
   sincronizar_audiencia?: boolean
   /** Tipo gravado na audiência criada (default: tipo da comunicação). */
   audiencia_tipo?: string
+  /** Fase para a qual o processo avança ao receber este tipo de publicação. */
+  avancar_fase?: string
 }
 
 export type EscritorioConfig = {
