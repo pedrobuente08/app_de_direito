@@ -7,7 +7,7 @@ export type CapturaJobPayload = {
   escritorioId: string;
   oab: string;
   fonte: 'djen';
-  tentativa: 'normal' | 'retry';
+  tentativa: 'normal';
   capturaLogId: string;
 };
 

@@ -66,7 +66,7 @@ export class CapturaService {
   async capturarPorOab(
     escritorioId: string,
     oab: string,
-    opts?: { capturaLogId?: string; tentativa?: 'normal' | 'retry' },
+    opts?: { capturaLogId?: string; tentativa?: 'normal' },
   ): Promise<CapturaResult> {
     const oabNorm = oab.trim().toUpperCase();
     const parsed = parseOab(oabNorm);
@@ -115,7 +115,7 @@ export class CapturaService {
       status = 'falha';
       erroMsg = err instanceof Error ? err.message : String(err);
       await this.registrarFalhaFonte(escritorioId, FONTE_DJEN, erroMsg);
-      await this.notificarFalha(escritorioId, oabNorm, erroMsg, opts?.tentativa);
+      await this.notificarFalha(escritorioId, oabNorm, erroMsg);
       this.log.error(`Captura falhou escritorio=${escritorioId} oab=${oabNorm}: ${erroMsg}`);
     }
 
@@ -198,15 +198,13 @@ export class CapturaService {
     escritorioId: string,
     oab: string,
     erroMsg: string,
-    tentativa?: 'normal' | 'retry',
   ) {
-    const horario = tentativa === 'retry' ? '14h' : '06h';
     try {
       await this.notificacoes.criar({
         escritorioId,
         tipoGatilho: 'CAPTURA_DJEN_FALHA',
         entidade: 'captura',
-        titulo: `Falha na captura DJEN (${horario})`,
+        titulo: `Falha na captura DJEN`,
         mensagem: `A captura da OAB ${oab} falhou: ${erroMsg.slice(0, 500)}`,
         prioridade: 'ALTA',
       });
@@ -280,7 +278,7 @@ export class CapturaService {
       falhasConsecutivas: fonte.falhasConsecutivas,
       ultimaFalhaEm: fonte.ultimaFalhaEm.toISOString(),
       titulo: `${tribunal} não respondeu na captura`,
-      mensagem: `${tribunal} não respondeu na última captura automática. ${orfas > 0 ? `${orfas} processo(s) podem ter publicações pendentes` : 'Confira manualmente ou aguarde a nova tentativa às 14h'}.`,
+      mensagem: `${tribunal} não respondeu na última captura automática. ${orfas > 0 ? `${orfas} processo(s) podem ter publicações pendentes` : 'Confira manualmente ou aguarde a próxima captura automática'}.`,
     };
   }
 
