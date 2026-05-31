@@ -512,6 +512,40 @@ export class ComunicacoesService {
       .limit(limit);
   }
 
+  /**
+   * Tenta re-vincular comunicações ÓRFÃ ao processo correto.
+   * Chamado pelo cron diário — não lança exceção.
+   */
+  async tentarResolverOrfas(escritorioId: string): Promise<{ resolvidas: number }> {
+    const orfas = await this.drizzle.db
+      .select()
+      .from(comunicacao)
+      .where(
+        and(
+          eq(comunicacao.escritorioId, escritorioId),
+          eq(comunicacao.status, 'ORFA'),
+        ),
+      )
+      .limit(200);
+
+    let resolvidas = 0;
+    for (const com of orfas) {
+      if (!com.numeroProcessoBruto) continue;
+      const processoId = await this.resolverProcessoId(escritorioId, com.numeroProcessoBruto);
+      if (!processoId) continue;
+
+      await this.drizzle.db
+        .update(comunicacao)
+        .set({ processoId, status: 'LIDA' })
+        .where(eq(comunicacao.id, com.id));
+
+      await this.aplicarRegras(escritorioId, { ...com, processoId }, com.tipo);
+      resolvidas++;
+    }
+
+    return { resolvidas };
+  }
+
   async listarOrfas(escritorioId: string) {
     return this.drizzle.db
       .select()

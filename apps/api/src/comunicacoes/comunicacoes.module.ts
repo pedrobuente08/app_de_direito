@@ -5,13 +5,14 @@ import { NotificacoesModule } from '../notificacoes/notificacoes.module';
 import { PendenciasModule } from '../pendencias/pendencias.module';
 import { ProcessosModule } from '../processos/processos.module';
 import { ComunicacoesDigestCronService } from './comunicacoes-digest.cron';
+import { ComunicacoesOrfasCronService } from './comunicacoes-orfas.cron';
 import { ComunicacoesController } from './comunicacoes.controller';
 import { ComunicacoesService } from './comunicacoes.service';
 
 @Module({
   imports: [PendenciasModule, AudienciasModule, ProcessosModule, FaseDerivacaoModule, NotificacoesModule],
   controllers: [ComunicacoesController],
-  providers: [ComunicacoesService, ComunicacoesDigestCronService],
+  providers: [ComunicacoesService, ComunicacoesDigestCronService, ComunicacoesOrfasCronService],
   exports: [ComunicacoesService],
 })
 export class ComunicacoesModule {}
