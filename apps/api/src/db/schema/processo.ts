@@ -95,6 +95,8 @@ export const processo = pgTable(
     /** @deprecated Preferir `observacaoGeral`. */
     observacoes: text('observacoes'),
     observacaoGeral: text('observacao_geral'),
+    /** Quando true, a derivação automática não sobrescreve faseAtual. */
+    faseTravada: boolean('fase_travada').notNull().default(false),
     requerConferencia: boolean('requer_conferencia').default(false).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()

@@ -57,6 +57,7 @@ export class FaseDerivacaoService {
   /**
    * Recalcula e persiste `processo.fase_atual` conforme E3.
    * Retorna a fase gravada (pode ser igual à anterior).
+   * Não sobrescreve quando `fase_travada = true` (fase definida por automação COMUNICA).
    */
   async aplicarAposMutacao(
     escritorioId: string,
@@ -76,6 +77,10 @@ export class FaseDerivacaoService {
       .limit(1);
     if (!proc) {
       return null;
+    }
+
+    if (proc.faseTravada) {
+      return proc.faseAtual?.trim() ?? null;
     }
 
     const nova = await this.derivar(escritorioId, processoId);
@@ -132,7 +137,7 @@ export class FaseDerivacaoService {
     const now = new Date();
     await db
       .update(processo)
-      .set({ faseAtual: novaFase, faseUpdatedAt: now, updatedAt: now })
+      .set({ faseAtual: novaFase, faseUpdatedAt: now, updatedAt: now, faseTravada: true })
       .where(eq(processo.id, processoId));
 
     await db.insert(faseHistorico).values({
@@ -143,6 +148,20 @@ export class FaseDerivacaoService {
       origem: 'COMUNICA',
       usuarioId: null,
     });
+  }
+
+  /**
+   * Remove o travamento de fase — permite que a derivação automática
+   * volte a funcionar normalmente. Chamado quando o usuário muda a fase
+   * manualmente ou quando uma pendência é resolvida.
+   */
+  async destravrarFase(escritorioId: string, processoId: string): Promise<void> {
+    await this.drizzle.db
+      .update(processo)
+      .set({ faseTravada: false, updatedAt: new Date() })
+      .where(
+        and(eq(processo.escritorioId, escritorioId), eq(processo.id, processoId)),
+      );
   }
 
   /** Apenas cálculo, sem persistir. */
