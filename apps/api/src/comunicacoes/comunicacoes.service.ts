@@ -129,6 +129,40 @@ function addDaysIso(days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Remove acentos e normaliza para uppercase — usado no matching de regras. */
+function normTipo(s: string): string {
+  return s.normalize('NFD').replace(/\p{M}/gu, '').trim().toUpperCase();
+}
+
+/**
+ * Resolve a regra aplicável a um tipo de publicação.
+ * Prioridade: match exato normalizado > substring (mais longo vence) > wildcard `*`.
+ * Ignora acentuação em ambos os lados para suportar variações entre tribunais.
+ */
+function resolverRegra(
+  regras: Record<string, ComunicaRegra>,
+  tipoBruto: string | null | undefined,
+): ComunicaRegra | undefined {
+  const tipoNorm = tipoBruto?.trim() ? normTipo(tipoBruto) : '';
+
+  let melhor: ComunicaRegra | undefined;
+  let melhorLen = -1;
+
+  for (const [chave, regra] of Object.entries(regras)) {
+    if (chave === '*') continue;
+    const chaveNorm = normTipo(chave);
+    if (!chaveNorm) continue;
+    if (tipoNorm === chaveNorm || tipoNorm.includes(chaveNorm)) {
+      if (chaveNorm.length > melhorLen) {
+        melhor = regra;
+        melhorLen = chaveNorm.length;
+      }
+    }
+  }
+
+  return melhor ?? regras['*'];
+}
+
 @Injectable()
 export class ComunicacoesService {
   constructor(
@@ -165,7 +199,7 @@ export class ComunicacoesService {
     comRow: typeof comunicacao.$inferSelect,
     tipoBruto: string | null | undefined,
   ) {
-    if (!comRow.processoId || !tipoBruto?.trim()) {
+    if (!comRow.processoId) {
       return;
     }
 
@@ -183,8 +217,7 @@ export class ComunicacoesService {
       return;
     }
 
-    const key = tipoBruto.trim().toUpperCase();
-    const rule = regras[key];
+    const rule = resolverRegra(regras, tipoBruto);
     if (!rule) {
       return;
     }

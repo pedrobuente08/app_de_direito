@@ -55,12 +55,19 @@ function regraParaForm(tipo: string, r: ComunicaRegra): FormState {
   }
 }
 
+function regraParaFormPadrao(r: ComunicaRegra | undefined): FormState {
+  if (!r) return { ...FORM_VAZIO, tipo: '*' }
+  return regraParaForm('*', r)
+}
+
 export function RegrasComunicaSection({ regras, tiposPendencia, onChange }: Props) {
   const [form, setForm] = useState<FormState>(FORM_VAZIO)
   const [editandoTipo, setEditandoTipo] = useState<string | null>(null)
   const [aberto, setAberto] = useState(false)
+  const [editandoPadrao, setEditandoPadrao] = useState(false)
+  const [formPadrao, setFormPadrao] = useState<FormState>(regraParaFormPadrao(regras['*']))
 
-  const tipos = Object.keys(regras).sort()
+  const tipos = Object.keys(regras).filter((k) => k !== '*').sort()
 
   function abrirAdicionar() {
     setForm(FORM_VAZIO)
@@ -115,6 +122,36 @@ export function RegrasComunicaSection({ regras, tiposPendencia, onChange }: Prop
     onChange(novas)
   }
 
+  function salvarPadrao() {
+    const regra: ComunicaRegra = {}
+    if (formPadrao.criarPendencia && formPadrao.tipoPendencia.trim()) {
+      regra.criar_pendencia = true
+      regra.tipo_pendencia = formPadrao.tipoPendencia.trim()
+      const dias = Number(formPadrao.prazoDias)
+      if (dias > 0) regra.prazo_dias = dias
+    }
+    if (formPadrao.sincAudiencia) {
+      regra.sincronizar_audiencia = true
+      if (formPadrao.audienciaTipo.trim()) regra.audiencia_tipo = formPadrao.audienciaTipo.trim()
+    }
+    if (formPadrao.avancarFase.trim()) regra.avancar_fase = formPadrao.avancarFase.trim()
+    onChange({ ...regras, '*': regra })
+    setEditandoPadrao(false)
+  }
+
+  function removerPadrao() {
+    const novas = { ...regras }
+    delete novas['*']
+    onChange(novas)
+    setFormPadrao(regraParaFormPadrao(undefined))
+    setEditandoPadrao(false)
+  }
+
+  const padraoValido =
+    (formPadrao.criarPendencia && formPadrao.tipoPendencia.trim() !== '') ||
+    formPadrao.sincAudiencia ||
+    formPadrao.avancarFase.trim() !== ''
+
   function acaoLabel(r: ComunicaRegra): string {
     const partes: string[] = []
     if (r.criar_pendencia && r.tipo_pendencia) {
@@ -156,6 +193,102 @@ export function RegrasComunicaSection({ regras, tiposPendencia, onChange }: Prop
           >
             + Nova regra
           </button>
+        )}
+      </div>
+
+      {/* Regra padrão */}
+      <div className="mb-4 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-[var(--color-text-primary)]">
+              Regra padrão
+            </span>
+            <span className="ml-2 text-[11px] text-[var(--color-text-tertiary)]">
+              aplicada a qualquer publicação sem regra específica
+            </span>
+          </div>
+          {!editandoPadrao && (
+            <button
+              type="button"
+              onClick={() => { setFormPadrao(regraParaFormPadrao(regras['*'])); setEditandoPadrao(true) }}
+              className="text-xs text-[var(--color-brand)] hover:underline"
+            >
+              {regras['*'] ? 'Editar' : '+ Configurar'}
+            </button>
+          )}
+        </div>
+
+        {!editandoPadrao && (
+          regras['*']
+            ? <p className="text-xs text-[var(--color-text-secondary)]">{acaoLabel(regras['*'])}</p>
+            : <p className="text-xs text-[var(--color-text-tertiary)]">Não configurada — publicações sem regra específica não geram ação automática.</p>
+        )}
+
+        {editandoPadrao && (
+          <div className="mt-2 space-y-2 border-t border-[var(--color-border-default)] pt-3">
+            {/* Avançar fase */}
+            <div>
+              <label className="mb-1 block text-xs font-medium text-[var(--color-text-primary)]">Avançar fase</label>
+              <select
+                value={formPadrao.avancarFase}
+                onChange={(e) => setFormPadrao((f) => ({ ...f, avancarFase: e.target.value }))}
+                className="w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-2 py-1.5 text-xs focus:border-[var(--color-brand)] focus:outline-none"
+              >
+                <option value="">— Não alterar —</option>
+                {FASE_OPCOES_CANONICAS.map((f) => (
+                  <option key={f} value={f}>{faseLabel(f)}</option>
+                ))}
+              </select>
+            </div>
+            {/* Criar pendência */}
+            <label className="flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={formPadrao.criarPendencia}
+                onChange={(e) => setFormPadrao((f) => ({ ...f, criarPendencia: e.target.checked }))} />
+              <span className="text-[var(--color-text-primary)]">Criar pendência</span>
+            </label>
+            {formPadrao.criarPendencia && (
+              <div className="ml-5 grid grid-cols-2 gap-2">
+                <div>
+                  <label className="mb-1 block text-[11px] text-[var(--color-text-secondary)]">Tipo *</label>
+                  {tiposPendencia.length > 0
+                    ? <select value={formPadrao.tipoPendencia}
+                        onChange={(e) => setFormPadrao((f) => ({ ...f, tipoPendencia: e.target.value }))}
+                        className="w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-2 py-1 text-xs focus:border-[var(--color-brand)] focus:outline-none">
+                        <option value="">Selecionar…</option>
+                        {tiposPendencia.map((tp) => <option key={tp} value={tp}>{tp}</option>)}
+                      </select>
+                    : <input value={formPadrao.tipoPendencia}
+                        onChange={(e) => setFormPadrao((f) => ({ ...f, tipoPendencia: e.target.value }))}
+                        placeholder="REVISAR PUBLICAÇÃO"
+                        className="w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-2 py-1 text-xs focus:border-[var(--color-brand)] focus:outline-none" />
+                  }
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] text-[var(--color-text-secondary)]">Prazo (dias)</label>
+                  <input type="number" min={1} value={formPadrao.prazoDias}
+                    onChange={(e) => setFormPadrao((f) => ({ ...f, prazoDias: e.target.value }))}
+                    placeholder="3"
+                    className="w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-2 py-1 text-xs focus:border-[var(--color-brand)] focus:outline-none" />
+                </div>
+              </div>
+            )}
+            <div className="flex items-center gap-2 pt-1">
+              <button type="button" onClick={salvarPadrao} disabled={!padraoValido}
+                className="rounded bg-[var(--color-brand)] px-3 py-1 text-xs font-medium text-white disabled:opacity-40">
+                Salvar
+              </button>
+              <button type="button" onClick={() => setEditandoPadrao(false)}
+                className="rounded border border-[var(--color-border-default)] px-3 py-1 text-xs text-[var(--color-text-secondary)]">
+                Cancelar
+              </button>
+              {regras['*'] && (
+                <button type="button" onClick={removerPadrao}
+                  className="ml-auto text-xs text-[var(--color-text-tertiary)] hover:text-red-600 underline">
+                  Remover regra padrão
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
