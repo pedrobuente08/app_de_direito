@@ -48,8 +48,6 @@ const CENARIO_OPCOES: { value: string; label: string; descricao?: string }[] = [
   { value: 'TODOS_COMPARECERAM', label: 'Todos compareceram', descricao: 'Trâmite normal' },
   { value: 'REVELIA', label: 'Revelia', descricao: 'Réu faltou; autor compareceu' },
   { value: 'SO_ADVOGADO', label: 'Só o advogado', descricao: 'Cliente faltou; cria pendência automática para o atendimento obter justificativa' },
-  { value: 'UNA', label: 'UNA', descricao: 'Conciliação + instrução + julgamento na mesma sessão' },
-  { value: 'FRACIONADA', label: 'Fracionada', descricao: 'Continuação em nova data — cria automaticamente nova audiência de INSTRUÇÃO' },
 ]
 
 const MOTIVOS_AUSENCIA = [
