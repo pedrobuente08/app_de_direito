@@ -44,6 +44,7 @@ export type Processo = {
   observacoes?: string | null
   observacaoGeral?: string | null
   requerConferencia: boolean
+  comprovanteResidenciaTipo?: string | null
   createdAt: string
   updatedAt?: string
 }
@@ -76,6 +77,7 @@ export type PatchProcessoPayload = Partial<{
   observacoes: string | null
   observacaoGeral: string | null
   tipoCr: string | null
+  comprovanteResidenciaTipo: string | null
 }>
 
 export type Sentenca = {
@@ -201,6 +203,8 @@ export type VaraConfig = {
   tipo: 'una' | 'fracionada'
   muda_sala?: boolean
   una_condicional?: boolean
+  /** Tipos de comprovante de residência aceitos. Vazio/ausente = aceita todos. */
+  comprovantes_aceitos?: string[]
 }
 
 export type ComunicaRegra = {

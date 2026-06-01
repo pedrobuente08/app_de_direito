@@ -150,4 +150,9 @@ export class UpdateProcessoDto {
     message: 'dataTransito deve estar em YYYY-MM-DD',
   })
   dataTransito?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  comprovanteResidenciaTipo?: string | null;
 }

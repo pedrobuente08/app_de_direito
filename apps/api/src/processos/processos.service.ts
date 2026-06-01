@@ -622,6 +622,10 @@ export class ProcessosService {
     if (dto.dataTransito !== undefined) {
       patch.dataTransito = dto.dataTransito;
     }
+    if (dto.comprovanteResidenciaTipo !== undefined) {
+      patch.comprovanteResidenciaTipo =
+        dto.comprovanteResidenciaTipo === null ? null : nullableTrim(dto.comprovanteResidenciaTipo);
+    }
 
     if (!Object.keys(patch).length) {
       throw new BadRequestException('Informe ao menos um campo para atualizar.');

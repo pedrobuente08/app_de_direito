@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import type { DropdownsProcessoConfig, Processo } from '@/lib/types'
+import type { DropdownsProcessoConfig, Processo, VaraConfig } from '@/lib/types'
 import { ProcessoDetailPanel } from './processo-detail-panel'
 import type { ToastApi } from './processo-editable'
 
@@ -13,6 +13,7 @@ type Props = {
   toast: ToastApi
   readOnly?: boolean
   dropdowns?: DropdownsProcessoConfig | null
+  varasConfig?: Record<string, VaraConfig> | null
   onNovaPendencia?: (p: Processo) => void
 }
 
@@ -24,6 +25,7 @@ export function ProcessoModal({
   toast,
   readOnly,
   dropdowns,
+  varasConfig,
   onNovaPendencia,
 }: Props) {
   useEffect(() => {
@@ -85,6 +87,7 @@ export function ProcessoModal({
             toast={toast}
             readOnly={readOnly}
             dropdowns={dropdowns}
+            varasConfig={varasConfig}
             onNovaPendencia={onNovaPendencia}
           />
         </div>

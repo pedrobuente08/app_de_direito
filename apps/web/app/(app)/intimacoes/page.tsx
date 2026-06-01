@@ -25,6 +25,7 @@ import type {
   ProcessosListMeta,
   ProcessosResumo,
   Usuario,
+  VaraConfig,
 } from '@/lib/types'
 import { NovaPendenciaDialog } from '@/components/pendencias/nova-pendencia-dialog'
 import { FASE_OPCOES_CANONICAS, faseLabel } from '@/lib/fase-label'
@@ -97,6 +98,7 @@ export default function IntimacoesPage() {
   const [orfas, setOrfas] = useState<Comunicacao[]>([])
   const [readOnly, setReadOnly] = useState(false)
   const [dropdowns, setDropdowns] = useState<DropdownsProcessoConfig | null>(null)
+  const [varasConfig, setVarasConfig] = useState<Record<string, VaraConfig> | null>(null)
   const [selectedProcesso, setSelectedProcesso] = useState<Processo | null>(null)
   const [pdfRevisaoOpen, setPdfRevisaoOpen] = useState(false)
   const [pdfPreviewItem, setPdfPreviewItem] = useState<PdfPreviewItem | null>(null)
@@ -120,6 +122,7 @@ export default function IntimacoesPage() {
         if (cancelled) return
         setReadOnly(me.perfil === 'leitura')
         setDropdowns(cfg.dropdowns_processo ?? null)
+        setVarasConfig(cfg.varas_config ?? null)
         const comarcas = (comarcasRes ?? [])
           .map((c) => c.nome.trim())
           .filter(Boolean)
@@ -600,6 +603,7 @@ export default function IntimacoesPage() {
           toast={toast}
           readOnly={readOnly}
           dropdowns={dropdowns}
+          varasConfig={varasConfig}
           onNovaPendencia={(p) => {
             setSelectedProcesso(null)
             setPendenciaProcesso(p)

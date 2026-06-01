@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { VaraConfig } from '@/lib/types'
+import { COMPROVANTE_RESIDENCIA_TIPOS } from '@/lib/comprovante-residencia'
 
 type Props = {
   varas: Record<string, VaraConfig>
@@ -57,6 +58,23 @@ export function VarasSection({ varas, onChange }: Props) {
     onChange({ ...varas, [nome]: updated })
   }
 
+  function toggleComprovante(nome: string, value: string) {
+    const cur = varas[nome]!
+    const current = cur.comprovantes_aceitos ?? []
+    const next = current.includes(value)
+      ? current.filter((v) => v !== value)
+      : [...current, value]
+    const updated = { ...cur }
+    if (next.length === 0) {
+      delete updated.comprovantes_aceitos
+    } else {
+      updated.comprovantes_aceitos = next
+    }
+    onChange({ ...varas, [nome]: updated })
+  }
+
+  const [expandedVara, setExpandedVara] = useState<string | null>(null)
+
   const entries = Object.entries(varas).sort(([a], [b]) =>
     a.localeCompare(b, 'pt-BR'),
   )
@@ -83,6 +101,7 @@ export function VarasSection({ varas, onChange }: Props) {
                 <th className="pb-1.5 pr-3 font-medium">Tipo</th>
                 <th className="pb-1.5 pr-3 text-center font-medium">Muda sala</th>
                 <th className="pb-1.5 pr-3 text-center font-medium">UNA condicional</th>
+                <th className="pb-1.5 pr-3 font-medium">Comprovantes aceitos</th>
                 <th className="pb-1.5" />
               </tr>
             </thead>
@@ -124,6 +143,36 @@ export function VarasSection({ varas, onChange }: Props) {
                       onChange={() => toggle(nome, 'una_condicional')}
                       title="Vira FRACIONADA se ambas as partes pedirem AIJ"
                     />
+                  </td>
+                  <td className="relative py-2 pr-3">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedVara(expandedVara === nome ? null : nome)}
+                      className="rounded border border-[var(--color-border-default)] px-2 py-0.5 text-[11px] text-[var(--color-text-secondary)] hover:border-[var(--color-brand)] hover:text-[var(--color-brand)]"
+                    >
+                      {cfg.comprovantes_aceitos?.length
+                        ? `${cfg.comprovantes_aceitos.length} selecionado(s)`
+                        : 'Todos aceitos'}
+                    </button>
+                    {expandedVara === nome ? (
+                      <div className="absolute z-10 mt-1 rounded border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-2 shadow-md">
+                        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-tertiary)]">
+                          Marque os aceitos (vazio = todos)
+                        </p>
+                        <div className="space-y-1">
+                          {COMPROVANTE_RESIDENCIA_TIPOS.map((t) => (
+                            <label key={t.value} className="flex items-center gap-1.5 text-xs text-[var(--color-text-primary)]">
+                              <input
+                                type="checkbox"
+                                checked={(cfg.comprovantes_aceitos ?? []).includes(t.value)}
+                                onChange={() => toggleComprovante(nome, t.value)}
+                              />
+                              {t.label}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
                   </td>
                   <td className="py-2">
                     <button
@@ -199,6 +248,8 @@ export function VarasSection({ varas, onChange }: Props) {
         <strong>Muda sala</strong> — varas UNA onde o cliente troca de sala virtual durante a instrução.
         &nbsp;|&nbsp;
         <strong>UNA condicional</strong> — varas normalmente UNA que viram FRACIONADAS se ambas as partes solicitarem AIJ.
+        &nbsp;|&nbsp;
+        <strong>Comprovantes aceitos</strong> — deixe vazio para aceitar todos; marque apenas os que a vara aceita para filtrar o dropdown no modal do processo.
       </p>
     </section>
   )

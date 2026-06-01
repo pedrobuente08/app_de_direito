@@ -19,7 +19,13 @@ import type {
   PatchProcessoPayload,
   Processo,
   Sentenca,
+  VaraConfig,
 } from '@/lib/types'
+import {
+  COMPROVANTE_RESIDENCIA_TIPOS,
+  comprovanteLabel,
+  comprovantesDisponiveis,
+} from '@/lib/comprovante-residencia'
 import {
   EditableDate,
   EditableSelect,
@@ -57,6 +63,7 @@ type Props = {
   toast: ToastApi
   readOnly?: boolean
   dropdowns?: DropdownsProcessoConfig | null
+  varasConfig?: Record<string, VaraConfig> | null
   onNovaPendencia?: (p: Processo) => void
 }
 
@@ -66,6 +73,7 @@ export function ProcessoDetailPanel({
   toast,
   readOnly,
   dropdowns,
+  varasConfig,
   onNovaPendencia,
 }: Props) {
   const [current, setCurrent] = useState<Processo>(processo)
@@ -138,6 +146,12 @@ export function ProcessoDetailPanel({
     const base = (dropdowns?.situacao ?? []).filter(Boolean)
     return Array.from(new Set(base))
   }, [dropdowns])
+  const comprovantesOpts = useMemo(() => {
+    const vara = (current.vara ?? '').trim().toUpperCase()
+    const varaCfg = vara && varasConfig ? varasConfig[vara] : undefined
+    return comprovantesDisponiveis(varaCfg?.comprovantes_aceitos)
+  }, [current.vara, varasConfig])
+
   const sistemaOpts = useMemo(() => {
     const s = (current.sistema ?? '').trim().toUpperCase()
     const set = new Set<string>([...SISTEMAS_TRIBUNAL_SUGESTAO])
@@ -243,6 +257,18 @@ export function ProcessoDetailPanel({
                 options={faseOpts}
                 toast={toast}
                 onCommit={(v) => patch({ faseAtual: v })}
+              />
+            )}
+          </Field>
+          <Field label="Comprovante de residência">
+            {ro ? (
+              <ReadField value={comprovanteLabel(current.comprovanteResidenciaTipo)} />
+            ) : (
+              <EditableSelect
+                value={current.comprovanteResidenciaTipo ?? ''}
+                options={comprovantesOpts.map((c) => ({ value: c.value, label: c.label }))}
+                toast={toast}
+                onCommit={(v) => patch({ comprovanteResidenciaTipo: v || null })}
               />
             )}
           </Field>

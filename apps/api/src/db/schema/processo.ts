@@ -98,6 +98,7 @@ export const processo = pgTable(
     /** Quando true, a derivação automática não sobrescreve faseAtual. */
     faseTravada: boolean('fase_travada').notNull().default(false),
     requerConferencia: boolean('requer_conferencia').default(false).notNull(),
+    comprovanteResidenciaTipo: varchar('comprovante_residencia_tipo', { length: 50 }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),

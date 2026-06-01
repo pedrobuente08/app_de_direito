@@ -11,6 +11,8 @@ export type VaraConfig = {
   tipo: 'una' | 'fracionada';
   muda_sala?: boolean;
   una_condicional?: boolean;
+  /** Tipos de comprovante de residência aceitos. Vazio = aceita todos. */
+  comprovantes_aceitos?: string[];
 };
 
 /** Digest automático de comunicações (e-mail diário via cron). */
