@@ -50,6 +50,14 @@ const CENARIO_OPCOES: { value: string; label: string; descricao?: string }[] = [
   { value: 'SO_ADVOGADO', label: 'Só o advogado', descricao: 'Cliente faltou; cria pendência automática para o atendimento obter justificativa' },
 ]
 
+const MOTIVOS_AUSENCIA_AUTOR = [
+  { value: 'ESTRATEGIA', label: 'Autor faltou por estratégia' },
+  { value: 'DESISTENCIA', label: 'Autor faltou por desistência' },
+  { value: 'AUSENCIA_CONTATO', label: 'Autor faltou por ausência de contato' },
+  { value: 'ATESTADO_MEDICO', label: 'Autor faltou por atestado médico' },
+  { value: 'OBITO', label: 'Autor faltou por óbito' },
+] as const
+
 const MOTIVOS_CANCELAMENTO = [
   { value: 'AUSENCIA_CONTATO', label: 'Ausência de contato com o cliente' },
   { value: 'CANCELAMENTO_VARA', label: 'Cancelamento pela vara' },
@@ -139,6 +147,7 @@ export function PopUpPosAudiencia({
   const [escritorioAdvId, setEscritorioAdvId] = useState('')
   const [cenario, setCenario] = useState('')
   const [cenarioObservacao, setCenarioObservacao] = useState('')
+  const [motivoAusenciaAutor, setMotivoAusenciaAutor] = useState('')
   /** 'sem_acordo' | 'com_acordo' | 'outro' — usado só quando vara é FRACIONADA */
   const [resultadoFracionada, setResultadoFracionada] = useState<'sem_acordo' | 'com_acordo' | 'outro'>('sem_acordo')
   const [adversarios, setAdversarios] = useState<EscritorioAdversario[]>([])
@@ -191,6 +200,7 @@ export function PopUpPosAudiencia({
     setEscritorioAdvId(audiencia?.escritorioAdversarioId ?? '')
     setCenario(varaEhFracionada ? 'FRACIONADA' : '')
     setCenarioObservacao('')
+    setMotivoAusenciaAutor('')
     setResultadoFracionada('sem_acordo')
     setSolicitouAij(null)
     setErro(null)
@@ -295,8 +305,8 @@ export function PopUpPosAudiencia({
       )
       return
     }
-    if (status === 'REALIZADA' && cenario === 'SO_ADVOGADO' && !cenarioObservacao.trim()) {
-      setErro('Informe a justificativa (só o advogado compareceu).')
+    if (status === 'REALIZADA' && cenario === 'SO_ADVOGADO' && !motivoAusenciaAutor) {
+      setErro('Selecione o motivo da ausência do autor.')
       return
     }
 
@@ -325,7 +335,11 @@ export function PopUpPosAudiencia({
       }
       if (status === 'REALIZADA') {
         body.cenario = cenario.trim()
-        body.cenarioObservacao = cenarioObservacao.trim() || null
+        const motivoLabel = MOTIVOS_AUSENCIA_AUTOR.find((m) => m.value === motivoAusenciaAutor)?.label
+        const obsExtra = cenarioObservacao.trim()
+        body.cenarioObservacao = cenario === 'SO_ADVOGADO' && motivoLabel
+          ? [motivoLabel, obsExtra].filter(Boolean).join(' — ')
+          : obsExtra || null
         body.houvePendencia = houvePendencia
         if (houvePendencia) {
           const hoje = new Date().toISOString().slice(0, 10)
@@ -522,18 +536,34 @@ export function PopUpPosAudiencia({
                     </label>
                   ))}
                   {cenario === 'SO_ADVOGADO' ? (
-                    <label className="mt-3 block text-xs text-[var(--color-text-secondary)]">
-                      Justificativa *
-                      <textarea
-                        required
-                        rows={2}
-                        disabled={readOnly || salvando}
-                        value={cenarioObservacao}
-                        onChange={(e) => setCenarioObservacao(e.target.value)}
-                        placeholder="Ex.: cliente justificará por motivo médico"
-                        className="mt-1 w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
-                      />
-                    </label>
+                    <div className="mt-3 space-y-2">
+                      <label className="block text-xs text-[var(--color-text-secondary)]">
+                        Motivo da ausência *
+                        <select
+                          required
+                          disabled={readOnly || salvando}
+                          value={motivoAusenciaAutor}
+                          onChange={(e) => setMotivoAusenciaAutor(e.target.value)}
+                          className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
+                        >
+                          <option value="">— Selecione —</option>
+                          {MOTIVOS_AUSENCIA_AUTOR.map((m) => (
+                            <option key={m.value} value={m.value}>{m.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block text-xs text-[var(--color-text-secondary)]">
+                        Observação adicional
+                        <textarea
+                          rows={2}
+                          disabled={readOnly || salvando}
+                          value={cenarioObservacao}
+                          onChange={(e) => setCenarioObservacao(e.target.value)}
+                          placeholder="Informações complementares (opcional)"
+                          className="mt-1 w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
+                        />
+                      </label>
+                    </div>
                   ) : null}
                 </div>
               ) : null}
@@ -600,22 +630,37 @@ export function PopUpPosAudiencia({
                 ))}
               </div>
               {cenario === 'SO_ADVOGADO' ? (
-                <label className="mt-3 block text-xs text-[var(--color-text-secondary)]">
-                  Justificativa *
-                  <textarea
-                    required
-                    rows={2}
-                    disabled={readOnly || salvando}
-                    value={cenarioObservacao}
-                    onChange={(e) => setCenarioObservacao(e.target.value)}
-                    placeholder="Ex.: cliente justificará por motivo médico"
-                    className="mt-1 w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
-                  />
-                </label>
+                <div className="mt-3 space-y-2">
+                  <label className="block text-xs text-[var(--color-text-secondary)]">
+                    Motivo da ausência *
+                    <select
+                      required
+                      disabled={readOnly || salvando}
+                      value={motivoAusenciaAutor}
+                      onChange={(e) => setMotivoAusenciaAutor(e.target.value)}
+                      className="mt-1 w-full rounded border border-[var(--color-border-default)] px-2 py-1.5 text-sm"
+                    >
+                      <option value="">— Selecione —</option>
+                      {MOTIVOS_AUSENCIA_AUTOR.map((m) => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-xs text-[var(--color-text-secondary)]">
+                    Observação adicional
+                    <textarea
+                      rows={2}
+                      disabled={readOnly || salvando}
+                      value={cenarioObservacao}
+                      onChange={(e) => setCenarioObservacao(e.target.value)}
+                      placeholder="Informações complementares (opcional)"
+                      className="mt-1 w-full rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                </div>
               ) : null}
             </fieldset>
           ) : null}
-
 
           {precisaNovaData ? (
             <div className="mb-3 grid grid-cols-2 gap-2">
