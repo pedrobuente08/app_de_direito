@@ -1,9 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { PopUpEmbargosDeclaracao } from '@/components/recursos/popup-embargos-declaracao'
 import { RegistrarSegundoGrauDialog } from '@/components/recursos/registrar-segundo-grau-dialog'
 import type { RecursoLinha } from '@/components/recursos/registrar-segundo-grau-dialog'
-import { getAuthMe, getRecursos, getRecursosResumo } from '@/lib/api'
+import { getAddonsStatus, getAuthMe, getRecursos, getRecursosResumo } from '@/lib/api'
 import { faseLabel } from '@/lib/fase-label'
 import { KpiCard } from '@/components/ui/kpi-card'
 import type { RecursoListaItem, RecursosResumo } from '@/lib/types'
@@ -12,11 +13,16 @@ import { ToastContainer, useToast } from '@/lib/toast'
 export default function RecursosPage() {
   const toast = useToast()
   const [readOnly, setReadOnly] = useState(false)
+  const [recursosAvancados, setRecursosAvancados] = useState(false)
   const [lista, setLista] = useState<RecursoListaItem[]>([])
   const [resumo, setResumo] = useState<RecursosResumo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [dialogItem, setDialogItem] = useState<RecursoLinha | null>(null)
+  const [embargosItem, setEmbargosItem] = useState<{
+    processoId: string
+    numero: string
+  } | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -36,6 +42,9 @@ export default function RecursosPage() {
     getAuthMe()
       .then((me) => setReadOnly(me.perfil === 'leitura'))
       .catch(() => setReadOnly(false))
+    getAddonsStatus()
+      .then((s) => setRecursosAvancados(s.addons.recursos_avancados === true))
+      .catch(() => setRecursosAvancados(false))
     void load()
   }, [load])
 
@@ -54,6 +63,9 @@ export default function RecursosPage() {
         <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Recursos</h1>
         <p className="mt-1 max-w-2xl text-sm text-[var(--color-text-secondary)]">
           Processos em recurso sem acórdão de 2º grau. Registre a decisão pelo botão na linha.
+          {recursosAvancados
+            ? ' Com add-on PRO: registre embargos de declaração e acompanhe o badge ED.'
+            : null}
         </p>
       </div>
 
@@ -100,7 +112,19 @@ export default function RecursosPage() {
             <tbody className="divide-y divide-[var(--color-border-default)]">
               {lista.map((r) => (
                 <tr key={r.processoId} className="hover:bg-[var(--color-bg-hover)]">
-                  <td className="px-4 py-2.5 font-mono text-xs">{r.numero}</td>
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs">{r.numero}</span>
+                      {r.embargosAbertos ? (
+                        <span
+                          className="rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-orange-800"
+                          title="Embargos de declaração pendentes"
+                        >
+                          ED
+                        </span>
+                      ) : null}
+                    </div>
+                  </td>
                   <td className="px-4 py-2.5">{r.clienteNome ?? '—'}</td>
                   <td className="px-4 py-2.5">
                     {r.origemRecurso === 'NOSSO'
@@ -113,22 +137,44 @@ export default function RecursosPage() {
                     {r.turmaRecursal ?? '—'}
                   </td>
                   <td className="px-4 py-2.5">{faseLabel(r.faseAtual)}</td>
-                  <td className="px-4 py-2.5">{r.prazoManifestacao ?? '—'}</td>
+                  <td className="px-4 py-2.5">
+                    {r.prazoSuspensoEd ? (
+                      <span className="text-orange-700">Suspenso (ED)</span>
+                    ) : (
+                      (r.prazoManifestacao ?? '—')
+                    )}
+                  </td>
                   <td className="px-4 py-2.5 text-right">
                     {!readOnly ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDialogItem({
-                            processoId: r.processoId,
-                            numero: r.numero,
-                            origemRecurso: r.origemRecurso,
-                          })
-                        }
-                        className="text-xs text-[var(--color-brand)] hover:underline"
-                      >
-                        Registrar acórdão
-                      </button>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {recursosAvancados && !r.embargosAbertos ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEmbargosItem({
+                                processoId: r.processoId,
+                                numero: r.numero,
+                              })
+                            }
+                            className="text-xs text-orange-700 hover:underline"
+                          >
+                            Embargos
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDialogItem({
+                              processoId: r.processoId,
+                              numero: r.numero,
+                              origemRecurso: r.origemRecurso,
+                            })
+                          }
+                          className="text-xs text-[var(--color-brand)] hover:underline"
+                        >
+                          Registrar acórdão
+                        </button>
+                      </div>
                     ) : null}
                   </td>
                 </tr>
@@ -144,6 +190,16 @@ export default function RecursosPage() {
         onClose={() => setDialogItem(null)}
         onSuccess={() => {
           toast.success('Acórdão registrado.')
+          void load()
+        }}
+      />
+
+      <PopUpEmbargosDeclaracao
+        open={!!embargosItem}
+        item={embargosItem}
+        onClose={() => setEmbargosItem(null)}
+        onSuccess={() => {
+          toast.success('Embargos registrados.')
           void load()
         }}
       />

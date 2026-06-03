@@ -165,6 +165,12 @@ export class EscritorioService {
     if (dto.fatores_provisao_pct !== undefined) {
       merged.fatores_provisao_pct = dto.fatores_provisao_pct;
     }
+    if (dto.addons !== undefined) {
+      merged.addons = {
+        ...(prev.addons ?? {}),
+        ...dto.addons,
+      };
+    }
 
     await this.drizzle.db
       .update(escritorio)

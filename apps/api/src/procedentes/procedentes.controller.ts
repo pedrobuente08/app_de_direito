@@ -40,6 +40,12 @@ export class ProcedentesController {
     return this.procedentes.sincronizarLinhasEmFalta(user.escritorioId);
   }
 
+  @Get('comissoes/resumo')
+  @Throttle(ThrottlePresets.procedentesList)
+  comissoesResumo(@CurrentUser() user: AuthUser) {
+    return this.procedentes.resumoComissoes(user.escritorioId);
+  }
+
   @Get(':processoId')
   @Throttle(ThrottlePresets.procedentesList)
   obter(
@@ -62,6 +68,28 @@ export class ProcedentesController {
       processoId,
       dto,
     );
+  }
+
+  @Patch(':processoId/astreintes')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.procedentesWrite)
+  astreintes(
+    @CurrentUser() user: AuthUser,
+    @Param('processoId', ParseUUIDPipe) processoId: string,
+    @Body() dto: Record<string, unknown>,
+  ) {
+    return this.procedentes.atualizarAstreintes(user.escritorioId, processoId, dto);
+  }
+
+  @Patch(':processoId/penhora')
+  @Roles('admin', 'adm', 'advogado')
+  @Throttle(ThrottlePresets.procedentesWrite)
+  penhora(
+    @CurrentUser() user: AuthUser,
+    @Param('processoId', ParseUUIDPipe) processoId: string,
+    @Body() dto: Record<string, unknown>,
+  ) {
+    return this.procedentes.atualizarPenhora(user.escritorioId, processoId, dto);
   }
 
   @Patch(':processoId')

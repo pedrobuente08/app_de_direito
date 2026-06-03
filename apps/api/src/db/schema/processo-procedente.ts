@@ -50,6 +50,36 @@ export const processoProcedente = pgTable('processo_procedente', {
   serasajudAcionado: boolean('serasajud_acionado').notNull().default(false),
   tipoExecucao: varchar('tipo_execucao', { length: 20 }),
   penhoraStatus: varchar('penhora_status', { length: 30 }),
+  astreintesAtiva: boolean('astreintes_ativa').notNull().default(false),
+  astreintesValorDiario: numeric('astreintes_valor_diario', {
+    precision: 12,
+    scale: 2,
+  }),
+  astreintesDataInicio: date('astreintes_data_inicio'),
+  astreintesTotalAcumulado: numeric('astreintes_total_acumulado', {
+    precision: 14,
+    scale: 2,
+  }),
+  astreintesUltimaAtualizacao: date('astreintes_ultima_atualizacao'),
+  astreintesTeto: numeric('astreintes_teto', { precision: 14, scale: 2 }),
+  astreintesSuspensaEm: date('astreintes_suspensa_em'),
+  astreintesPagaEm: date('astreintes_paga_em'),
+  penhoraSistema: varchar('penhora_sistema', { length: 20 }),
+  sisbajudNumeroOrdem: varchar('sisbajud_numero_ordem', { length: 50 }),
+  sisbajudDataBloqueio: date('sisbajud_data_bloqueio'),
+  sisbajudValorBloqueado: numeric('sisbajud_valor_bloqueado', {
+    precision: 12,
+    scale: 2,
+  }),
+  bacenjudDataOficio: date('bacenjud_data_oficio'),
+  bacenjudBancoAlvo: varchar('bacenjud_banco_alvo', { length: 100 }),
+  execucaoContraOrgaoPublico: boolean('execucao_contra_orgao_publico')
+    .notNull()
+    .default(false),
+  modalidadeExecucaoPub: varchar('modalidade_execucao_pub', { length: 20 }),
+  numeroRpv: varchar('numero_rpv', { length: 50 }),
+  numeroPrecatorio: varchar('numero_precatorio', { length: 50 }),
+  previsaoPagamentoPub: date('previsao_pagamento_pub'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

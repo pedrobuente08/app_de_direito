@@ -79,7 +79,7 @@ export class PosExtincaoService {
       })
       .where(eq(sentenca.id, sent.id));
 
-    if (dto.modalidade === 'SEM_CUSTAS') {
+    if (dto.modalidade === 'SEM_CUSTAS' || dto.modalidade === 'DESISTENCIA_SEM_ONUS') {
       await this.drizzle.db
         .insert(processoReprotocolo)
         .values({
@@ -107,7 +107,7 @@ export class PosExtincaoService {
         'extinto_sem_merito_sem_custas',
         { processoId, observacao: obs },
       );
-    } else if (dto.modalidade === 'COM_CUSTAS') {
+    } else if (dto.modalidade === 'COM_CUSTAS' || dto.modalidade === 'DESISTENCIA_COM_ONUS') {
       await this.drizzle.db
         .insert(processoReprotocolo)
         .values({
@@ -137,6 +137,16 @@ export class PosExtincaoService {
         'extinto_sem_merito_com_custas',
         { processoId, observacao: obs },
       );
+    } else if (dto.modalidade === 'RENUNCIA_DIREITO') {
+      await this.drizzle.db
+        .update(processo)
+        .set({
+          statusProcesso: 'ARQUIVADO',
+          faseAtual: 'ENCERRADO',
+          situacaoFinal: 'RENUNCIA_DIREITO',
+          updatedAt: new Date(),
+        })
+        .where(eq(processo.id, processoId));
     } else {
       await this.drizzle.db
         .update(processo)

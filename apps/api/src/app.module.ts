@@ -17,6 +17,12 @@ import { ComarcasModule } from './comarcas/comarcas.module';
 import { DajeModule } from './daje/daje.module';
 import { CapturaModule } from './captura/captura.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
+import { AddonsModule } from './addons/addons.module';
+import { EmbargosModule } from './embargos/embargos.module';
+import { DecisoesInterlocutoriasModule } from './decisoes-interlocutorias/decisoes-interlocutorias.module';
+import { WorkflowsRarosModule } from './workflows-raros/workflows-raros.module';
+import { ParceirosModule } from './parceiros/parceiros.module';
+import { PjeModule } from './pje/pje.module';
 import { AiGatewayModule } from './ai-gateway/ai-gateway.module';
 import { ComunicacoesModule } from './comunicacoes/comunicacoes.module';
 import { EscritorioConfigApiModule } from './config/config.module';
@@ -77,6 +83,7 @@ const adminImports = process.env.PLATFORM_JWT_SECRET?.trim()
     ...bullRoot,
     WorkersModule,
     EncadeamentosModule,
+    AddonsModule,
     JobsModule,
     ThrottlerModule.forRoot([
       {
@@ -111,6 +118,11 @@ const adminImports = process.env.PLATFORM_JWT_SECRET?.trim()
     NotificacoesModule,
     TelemarketingModule,
     RecursosModule,
+    EmbargosModule,
+    DecisoesInterlocutoriasModule,
+    WorkflowsRarosModule,
+    ParceirosModule,
+    PjeModule,
     DajeModule,
     ClientesModule,
   ],

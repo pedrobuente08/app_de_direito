@@ -41,6 +41,7 @@ import { HistoricoAudiencias } from '@/components/drawers/historico-audiencias'
 import { PopUpSobrestamento } from '@/components/popups'
 import { Btn } from '@/components/ui/btn'
 import { RegistrarSentencaSection } from './registrar-sentenca-section'
+import { ProWorkflowsSection } from './pro-workflows-section'
 import { DajeSection } from '@/components/processos/daje-section'
 import { desistirProcesso } from '@/lib/api'
 
@@ -362,6 +363,21 @@ export function ProcessoDetailPanel({
             onCreated={() => { void onSentencaCreated() }}
           />
         </Section>
+
+        <ProWorkflowsSection
+          processoId={current.id}
+          processoNumero={current.numero}
+          readOnly={ro}
+          toast={toast}
+          onProcessoUpdated={() => {
+            void getProcesso(current.id)
+              .then((p) => {
+                setCurrent(p)
+                onUpdated(p)
+              })
+              .catch((e) => toast.error((e as Error).message))
+          }}
+        />
 
         <Section title="Situação e justiça gratuita">
           <Field label="Situação" className="col-span-2 sm:col-span-3">

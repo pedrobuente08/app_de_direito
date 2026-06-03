@@ -10,6 +10,16 @@ import { useMemo } from 'react'
 import { faseLabel } from '@/lib/fase-label'
 import type { Processo } from '@/lib/types'
 
+function rowTintStyle(hex?: string | null): React.CSSProperties | undefined {
+  if (!hex?.startsWith('#') || hex.length < 7) return undefined
+  return { backgroundColor: `${hex}14` }
+}
+
+function isAutorFalecido(p: Processo): boolean {
+  const m = p.sobrestamentoMotivo?.toUpperCase() ?? ''
+  return m.includes('AUTOR_FALECIDO')
+}
+
 type Props = {
   data: Processo[]
   onRowClick: (processo: Processo) => void
@@ -64,6 +74,22 @@ export function ProcessosGrid({
                 MÁ-FÉ
               </span>
             ) : null}
+            {isAutorFalecido(row.original) ? (
+              <span
+                className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-800"
+                title="Autor falecido — aguardando habilitação de sucessores"
+              >
+                FALECIDO
+              </span>
+            ) : null}
+            {row.original.extincaoModalidade === 'RENUNCIA_DIREITO' ? (
+              <span
+                className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-800"
+                title="Renúncia ao direito — irreversível"
+              >
+                RENÚNCIA
+              </span>
+            ) : null}
           </div>
         )
       },
@@ -107,6 +133,30 @@ export function ProcessosGrid({
       cell: ({ row }) => (
         <span className="block truncate text-sm">{row.original.materia?.trim() || '—'}</span>
       ),
+    },
+    {
+      id: 'parceiro',
+      header: 'Parceiro',
+      size: 120,
+      cell: ({ row }) => {
+        const nome = row.original.parceiroNome?.trim()
+        const cor = row.original.parceiroCorHex
+        if (!nome) {
+          return <span className="text-sm text-[var(--color-text-secondary)]">—</span>
+        }
+        return (
+          <span className="flex items-center gap-1.5 truncate text-sm">
+            {cor ? (
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full border border-[var(--color-border-default)]"
+                style={{ backgroundColor: cor }}
+                aria-hidden
+              />
+            ) : null}
+            {nome}
+          </span>
+        )
+      },
     },
     {
       id: 'login',
@@ -206,6 +256,7 @@ export function ProcessosGrid({
             <tr
               key={row.id}
               onClick={() => onRowClick(row.original)}
+              style={rowTintStyle(row.original.parceiroCorHex)}
               className={`cursor-pointer hover:bg-[var(--color-bg-hover)] ${
                 row.original.alertaCrVara ? 'border-l-4 border-l-orange-400' : ''
               } ${

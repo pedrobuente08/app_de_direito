@@ -24,6 +24,11 @@ export * from './ai-quota';
 export * from './model-registry';
 export * from './processo-procedente';
 export * from './sentenca';
+export * from './embargos-declaracao';
+export * from './tutela-antecipada';
+export * from './processo-sucessor';
+export * from './parceiro';
+export * from './processo-producao-probatoria';
 export * from './fase-historico';
 export * from './improcedente';
 export * from './audit-log';
@@ -69,6 +74,11 @@ import { refreshTokens } from './refresh-token';
 import { reu } from './reu';
 import { reuAlias } from './reu-alias';
 import { sentenca } from './sentenca';
+import { embargosDeclaracao } from './embargos-declaracao';
+import { tutelaAntecipada } from './tutela-antecipada';
+import { processoSucessor } from './processo-sucessor';
+import { parceiro, parceiroMateria } from './parceiro';
+import { processoProducaoProbatoria } from './processo-producao-probatoria';
 import { usuario } from './usuario';
 
 export const schema = {
@@ -105,6 +115,12 @@ export const schema = {
   processoProcedente,
   procedenteTransicao,
   sentenca,
+  embargosDeclaracao,
+  tutelaAntecipada,
+  processoSucessor,
+  parceiro,
+  parceiroMateria,
+  processoProducaoProbatoria,
   faseHistorico,
   improcedente,
   auditLog,

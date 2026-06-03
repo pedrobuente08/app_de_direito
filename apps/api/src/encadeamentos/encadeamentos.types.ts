@@ -15,6 +15,20 @@ export const ENCADEAMENTO_EVENTOS = [
   'vara_exigente_documento',
   'litigancia_ma_fe_detectada',
   'acordo_procuracao_solicitada',
+  'embargos_interpostos_por_nos',
+  'interlocutoria_tutela_deferida',
+  'interlocutoria_tutela_indeferida',
+  'interlocutoria_emenda_inicial',
+  'interlocutoria_juntada_documentos',
+  'interlocutoria_citacao_realizada',
+  'interlocutoria_saneamento',
+  'interlocutoria_outro',
+  'tutela_deferida',
+  'tutela_indeferida',
+  'revisar_sobrestamento',
+  'pagar_comissao_parceiro',
+  'pje_contestacao_juntada',
+  'pje_saneamento_publicado',
 ] as const;
 
 export type EncadeamentoEvento = (typeof ENCADEAMENTO_EVENTOS)[number];

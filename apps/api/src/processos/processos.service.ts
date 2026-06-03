@@ -232,6 +232,18 @@ export class ProcessosService {
            order by s.data desc nulls last, s.created_at desc nulls last
            limit 1)
         `.as('ultimaSentencaResultado'),
+        extincaoModalidade: sql<string | null>`
+          (select s.extincao_modalidade from sentenca s
+           where s.processo_id = ${processo.id}
+           order by s.data desc nulls last, s.created_at desc nulls last
+           limit 1)
+        `.as('extincaoModalidade'),
+        parceiroNome: sql<string | null>`(select p.nome from parceiro p where p.id = ${processo.parceiroId})`.as(
+          'parceiroNome',
+        ),
+        parceiroCorHex: sql<string | null>`(select p.cor_hex from parceiro p where p.id = ${processo.parceiroId})`.as(
+          'parceiroCorHex',
+        ),
       })
       .from(processo)
       .where(whereClause)
@@ -301,11 +313,24 @@ export class ProcessosService {
         ),
       );
 
+    const [sobrestRevisarRow] = await db
+      .select({ c: count() })
+      .from(processo)
+      .where(
+        and(
+          base,
+          eq(processo.statusProcesso, 'SOBRESTADO'),
+          sql`${processo.sobrestamentoRevisadoEm} is null`,
+          sql`${processo.sobrestadoDesde} <= (current_date - interval '6 months')::date`,
+        ),
+      );
+
     return {
       totalAtivos: ativosRow?.c ?? 0,
       acaoImediata: acaoRow?.c ?? 0,
       emAvaliacao: avaliarRow?.c ?? 0,
       arquivados30d: arqRow?.c ?? 0,
+      sobrestadosRevisar: sobrestRevisarRow?.c ?? 0,
     };
   }
 

@@ -47,6 +47,14 @@ export type Processo = {
   origemCriacao?: string | null
   alertaCrVara?: boolean
   comprovanteResidenciaTipo?: string | null
+  sobrestamentoMotivo?: string | null
+  sobrestamentoMotivoCodigo?: string | null
+  sobrestamentoTemaAfetado?: string | null
+  sobrestamentoPrevisaoRetorno?: string | null
+  parceiroId?: string | null
+  parceiroNome?: string | null
+  parceiroCorHex?: string | null
+  extincaoModalidade?: string | null
   createdAt: string
   updatedAt?: string
 }
@@ -251,6 +259,16 @@ export type EscritorioConfig = {
   captura_djen_janela_dias?: number
   /** Fuso horário IANA do escritório (ex: "America/Manaus"). Default: "America/Sao_Paulo". */
   timezone?: string
+  /** Add-ons PRO contratados (Fase 3). */
+  addons?: EscritorioAddonsConfig
+}
+
+export type EscritorioAddonsConfig = {
+  recursos_avancados?: boolean
+  workflows_raros?: boolean
+  captacao?: boolean
+  execucao_avancada?: boolean
+  justica_comum_pje?: boolean
 }
 
 export type ImprocedenteRow = {
@@ -292,6 +310,8 @@ export type RecursoListaItem = {
   origemRecurso?: 'NOSSO' | 'REU' | null
   tipoRecurso?: string | null
   prazoManifestacao?: string | null
+  prazoSuspensoEd?: boolean
+  embargosAbertos?: boolean
   pendenciaRecurso?: string | null
   turmaRecursal?: string | number | null
 }
@@ -371,9 +391,19 @@ export type PosImprocedenciaPayload = {
   prazoDias?: number
 }
 
+export type ExtincaoModalidadeLean =
+  | 'SEM_CUSTAS'
+  | 'COM_CUSTAS'
+  | 'COM_MA_FE'
+
+export type ExtincaoModalidadePro =
+  | 'DESISTENCIA_SEM_ONUS'
+  | 'DESISTENCIA_COM_ONUS'
+  | 'RENUNCIA_DIREITO'
+
 export type PosExtincaoPayload = {
   sentencaId: string
-  modalidade: 'SEM_CUSTAS' | 'COM_CUSTAS' | 'COM_MA_FE'
+  modalidade: ExtincaoModalidadeLean | ExtincaoModalidadePro
   motivo: string
   observacao?: string | null
 }
@@ -400,9 +430,85 @@ export type EncerrarPendenciaPayload = {
   proximaAcao?: string | null
 }
 
+export type SobrestamentoMotivoCodigo =
+  | 'IRDR_IAC_STJ'
+  | 'IRDR_IAC_TJBA'
+  | 'ACORDO_EXTRAJUDICIAL_NEGOCIACAO'
+  | 'PREJUDICIAL_EXTERNA'
+  | 'INDEFERIMENTO_INICIAL_RECURSO'
+  | 'OUTRO'
+
 export type SobrestarProcessoPayload = {
   motivo: string
   sobrestadoDesde: string
+  motivoCodigo?: SobrestamentoMotivoCodigo
+  temaAfetado?: string
+  previsaoRetorno?: string
+  observacoes?: string
+}
+
+export type TipoInterlocutoria =
+  | 'TUTELA_DEFERIDA'
+  | 'TUTELA_INDEFERIDA'
+  | 'EMENDA_INICIAL'
+  | 'JUNTADA_DOCUMENTOS'
+  | 'CITACAO_REALIZADA'
+  | 'SANEAMENTO'
+  | 'OUTRO_INTERLOCUTORIO'
+
+export type TutelaAntecipada = {
+  id: string
+  processoId: string
+  tipo: 'TUTELA_ANTECIPADA' | 'TUTELA_CAUTELAR' | 'LIMINAR'
+  pedidoEm: string
+  resultado?: string | null
+  dataResultado?: string | null
+  prazoCumprimento?: string | null
+  cumprida: boolean
+  cumpridaEm?: string | null
+  descricao?: string | null
+  observacoes?: string | null
+  createdAt?: string
+}
+
+export type ProcessoSucessor = {
+  id: string
+  processoId: string
+  nome: string
+  cpf?: string | null
+  parentesco?: string | null
+  habilitado: boolean
+  habilitadoEm?: string | null
+  observacoes?: string | null
+}
+
+export type Parceiro = {
+  id: string
+  nome: string
+  tipo: 'PF' | 'ESCRITORIO'
+  cpfCnpj?: string | null
+  comissaoPercentual?: string | null
+  corHex?: string | null
+  ativo: boolean
+  createdAt?: string
+}
+
+export type ParceiroMateria = {
+  id: string
+  parceiroId: string
+  materia: string
+  parceiroNome?: string | null
+}
+
+export type ProducaoProbatoria = {
+  id: string
+  processoId: string
+  tipo: string
+  status: string
+  dataDesignacao?: string | null
+  dataConclusao?: string | null
+  peritoNome?: string | null
+  observacoes?: string | null
 }
 
 export type EscritorioAdversario = {
@@ -583,6 +689,20 @@ export type Procedente = {
   obrigacaoFazerCumprida?: boolean
   obrigacaoFazerCumpridaEm?: string | null
   serasajudAcionado?: boolean
+  astreintesAtiva?: boolean
+  astreintesValorDiario?: string | null
+  astreintesDataInicio?: string | null
+  astreintesTotalAcumulado?: string | null
+  astreintesUltimaAtualizacao?: string | null
+  astreintesTeto?: string | null
+  astreintesSuspensaEm?: string | null
+  astreintesPagaEm?: string | null
+  penhoraSistema?: string | null
+  sisbajudNumeroOrdem?: string | null
+  sisbajudDataBloqueio?: string | null
+  sisbajudValorBloqueado?: string | null
+  bacenjudDataOficio?: string | null
+  bacenjudBancoAlvo?: string | null
   createdAt: string
   processo?: { numero: string; clienteNome: string; reuTexto: string; sentenca?: string | null }
 }

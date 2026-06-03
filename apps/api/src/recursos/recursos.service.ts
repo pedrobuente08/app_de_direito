@@ -2,8 +2,9 @@ import {
   BadRequestException,
   Injectable,
 } from '@nestjs/common';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull, or } from 'drizzle-orm';
 import { DrizzleService } from '../db/drizzle.service';
+import { embargosDeclaracao } from '../db/schema/embargos-declaracao';
 import { improcedente } from '../db/schema/improcedente';
 import { pendencia } from '../db/schema/pendencia';
 import { processo } from '../db/schema/processo';
@@ -143,11 +144,29 @@ export class RecursosService {
       turmaPorProc.set(s.processoId, v != null ? v : null);
     }
 
+    const embargosAbertos = new Set(
+      (
+        await db
+          .select({ processoId: embargosDeclaracao.processoId })
+          .from(embargosDeclaracao)
+          .where(
+            and(
+              eq(embargosDeclaracao.escritorioId, escritorioId),
+              or(
+                isNull(embargosDeclaracao.resultado),
+                eq(embargosDeclaracao.resultado, 'A_JULGAR'),
+              ),
+            ),
+          )
+      ).map((r) => r.processoId),
+    );
+
     return lista.map((r) => {
       const pends = pendPorProc.get(r.processoId) ?? [];
       const pendRecurso = pends.find((p) =>
         p.tipo.toUpperCase().includes('RECURSO'),
       );
+      const temEd = embargosAbertos.has(r.processoId);
       let origem: 'NOSSO' | 'REU' | null = null;
       if (r.decisaoRecurso === 'RECORRER') origem = 'NOSSO';
       else if (r.recursoOrigem?.toUpperCase() === 'REU') origem = 'REU';
@@ -163,7 +182,9 @@ export class RecursosService {
         faseAtual: r.faseAtual,
         origemRecurso: origem,
         tipoRecurso: r.recursoTipo,
-        prazoManifestacao: pendRecurso?.dataLimite ?? null,
+        prazoManifestacao: temEd ? null : (pendRecurso?.dataLimite ?? null),
+        prazoSuspensoEd: temEd,
+        embargosAbertos: temEd,
         pendenciaRecurso: pendRecurso?.tipo ?? null,
         turmaRecursal: turmaPorProc.get(r.processoId) ?? null,
       };

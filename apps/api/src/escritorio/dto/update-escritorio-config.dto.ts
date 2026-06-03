@@ -112,4 +112,9 @@ export class UpdateEscritorioConfigDto {
   @IsArray()
   @IsString({ each: true })
   varas_una_condicional?: string[];
+
+  /** Add-ons PRO (Fase 3) — merge parcial por chave. */
+  @IsOptional()
+  @IsObject()
+  addons?: Record<string, boolean>;
 }

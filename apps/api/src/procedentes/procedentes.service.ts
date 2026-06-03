@@ -3,10 +3,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, count, eq, isNull, ne, sql } from 'drizzle-orm';
+import { and, count, desc, eq, isNull, ne, sql } from 'drizzle-orm';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
 import { DrizzleService } from '../db/drizzle.service';
+import { AddonsService } from '../addons/addons.service';
 import { CalcularPrazoProcessualService } from '../encadeamentos/calcular-prazo-processual.service';
+import { parceiro } from '../db/schema/parceiro';
+import { sentenca } from '../db/schema/sentenca';
+import { ParceirosService } from '../parceiros/parceiros.service';
 import { EncadeamentosQueueService } from '../encadeamentos/encadeamentos-queue.service';
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import { pendencia } from '../db/schema/pendencia';
@@ -70,6 +74,8 @@ export class ProcedentesService {
     private readonly faseDerivacao: FaseDerivacaoService,
     private readonly encadeamentos: EncadeamentosQueueService,
     private readonly prazos: CalcularPrazoProcessualService,
+    private readonly addons: AddonsService,
+    private readonly parceiros: ParceirosService,
   ) {}
 
   private hojeYmd(): string {
@@ -467,7 +473,143 @@ export class ProcedentesService {
       });
     }
 
+    if (
+      dto.dataAlvaraExpedido &&
+      !procRow.dataAlvaraExpedido
+    ) {
+      await this.encadeamentos.dispatch(escritorioId, 'alvara_expedido', {
+        processoId,
+      });
+    }
+
+    if (
+      dto.dataRecebimento &&
+      !procRow.dataRecebimento &&
+      (await this.addons.isEnabled(escritorioId, 'captacao'))
+    ) {
+      await this.processarComissaoParceiro(escritorioId, processoId, row.processo);
+    }
+
     return this.obter(escritorioId, processoId);
+  }
+
+  async atualizarAstreintes(
+    escritorioId: string,
+    processoId: string,
+    dto: Record<string, unknown>,
+  ) {
+    await this.addons.assertEnabled(escritorioId, 'execucao_avancada');
+    await this.obterJoinRaw(escritorioId, processoId);
+    const patch: Partial<typeof processoProcedente.$inferInsert> = {
+      updatedAt: new Date(),
+    };
+    for (const [k, v] of Object.entries(dto)) {
+      if (v === undefined) continue;
+      (patch as Record<string, unknown>)[k] = v;
+    }
+    await this.drizzle.db
+      .update(processoProcedente)
+      .set(patch)
+      .where(eq(processoProcedente.processoId, processoId));
+    return this.obter(escritorioId, processoId);
+  }
+
+  async atualizarPenhora(
+    escritorioId: string,
+    processoId: string,
+    dto: Record<string, unknown>,
+  ) {
+    await this.addons.assertEnabled(escritorioId, 'execucao_avancada');
+    await this.obterJoinRaw(escritorioId, processoId);
+    const patch: Partial<typeof processoProcedente.$inferInsert> = {
+      updatedAt: new Date(),
+    };
+    for (const [k, v] of Object.entries(dto)) {
+      if (v === undefined) continue;
+      (patch as Record<string, unknown>)[k] = v;
+    }
+    await this.drizzle.db
+      .update(processoProcedente)
+      .set(patch)
+      .where(eq(processoProcedente.processoId, processoId));
+    return this.obter(escritorioId, processoId);
+  }
+
+  private async processarComissaoParceiro(
+    escritorioId: string,
+    processoId: string,
+    proc: typeof processo.$inferSelect,
+  ) {
+    if (!proc.parceiroId) return;
+    const [p] = await this.drizzle.db
+      .select()
+      .from(parceiro)
+      .where(
+        and(eq(parceiro.id, proc.parceiroId), eq(parceiro.escritorioId, escritorioId)),
+      )
+      .limit(1);
+    if (!p?.comissaoPercentual) return;
+
+    const [sent] = await this.drizzle.db
+      .select({ valor: sentenca.valor })
+      .from(sentenca)
+      .where(
+        and(eq(sentenca.processoId, processoId), eq(sentenca.escritorioId, escritorioId)),
+      )
+      .orderBy(desc(sentenca.data))
+      .limit(1);
+    const valor = Number(sent?.valor ?? proc.honorarioSucumbencialValor ?? 0);
+    if (!valor) return;
+
+    const comissao = (valor * Number(p.comissaoPercentual)) / 100;
+    await this.drizzle.db
+      .update(processo)
+      .set({
+        comissaoCalculada: String(comissao.toFixed(2)),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(processo.id, processoId), eq(processo.escritorioId, escritorioId)));
+
+    await this.encadeamentos.dispatch(escritorioId, 'pagar_comissao_parceiro', {
+      processoId,
+      observacao: `Comissão ${p.nome}: R$ ${comissao.toFixed(2)}`,
+    });
+  }
+
+  async resumoComissoes(escritorioId: string) {
+    await this.addons.assertEnabled(escritorioId, 'captacao');
+    const rows = await this.drizzle.db
+      .select({
+        parceiroId: processo.parceiroId,
+        parceiroNome: parceiro.nome,
+        comissaoCalculada: processo.comissaoCalculada,
+        comissaoPaga: processo.comissaoPaga,
+      })
+      .from(processo)
+      .leftJoin(parceiro, eq(parceiro.id, processo.parceiroId))
+      .where(
+        and(
+          eq(processo.escritorioId, escritorioId),
+          sql`${processo.comissaoCalculada} is not null`,
+        ),
+      );
+    let totalAPagar = 0;
+    let totalPago = 0;
+    const porParceiro: Record<string, { nome: string; aPagar: number; pago: number }> = {};
+    for (const r of rows) {
+      const v = Number(r.comissaoCalculada ?? 0);
+      const nome = r.parceiroNome ?? '—';
+      const key = r.parceiroId ?? 'sem';
+      porParceiro[key] ??= { nome, aPagar: 0, pago: 0 };
+      if (r.comissaoPaga) {
+        totalPago += v;
+        porParceiro[key].pago += v;
+      } else {
+        totalAPagar += v;
+        porParceiro[key].aPagar += v;
+      }
+    }
+    return { totalAPagar, totalPago, porParceiro: Object.values(porParceiro) };
   }
 
   async atualizarObrigacaoFazer(

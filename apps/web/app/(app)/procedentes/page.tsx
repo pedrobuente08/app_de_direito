@@ -3,8 +3,11 @@
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import {
+  atualizarAstreintes,
   atualizarObrigacaoFazer,
+  atualizarPenhoraExecucao,
   atualizarProcedente,
+  getAddonsStatus,
   getAuthMe,
   getProcedentes,
   getProcedentesResumo,
@@ -46,6 +49,16 @@ type EditForm = {
   obrigacaoCumpridaEm: string
   serasajudAcionado: boolean
   temObrigacaoFazer: boolean
+  astreintesAtiva: boolean
+  astreintesValorDiario: string
+  astreintesDataInicio: string
+  astreintesTeto: string
+  penhoraSistema: string
+  sisbajudNumeroOrdem: string
+  sisbajudDataBloqueio: string
+  sisbajudValorBloqueado: string
+  bacenjudDataOficio: string
+  bacenjudBancoAlvo: string
 }
 
 function formFromProcedente(p: Procedente): EditForm {
@@ -61,7 +74,33 @@ function formFromProcedente(p: Procedente): EditForm {
     obrigacaoCumpridaEm: p.obrigacaoFazerCumpridaEm ?? '',
     serasajudAcionado: !!p.serasajudAcionado,
     temObrigacaoFazer: !!p.temObrigacaoFazer,
+    astreintesAtiva: !!p.astreintesAtiva,
+    astreintesValorDiario: p.astreintesValorDiario ?? '',
+    astreintesDataInicio: p.astreintesDataInicio ?? '',
+    astreintesTeto: p.astreintesTeto ?? '',
+    penhoraSistema: p.penhoraSistema ?? '',
+    sisbajudNumeroOrdem: p.sisbajudNumeroOrdem ?? '',
+    sisbajudDataBloqueio: p.sisbajudDataBloqueio ?? '',
+    sisbajudValorBloqueado: p.sisbajudValorBloqueado ?? '',
+    bacenjudDataOficio: p.bacenjudDataOficio ?? '',
+    bacenjudBancoAlvo: p.bacenjudBancoAlvo ?? '',
   }
+}
+
+function diasAstreintes(dataInicio?: string | null): number {
+  if (!dataInicio) return 0
+  const ini = new Date(`${dataInicio.slice(0, 10)}T12:00:00`)
+  const hoje = new Date()
+  hoje.setHours(12, 0, 0, 0)
+  const diff = Math.floor((hoje.getTime() - ini.getTime()) / 86400000)
+  return Math.max(0, diff)
+}
+
+function formatBrl(valor: string | null | undefined): string {
+  if (!valor) return '—'
+  const n = Number(valor)
+  if (Number.isNaN(n)) return valor
+  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 export default function ProcedentesPage() {
@@ -81,9 +120,20 @@ export default function ProcedentesPage() {
     obrigacaoCumpridaEm: '',
     serasajudAcionado: false,
     temObrigacaoFazer: false,
+    astreintesAtiva: false,
+    astreintesValorDiario: '',
+    astreintesDataInicio: '',
+    astreintesTeto: '',
+    penhoraSistema: '',
+    sisbajudNumeroOrdem: '',
+    sisbajudDataBloqueio: '',
+    sisbajudValorBloqueado: '',
+    bacenjudDataOficio: '',
+    bacenjudBancoAlvo: '',
   })
   const [saving, setSaving] = useState(false)
   const [readOnly, setReadOnly] = useState(false)
+  const [execucaoAvancada, setExecucaoAvancada] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [resumo, setResumo] = useState<ProcedentesResumo | null>(null)
   const [filtroFamilia, setFiltroFamilia] = useState('')
@@ -93,6 +143,9 @@ export default function ProcedentesPage() {
     getAuthMe()
       .then((me) => setReadOnly(me.perfil === 'leitura'))
       .catch(() => setReadOnly(false))
+    getAddonsStatus()
+      .then((s) => setExecucaoAvancada(!!s.addons.execucao_avancada))
+      .catch(() => setExecucaoAvancada(false))
   }, [])
 
   async function load() {
@@ -274,6 +327,11 @@ export default function ProcedentesPage() {
                           Aguardando SerasaJud
                         </span>
                       ) : null}
+                      {p.astreintesAtiva ? (
+                        <span className="mt-1 inline-block rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-800">
+                          ASTREINTES
+                        </span>
+                      ) : null}
                       {p.situacao && <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">{p.situacao}</p>}
                     </td>
                     <td className="px-4 py-2.5 text-xs text-[var(--color-text-secondary)]">{p.responsavel ?? '—'}</td>
@@ -436,6 +494,221 @@ export default function ProcedentesPage() {
                               </div>
                             ) : null}
                           </div>
+                          {execucaoAvancada ? (
+                            <div className="col-span-full space-y-3 rounded border border-dashed p-3">
+                              <p className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                                Astreintes (execução PRO)
+                              </p>
+                              <label className="flex items-center gap-2 text-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={editForm.astreintesAtiva}
+                                  onChange={(e) =>
+                                    setEditForm((prev) => ({
+                                      ...prev,
+                                      astreintesAtiva: e.target.checked,
+                                    }))
+                                  }
+                                />
+                                Astreintes ativas
+                              </label>
+                              {editForm.astreintesAtiva ? (
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                  <input
+                                    value={editForm.astreintesValorDiario}
+                                    onChange={(e) =>
+                                      setEditForm((prev) => ({
+                                        ...prev,
+                                        astreintesValorDiario: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="Valor diário (R$)"
+                                    className="rounded border px-2 py-1.5 text-sm"
+                                  />
+                                  <input
+                                    type="date"
+                                    value={editForm.astreintesDataInicio}
+                                    onChange={(e) =>
+                                      setEditForm((prev) => ({
+                                        ...prev,
+                                        astreintesDataInicio: e.target.value,
+                                      }))
+                                    }
+                                    className="rounded border px-2 py-1.5 text-sm"
+                                  />
+                                  <input
+                                    value={editForm.astreintesTeto}
+                                    onChange={(e) =>
+                                      setEditForm((prev) => ({
+                                        ...prev,
+                                        astreintesTeto: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="Teto (opcional)"
+                                    className="rounded border px-2 py-1.5 text-sm sm:col-span-2"
+                                  />
+                                  {p.astreintesTotalAcumulado ||
+                                  (editForm.astreintesValorDiario &&
+                                    editForm.astreintesDataInicio) ? (
+                                    <p className="text-xs text-[var(--color-text-secondary)] sm:col-span-2">
+                                      Acumulado:{' '}
+                                      <strong>
+                                        {formatBrl(
+                                          p.astreintesTotalAcumulado ??
+                                            String(
+                                              diasAstreintes(
+                                                editForm.astreintesDataInicio,
+                                              ) *
+                                                Number(
+                                                  editForm.astreintesValorDiario ||
+                                                    '0',
+                                                ),
+                                            ),
+                                        )}
+                                      </strong>
+                                      {editForm.astreintesDataInicio
+                                        ? ` (${diasAstreintes(editForm.astreintesDataInicio)} dias)`
+                                        : null}
+                                      {p.astreintesUltimaAtualizacao
+                                        ? ` — atualizado em ${p.astreintesUltimaAtualizacao}`
+                                        : null}
+                                    </p>
+                                  ) : null}
+                                  <button
+                                    type="button"
+                                    className="text-xs text-[var(--color-brand)] hover:underline sm:col-span-2"
+                                    onClick={async () => {
+                                      try {
+                                        await atualizarAstreintes(p.processoId, {
+                                          astreintesAtiva: editForm.astreintesAtiva,
+                                          astreintesValorDiario:
+                                            editForm.astreintesValorDiario || null,
+                                          astreintesDataInicio:
+                                            editForm.astreintesDataInicio || null,
+                                          astreintesTeto: editForm.astreintesTeto || null,
+                                        })
+                                        toast.success('Astreintes salvas.')
+                                        load()
+                                      } catch (err) {
+                                        toast.error((err as Error).message)
+                                      }
+                                    }}
+                                  >
+                                    Salvar astreintes
+                                  </button>
+                                </div>
+                              ) : null}
+                              <p className="border-t border-[var(--color-border-default)] pt-2 text-xs font-semibold text-[var(--color-text-secondary)]">
+                                Penhora / bloqueio
+                              </p>
+                              <select
+                                value={editForm.penhoraSistema}
+                                onChange={(e) =>
+                                  setEditForm((prev) => ({
+                                    ...prev,
+                                    penhoraSistema: e.target.value,
+                                  }))
+                                }
+                                className="w-full rounded border px-2 py-1.5 text-sm"
+                              >
+                                <option value="">— sistema —</option>
+                                <option value="SISBAJUD">SISBAJUD</option>
+                                <option value="BACENJUD">BACENJUD</option>
+                                <option value="CARTA">Carta precatória</option>
+                                <option value="OUTRO">Outro</option>
+                              </select>
+                              {editForm.penhoraSistema === 'SISBAJUD' ? (
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                  <input
+                                    value={editForm.sisbajudNumeroOrdem}
+                                    onChange={(e) =>
+                                      setEditForm((prev) => ({
+                                        ...prev,
+                                        sisbajudNumeroOrdem: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="Nº ordem SISBAJUD"
+                                    className="rounded border px-2 py-1.5 text-sm"
+                                  />
+                                  <input
+                                    type="date"
+                                    value={editForm.sisbajudDataBloqueio}
+                                    onChange={(e) =>
+                                      setEditForm((prev) => ({
+                                        ...prev,
+                                        sisbajudDataBloqueio: e.target.value,
+                                      }))
+                                    }
+                                    className="rounded border px-2 py-1.5 text-sm"
+                                  />
+                                  <input
+                                    value={editForm.sisbajudValorBloqueado}
+                                    onChange={(e) =>
+                                      setEditForm((prev) => ({
+                                        ...prev,
+                                        sisbajudValorBloqueado: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="Valor bloqueado"
+                                    className="rounded border px-2 py-1.5 text-sm sm:col-span-2"
+                                  />
+                                </div>
+                              ) : null}
+                              {editForm.penhoraSistema === 'BACENJUD' ? (
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                  <input
+                                    type="date"
+                                    value={editForm.bacenjudDataOficio}
+                                    onChange={(e) =>
+                                      setEditForm((prev) => ({
+                                        ...prev,
+                                        bacenjudDataOficio: e.target.value,
+                                      }))
+                                    }
+                                    className="rounded border px-2 py-1.5 text-sm"
+                                  />
+                                  <input
+                                    value={editForm.bacenjudBancoAlvo}
+                                    onChange={(e) =>
+                                      setEditForm((prev) => ({
+                                        ...prev,
+                                        bacenjudBancoAlvo: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="Banco alvo"
+                                    className="rounded border px-2 py-1.5 text-sm"
+                                  />
+                                </div>
+                              ) : null}
+                              <button
+                                type="button"
+                                className="text-xs text-[var(--color-brand)] hover:underline"
+                                onClick={async () => {
+                                  try {
+                                    await atualizarPenhoraExecucao(p.processoId, {
+                                      penhoraSistema: editForm.penhoraSistema || null,
+                                      sisbajudNumeroOrdem:
+                                        editForm.sisbajudNumeroOrdem || null,
+                                      sisbajudDataBloqueio:
+                                        editForm.sisbajudDataBloqueio || null,
+                                      sisbajudValorBloqueado:
+                                        editForm.sisbajudValorBloqueado || null,
+                                      bacenjudDataOficio:
+                                        editForm.bacenjudDataOficio || null,
+                                      bacenjudBancoAlvo:
+                                        editForm.bacenjudBancoAlvo || null,
+                                    })
+                                    toast.success('Penhora salva.')
+                                    load()
+                                  } catch (err) {
+                                    toast.error((err as Error).message)
+                                  }
+                                }}
+                              >
+                                Salvar penhora
+                              </button>
+                            </div>
+                          ) : null}
                           <div className="col-span-full flex gap-2 pt-1">
                             <button type="submit" disabled={saving}
                               className="rounded-[var(--radius-sm)] bg-[var(--color-brand)] px-4 py-1.5 text-sm font-medium text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-50">

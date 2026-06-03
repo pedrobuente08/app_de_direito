@@ -8,8 +8,10 @@ import { ComarcasSection } from './_components/comarcas-section'
 import { RegrasComunicaSection } from './_components/regras-comunica-section'
 import { UsuariosSection } from './_components/usuarios-section'
 import { OnboardingDjenSection } from './_components/onboarding-djen-section'
+import { AddonsProSection } from './_components/addons-pro-section'
+import { ParceirosSection } from './_components/parceiros-section'
 import { VarasSection } from './_components/varas-section'
-import type { ComunicaRegra, VaraConfig } from '@/lib/types'
+import type { ComunicaRegra, EscritorioAddonsConfig, VaraConfig } from '@/lib/types'
 
 const CONFIG_TABS = [
   { id: 'geral', label: 'Geral' },
@@ -23,6 +25,7 @@ const CONFIG_TABS = [
   { id: 'varas', label: 'Varas' },
   { id: 'provisao', label: 'Provisão' },
   { id: 'comunica', label: 'Comunica' },
+  { id: 'pro', label: 'PRO' },
 ] as const
 
 type ConfigTab = (typeof CONFIG_TABS)[number]['id']
@@ -45,6 +48,7 @@ export default function ConfiguracoesPage() {
   const [digestEnabled, setDigestEnabled] = useState(false)
   const [digestEmails, setDigestEmails] = useState('')
   const [digestDias, setDigestDias] = useState('1')
+  const [addons, setAddons] = useState<EscritorioAddonsConfig>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -86,6 +90,7 @@ export default function ConfiguracoesPage() {
         setDigestEnabled(cfg.comunica_digest?.enabled ?? false)
         setDigestEmails((cfg.comunica_digest?.emails ?? []).join('\n'))
         setDigestDias(String(cfg.comunica_digest?.dias ?? 1))
+        setAddons(cfg.addons ?? {})
       } catch (e) {
         setError((e as Error).message)
       } finally {
@@ -172,6 +177,7 @@ export default function ConfiguracoesPage() {
             .filter(Boolean),
           dias: Number(digestDias) || 1,
         },
+        addons,
       })
       toast.success('Configurações salvas.')
     } catch (e) {
@@ -437,6 +443,13 @@ export default function ConfiguracoesPage() {
             </label>
           </div>
         </section>
+        )}
+
+        {aba === 'pro' && (
+          <>
+            <AddonsProSection addons={addons} onChange={setAddons} />
+            {addons.captacao ? <ParceirosSection toast={toast} /> : null}
+          </>
         )}
 
         {aba === 'geral' && (

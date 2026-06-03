@@ -476,10 +476,10 @@ Campos:
 | `EMBARGOS_JULGADOS` | Classifica resultado; reinicia prazo do recurso nominado |
 
 #### Critério de aceite [8.1]
-- [ ] Pop-up de embargos funciona para interposição por nós e pelo réu
-- [ ] Flag "ED" aparece na grid de RECURSOS
-- [ ] Prazo do recurso nominado é pausado e reiniciado corretamente
-- [ ] Resultado do julgamento atualiza a sentença base
+- [x] Pop-up de embargos funciona para interposição por nós e pelo réu
+- [x] Flag "ED" aparece na grid de RECURSOS
+- [x] Prazo do recurso nominado é pausado e reiniciado corretamente
+- [x] Resultado do julgamento atualiza a sentença base
 
 ---
 
@@ -510,10 +510,10 @@ Campos:
 4. Observações
 
 #### Critério de aceite [8.2]
-- [ ] Tipo `DECISAO_INTERLOCUTORIA` no Comunica → pop-up aparece
-- [ ] Cada tipo gera a cascata correta
-- [ ] Tipo `TUTELA_DEFERIDA` → notificação alta prioridade + pendência de monitoramento
-- [ ] Tipo `CITACAO_REALIZADA` → fase muda para `AGUARDANDO_CONTESTACAO`
+- [x] Tipo `DECISAO_INTERLOCUTORIA` no Comunica → pop-up aparece
+- [x] Cada tipo gera a cascata correta
+- [x] Tipo `TUTELA_DEFERIDA` → notificação alta prioridade + pendência de monitoramento
+- [x] Tipo `CITACAO_REALIZADA` → fase muda para `AGUARDANDO_CONTESTACAO`
 
 ---
 
@@ -567,10 +567,10 @@ tutela_indeferida: [
 - Job `job_revisar_tutelas`: semanal — lista tutelas com `cumprida = false` e `prazo_cumprimento < hoje + 7d` → alerta ADV
 
 #### Critério de aceite [9.1]
-- [ ] Seção de tutela aparece no drawer quando add-on ativo
-- [ ] Tutela deferida → pendências de monitoramento criadas
-- [ ] Tutela indeferida → pendência de avaliar agravo
-- [ ] Job semanal alerta tutelas vencendo
+- [x] Seção de tutela aparece no drawer quando add-on ativo
+- [x] Tutela deferida → pendências de monitoramento criadas
+- [x] Tutela indeferida → pendência de avaliar agravo
+- [x] Job semanal alerta tutelas vencendo
 
 ---
 
@@ -618,11 +618,11 @@ CREATE TABLE processo_sucessor (
 - Badge "FALECIDO" na grid de INTIMAÇÕES quando `processo.sobrestamentoMotivo` contém `AUTOR_FALECIDO`
 
 #### Critério de aceite [9.2]
-- [ ] Modal de registro de óbito funciona
-- [ ] Múltiplos herdeiros podem ser cadastrados
-- [ ] Pendências criadas por herdeiro para ATENDIMENTO
-- [ ] Todos habilitados → processo volta para ATIVO automaticamente
-- [ ] Badge "FALECIDO" visível na grid
+- [x] Modal de registro de óbito funciona
+- [x] Múltiplos herdeiros podem ser cadastrados
+- [x] Pendências criadas por herdeiro para ATENDIMENTO
+- [x] Todos habilitados → processo volta para ATIVO automaticamente
+- [x] Badge "FALECIDO" visível na grid
 
 ---
 
@@ -673,10 +673,10 @@ Ao confirmar sobrestamento:
 - Card "Sobrestados a revisar" no DASH_GERAL
 
 #### Critério de aceite [9.3]
-- [ ] Pop-up com 6 motivos substituindo o modal simples atual
-- [ ] Pendências suspensas ao sobrestar
-- [ ] Job mensal de revisão semestral dispara alertas
-- [ ] Card no dashboard conta sobrestados vencidos
+- [x] Pop-up com 6 motivos substituindo o modal simples atual
+- [x] Pendências suspensas ao sobrestar
+- [x] Job mensal de revisão semestral dispara alertas
+- [x] Card no dashboard conta sobrestados vencidos
 
 ---
 
@@ -705,10 +705,10 @@ Para `RENUNCIA_DIREITO`:
 **Badge na grid:** processo com `extincao_modalidade = 'RENUNCIA_DIREITO'` exibe badge vermelho "RENÚNCIA" na coluna de status.
 
 #### Critério de aceite [9.4]
-- [ ] 3 modalidades claramente distintas no pop-up
-- [ ] Confirmação dupla para renúncia de direito
-- [ ] Badge vermelho "RENÚNCIA" na grid
-- [ ] Renúncia não abre análise de reprotocolo (fluxo diferente das demais extinções)
+- [x] 3 modalidades claramente distintas no pop-up
+- [x] Confirmação dupla para renúncia de direito
+- [x] Badge vermelho "RENÚNCIA" na grid
+- [x] Renúncia não abre análise de reprotocolo (fluxo diferente das demais extinções)
 
 ---
 
@@ -779,12 +779,12 @@ Na aba PROCEDENTES, ao marcar `data_recebimento`:
 - Forecast de comissões baseado em procedentes em andamento
 
 #### Critério de aceite [10]
-- [ ] CRUD de parceiros nas configurações
-- [ ] Mapeamento matéria→parceiro automático na importação
-- [ ] Cor da linha em INTIMAÇÕES por parceiro
-- [ ] Comissão calculada ao registrar recebimento
-- [ ] Pendência de pagamento de comissão criada automaticamente
-- [ ] Dashboard de comissões
+- [x] CRUD de parceiros nas configurações
+- [x] Mapeamento matéria→parceiro automático na importação
+- [x] Cor da linha em INTIMAÇÕES por parceiro
+- [x] Comissão calculada ao registrar recebimento
+- [x] Pendência de pagamento de comissão criada automaticamente
+- [x] Dashboard de comissões
 
 ---
 
@@ -856,11 +856,11 @@ ALTER TABLE processo_procedente
 - BACENJUD: data do ofício + banco alvo
 
 #### Critério de aceite [11]
-- [ ] Campos de astreintes separados do texto livre
-- [ ] Job diário atualiza o total acumulado
-- [ ] Badge "ASTREINTES" na grid
-- [ ] Dropdown de sistema de penhora com campos condicionais
-- [ ] Número da ordem SISBAJUD registrável
+- [x] Campos de astreintes separados do texto livre
+- [x] Job diário atualiza o total acumulado
+- [x] Badge "ASTREINTES" na grid
+- [x] Dropdown de sistema de penhora com campos condicionais
+- [x] Número da ordem SISBAJUD registrável
 
 ---
 
@@ -981,11 +981,11 @@ ALTER TABLE processo_procedente
 - Forecast de recebimento por modalidade de execução pública
 
 #### Critério de aceite [12]
-- [ ] Processos PJE têm fases distintas dos processos do Juizado
-- [ ] Fluxo citação → contestação → réplica → saneamento navegável
-- [ ] Sub-estados de produção probatória registráveis
-- [ ] Apelação com prazo 15d (não 10d)
-- [ ] Execução contra órgão público → RPV vs Precatório
+- [x] Processos PJE têm fases distintas dos processos do Juizado
+- [x] Fluxo citação → contestação → réplica → saneamento navegável
+- [x] Sub-estados de produção probatória registráveis
+- [x] Apelação com prazo 15d (não 10d)
+- [x] Execução contra órgão público → RPV vs Precatório
 - [ ] Indicadores separados por sistema judicial
 
 ---

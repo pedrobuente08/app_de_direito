@@ -11,6 +11,7 @@ import type { AvaliacaoRecursoJson } from '../db/schema/processo';
 import type { DesistirProcessoDto } from './dto/desistir-processo.dto';
 import type { JusticaGratuitaProcessoDto } from './dto/justica-gratuita-processo.dto';
 import type { PatchAvaliacaoRecursoDto } from './dto/patch-avaliacao-recurso.dto';
+import { EncadeamentosQueueService } from '../encadeamentos/encadeamentos-queue.service';
 import type { SobrestarProcessoDto } from './dto/sobrestar-processo.dto';
 import { ProcessosHipossuficienciaService } from './processos-hipossuficiencia.service';
 
@@ -25,6 +26,7 @@ export class ProcessosWorkflowService {
   constructor(
     private readonly drizzle: DrizzleService,
     private readonly hipossuf: ProcessosHipossuficienciaService,
+    private readonly encadeamentos: EncadeamentosQueueService,
   ) {}
 
   private async assertProcesso(escritorioId: string, id: string) {
@@ -41,10 +43,15 @@ export class ProcessosWorkflowService {
 
   async sobrestar(escritorioId: string, id: string, dto: SobrestarProcessoDto) {
     await this.assertProcesso(escritorioId, id);
-    const motivo = dto.motivo.trim();
-    if (!motivo) {
+    const motivoTexto =
+      dto.motivo?.trim() ||
+      (dto.motivoCodigo ? dto.motivoCodigo.replace(/_/g, ' ') : '');
+    if (!motivoTexto && !dto.motivoCodigo) {
       throw new BadRequestException('Informe o motivo do sobrestamento.');
     }
+    const motivo = dto.observacoes?.trim()
+      ? `${motivoTexto}\n${dto.observacoes.trim()}`
+      : motivoTexto;
 
     const abertas = await this.drizzle.db
       .select()
@@ -86,12 +93,22 @@ export class ProcessosWorkflowService {
           statusProcesso: 'SOBRESTADO',
           sobrestamentoMotivo: motivo,
           sobrestadoDesde: dto.sobrestadoDesde.slice(0, 10),
+          sobrestamentoMotivoCodigo: dto.motivoCodigo ?? null,
+          sobrestamentoTemaAfetado: dto.temaAfetado?.trim() || null,
+          sobrestamentoPrevisaoRetorno: dto.previsaoRetorno ?? null,
           updatedAt: new Date(),
         })
         .where(
           and(eq(processo.escritorioId, escritorioId), eq(processo.id, id)),
         );
     });
+
+    if (dto.motivoCodigo) {
+      await this.encadeamentos.dispatch(escritorioId, 'revisar_sobrestamento', {
+        processoId: id,
+        observacao: motivo,
+      });
+    }
 
     return this.assertProcesso(escritorioId, id);
   }

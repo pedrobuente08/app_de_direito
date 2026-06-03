@@ -22,6 +22,8 @@ import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { ProcessosHipossuficienciaService } from '../processos/processos-hipossuficiencia.service';
 import { PendenciasService } from '../pendencias/pendencias.service';
 import { ProcessosService } from '../processos/processos.service';
+import { ParceirosService } from '../parceiros/parceiros.service';
+import { PjeService } from '../pje/pje.service';
 import type { CadastrarOabDto } from './dto/cadastrar-oab.dto';
 import type { ComunicacaoWebhookDto } from './dto/comunicacao-webhook.dto';
 import type { ResolverComunicacaoDto } from './dto/resolver-comunicacao.dto';
@@ -231,6 +233,8 @@ export class ComunicacoesService {
     private readonly audit: AuditService,
     private readonly encadeamentos: EncadeamentosQueueService,
     private readonly hipossuf: ProcessosHipossuficienciaService,
+    private readonly pje: PjeService,
+    private readonly parceiros: ParceirosService,
   ) {}
 
   private async validarTokenEscritorio(
@@ -402,6 +406,15 @@ export class ComunicacoesService {
       }
     } catch {
       /* não bloqueia o fluxo principal */
+    }
+
+    const tipoNorm = tipoBruto ? normTipo(tipoBruto) : '';
+    if (tipoNorm && comRow.processoId) {
+      await this.pje.aplicarTipoComunicaPje(
+        escritorioId,
+        comRow.processoId,
+        tipoNorm,
+      );
     }
   }
 
@@ -624,6 +637,17 @@ export class ComunicacoesService {
       acao: 'AUTO_CRIADO_DJEN',
       diff: { origemCriacao, numero },
     });
+
+    const textoObs = item.texto?.slice(0, 500) ?? null;
+    const parceiroId = await this.parceiros.resolverParceiroParaProcesso(
+      escritorioId,
+      null,
+      textoObs,
+    );
+    if (parceiroId) {
+      await this.parceiros.aplicarParceiroNoProcesso(escritorioId, id, parceiroId);
+    }
+
     return id;
   }
 

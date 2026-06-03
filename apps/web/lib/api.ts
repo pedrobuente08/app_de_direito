@@ -338,6 +338,290 @@ export async function getRecursosResumo(): Promise<
   return apiFetch<import('@/lib/types').RecursosResumo>('/recursos/resumo')
 }
 
+export type InterporEmbargosPayload = {
+  sentencaId: string
+  processoId: string
+  origem: 'NOS' | 'REU' | 'AMBOS'
+  dataInterposicao: string
+  prazoJulgamento?: string
+  observacoes?: string
+}
+
+export async function interporEmbargosDeclaracao(
+  payload: InterporEmbargosPayload,
+): Promise<unknown> {
+  return apiFetch('/embargos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function registrarResultadoEmbargos(
+  embargosId: string,
+  payload: {
+    resultado: 'ACOLHIDOS' | 'PARCIALMENTE_ACOLHIDOS' | 'REJEITADOS'
+    dataJulgamento: string
+    observacoes?: string
+  },
+): Promise<unknown> {
+  return apiFetch(`/embargos/${embargosId}/resultado`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function getAddonsStatus(): Promise<{
+  addons: import('@/lib/types').EscritorioAddonsConfig
+  labels: Record<string, string>
+}> {
+  return apiFetch('/addons/status')
+}
+
+export async function classificarDecisaoInterlocutoria(payload: {
+  processoId: string
+  tipo: import('@/lib/types').TipoInterlocutoria
+  conteudo?: string
+  prazoCumprimento?: string
+  observacoes?: string
+  comunicacaoId?: string
+}): Promise<unknown> {
+  return apiFetch('/decisoes-interlocutorias/classificar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+// ─── PRO Fase 3 — Workflows raros ─────────────────────────────────────────────
+
+export async function getTutelas(processoId: string): Promise<
+  import('@/lib/types').TutelaAntecipada[]
+> {
+  return apiFetch(`/processos/${processoId}/tutelas`)
+}
+
+export async function criarTutela(
+  processoId: string,
+  payload: {
+    tipo: 'TUTELA_ANTECIPADA' | 'TUTELA_CAUTELAR' | 'LIMINAR'
+    pedidoEm: string
+    descricao?: string
+    prazoCumprimento?: string
+  },
+): Promise<import('@/lib/types').TutelaAntecipada> {
+  return apiFetch(`/processos/${processoId}/tutelas`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function atualizarTutela(
+  tutelaId: string,
+  payload: Partial<{
+    resultado: string
+    dataResultado: string
+    cumprida: boolean
+    cumpridaEm: string
+    observacoes: string
+    prazoCumprimento: string
+  }>,
+): Promise<import('@/lib/types').TutelaAntecipada> {
+  return apiFetch(`/tutelas/${tutelaId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function getSucessores(
+  processoId: string,
+): Promise<import('@/lib/types').ProcessoSucessor[]> {
+  return apiFetch(`/processos/${processoId}/sucessores`)
+}
+
+export async function registrarAutorFalecido(
+  processoId: string,
+  payload: {
+    dataObito: string
+    sucessores: Array<{ nome: string; cpf?: string; parentesco?: string }>
+    observacoes?: string
+  },
+): Promise<import('@/lib/types').Processo> {
+  return apiFetch(`/processos/${processoId}/autor-falecido`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function habilitarSucessor(
+  sucessorId: string,
+  payload?: { habilitadoEm?: string },
+): Promise<import('@/lib/types').ProcessoSucessor> {
+  return apiFetch(`/sucessores/${sucessorId}/habilitar`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload ?? {}),
+  })
+}
+
+export async function criarSucessor(
+  processoId: string,
+  payload: { nome: string; cpf?: string; parentesco?: string; observacoes?: string },
+): Promise<import('@/lib/types').ProcessoSucessor> {
+  return apiFetch(`/processos/${processoId}/sucessores`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+// ─── PRO Fase 3 — Captação (parceiros) ───────────────────────────────────────
+
+export async function getParceiros(): Promise<import('@/lib/types').Parceiro[]> {
+  return apiFetch('/parceiros')
+}
+
+export async function criarParceiro(payload: {
+  nome: string
+  tipo: 'PF' | 'ESCRITORIO'
+  cpfCnpj?: string
+  comissaoPercentual?: string
+  corHex?: string
+}): Promise<import('@/lib/types').Parceiro> {
+  return apiFetch('/parceiros', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function atualizarParceiro(
+  id: string,
+  payload: Partial<{
+    nome: string
+    tipo: 'PF' | 'ESCRITORIO'
+    cpfCnpj: string | null
+    comissaoPercentual: string | null
+    corHex: string | null
+    ativo: boolean
+  }>,
+): Promise<import('@/lib/types').Parceiro> {
+  return apiFetch(`/parceiros/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deletarParceiro(id: string): Promise<void> {
+  await apiFetch<void>(`/parceiros/${id}`, { method: 'DELETE' })
+}
+
+export async function getParceiroMaterias(): Promise<
+  import('@/lib/types').ParceiroMateria[]
+> {
+  return apiFetch('/parceiros/materias')
+}
+
+export async function criarParceiroMateria(payload: {
+  parceiroId: string
+  materia: string
+}): Promise<import('@/lib/types').ParceiroMateria> {
+  return apiFetch('/parceiros/materias', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deletarParceiroMateria(id: string): Promise<void> {
+  await apiFetch<void>(`/parceiros/materias/${id}`, { method: 'DELETE' })
+}
+
+// ─── PRO Fase 3 — Produção probatória (PJE) ──────────────────────────────────
+
+export async function getProducaoProbatoria(
+  processoId: string,
+): Promise<import('@/lib/types').ProducaoProbatoria[]> {
+  return apiFetch(`/processos/${processoId}/producao-probatoria`)
+}
+
+export async function criarProducaoProbatoria(
+  processoId: string,
+  payload: {
+    tipo: string
+    status?: string
+    dataDesignacao?: string
+    peritoNome?: string
+    observacoes?: string
+  },
+): Promise<import('@/lib/types').ProducaoProbatoria> {
+  return apiFetch(`/processos/${processoId}/producao-probatoria`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function atualizarProducaoProbatoria(
+  id: string,
+  payload: Partial<{
+    status: string
+    dataDesignacao: string
+    dataConclusao: string
+    peritoNome: string
+    observacoes: string
+  }>,
+): Promise<import('@/lib/types').ProducaoProbatoria> {
+  return apiFetch(`/producao-probatoria/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+// ─── PRO Fase 3 — Execução avançada ──────────────────────────────────────────
+
+export async function atualizarAstreintes(
+  processoId: string,
+  payload: Partial<{
+    astreintesAtiva: boolean
+    astreintesValorDiario: string | null
+    astreintesDataInicio: string | null
+    astreintesTeto: string | null
+    astreintesSuspensaEm: string | null
+    astreintesPagaEm: string | null
+  }>,
+): Promise<import('@/lib/types').Procedente> {
+  return apiFetch(`/procedentes/${processoId}/astreintes`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function atualizarPenhoraExecucao(
+  processoId: string,
+  payload: Partial<{
+    penhoraSistema: string | null
+    sisbajudNumeroOrdem: string | null
+    sisbajudDataBloqueio: string | null
+    sisbajudValorBloqueado: string | null
+    bacenjudDataOficio: string | null
+    bacenjudBancoAlvo: string | null
+  }>,
+): Promise<import('@/lib/types').Procedente> {
+  return apiFetch(`/procedentes/${processoId}/penhora`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function getImprocedentes(): Promise<
   import('@/lib/types').ImprocedenteRow[]
 > {

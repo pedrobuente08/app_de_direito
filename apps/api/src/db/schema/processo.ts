@@ -13,6 +13,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 import { escritorio } from './escritorio';
+import { parceiro } from './parceiro';
 import { reu } from './reu';
 
 /** JSON em `processo.avaliacao_recurso` (estado AVALIAR). */
@@ -83,8 +84,20 @@ export const processo = pgTable(
     honorarioSucumbencialPagoEm: date('honorario_sucumbencial_pago_em'),
     sobrestamentoMotivo: text('sobrestamento_motivo'),
     sobrestadoDesde: date('sobrestado_desde'),
+    sobrestamentoMotivoCodigo: varchar('sobrestamento_motivo_codigo', {
+      length: 40,
+    }),
+    sobrestamentoTemaAfetado: varchar('sobrestamento_tema_afetado', {
+      length: 100,
+    }),
+    sobrestamentoPrevisaoRetorno: date('sobrestamento_previsao_retorno'),
+    sobrestamentoRevisadoEm: date('sobrestamento_revisado_em'),
     recursoAdversario: boolean('recurso_adversario').default(false),
     parceiroEscritorio: varchar('parceiro_escritorio', { length: 200 }),
+    parceiroId: uuid('parceiro_id').references(() => parceiro.id),
+    comissaoCalculada: numeric('comissao_calculada', { precision: 12, scale: 2 }),
+    comissaoPaga: boolean('comissao_paga').notNull().default(false),
+    comissaoPagaEm: date('comissao_paga_em'),
     situacaoFinal: varchar('situacao_final', { length: 50 }),
     telefone: varchar('telefone', { length: 20 }),
     statusAudiencia: varchar('status_audiencia', { length: 30 }),

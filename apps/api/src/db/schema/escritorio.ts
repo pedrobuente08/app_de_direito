@@ -89,6 +89,18 @@ export type EscritorioConfig = {
   captura_djen_janela_dias?: number;
   /** Fuso horário do escritório (IANA, ex: "America/Manaus"). Default: "America/Sao_Paulo". */
   timezone?: string;
+  /** Add-ons PRO contratados por escritório (Fase 3). */
+  addons?: EscritorioAddonsConfig;
+  /** Salário mínimo vigente para cálculo RPV/Precatório (add-on PJE). */
+  salario_minimo_atual?: number;
+};
+
+export type EscritorioAddonsConfig = {
+  recursos_avancados?: boolean;
+  workflows_raros?: boolean;
+  captacao?: boolean;
+  execucao_avancada?: boolean;
+  justica_comum_pje?: boolean;
 };
 
 export const escritorio = pgTable('escritorio', {
