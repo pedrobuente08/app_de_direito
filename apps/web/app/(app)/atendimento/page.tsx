@@ -16,6 +16,8 @@ import { ToastContainer, useToast } from '@/lib/toast'
 const TIPO_LABELS: Record<string, string> = {
   SOLICITAR_DOC_GRATUIDADE:    'Solicitar doc. gratuidade',
   SOLICITAR_DOC_CONFORME_VARA: 'Solicitar doc. conforme vara',
+  SOLICITAR_NOVA_PROCURACAO: 'Solicitar nova procuração',
+  CONTATO_URGENTE_CLIENTE_MA_FE: 'Contato urgente — má-fé',
   JUSTIFICAR_AUSENCIA_CLIENTE: 'Justificar ausência do cliente',
 }
 

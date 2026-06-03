@@ -92,4 +92,34 @@ export const ENCADEAMENTO_PENDENCIAS: Record<
       fila: 'ADV',
     },
   ],
+  vara_exigente_documento: [
+    {
+      tipo: 'SOLICITAR_DOC_CONFORME_VARA',
+      dias: 5,
+      responsavel: null,
+      fila: 'ATENDIMENTO',
+    },
+  ],
+  litigancia_ma_fe_detectada: [
+    {
+      tipo: 'MONITORAR_PROCESSO_MA_FE',
+      dias: 15,
+      responsavel: null,
+      fila: 'ADV',
+    },
+    {
+      tipo: 'CONTATO_URGENTE_CLIENTE_MA_FE',
+      dias: 3,
+      responsavel: null,
+      fila: 'ATENDIMENTO',
+    },
+  ],
+  acordo_procuracao_solicitada: [
+    {
+      tipo: 'SOLICITAR_NOVA_PROCURACAO',
+      dias: 5,
+      responsavel: null,
+      fila: 'ATENDIMENTO',
+    },
+  ],
 };

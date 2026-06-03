@@ -608,6 +608,12 @@ export class ProcessosService {
     if (dto.requerConferencia !== undefined) {
       patch.requerConferencia = dto.requerConferencia;
     }
+    if (dto.alertaCrVara !== undefined) {
+      patch.alertaCrVara = dto.alertaCrVara;
+    }
+    if (dto.litiganciaMaFe !== undefined) {
+      patch.litiganciaMaFe = dto.litiganciaMaFe;
+    }
     if (dto.observacoes !== undefined) {
       patch.observacoes =
         dto.observacoes === null ? null : nullableTrim(dto.observacoes);
@@ -686,6 +692,17 @@ export class ProcessosService {
         horaAudiencia: atualizado.horaAudiencia,
         tipoAudiencia: atualizado.tipoAudiencia,
       });
+    }
+
+    if (
+      dto.litiganciaMaFe === true &&
+      !antes.litiganciaMaFe
+    ) {
+      await this.encadeamentos.dispatch(
+        escritorioId,
+        'litigancia_ma_fe_detectada',
+        { processoId: id },
+      );
     }
 
     const transitoAntes = antes.dataTransito;

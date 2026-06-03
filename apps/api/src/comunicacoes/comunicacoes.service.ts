@@ -10,11 +10,16 @@ import type { EscritorioConfig } from '../db/schema/escritorio';
 import { escritorio } from '../db/schema/escritorio';
 import { comunicacao } from '../db/schema/comunicacao';
 import { oabEscuta } from '../db/schema/oab-escuta';
+import { pendencia } from '../db/schema/pendencia';
 import { processo } from '../db/schema/processo';
+import { EncadeamentosQueueService } from '../encadeamentos/encadeamentos-queue.service';
+import { AuditService } from '../audit/audit.service';
 import { DrizzleService } from '../db/drizzle.service';
+import type { VaraConfig } from '../db/schema/escritorio';
 import { AudienciasService } from '../audiencias/audiencias.service';
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
+import { ProcessosHipossuficienciaService } from '../processos/processos-hipossuficiencia.service';
 import { PendenciasService } from '../pendencias/pendencias.service';
 import { ProcessosService } from '../processos/processos.service';
 import type { CadastrarOabDto } from './dto/cadastrar-oab.dto';
@@ -35,6 +40,53 @@ function normNumero(raw: string | null | undefined): string | null {
   }
   return raw.replace(/\D/g, '') || null;
 }
+
+const MIN_DIGITOS_NUMERO_PROCESSO = 15;
+
+function numeroProcessoValido(digits: string | null): boolean {
+  return Boolean(digits && digits.length >= MIN_DIGITOS_NUMERO_PROCESSO);
+}
+
+function formatNumeroCnj(digits: string): string {
+  if (digits.length !== 20) return digits;
+  return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9, 13)}.${digits.slice(13, 14)}.${digits.slice(14, 16)}.${digits.slice(16, 20)}`;
+}
+
+function numeroExibicao(
+  bruto: string | null,
+  digits: string,
+): string {
+  const masc = bruto?.trim();
+  if (masc && masc.replace(/\D/g, '').length >= MIN_DIGITOS_NUMERO_PROCESSO) {
+    return masc.slice(0, 30);
+  }
+  return formatNumeroCnj(digits).slice(0, 30);
+}
+
+function inferirSistema(item: ComunicaApiItem): string {
+  const tribunal = (item.siglaTribunal ?? '').toUpperCase();
+  const org = (item.nomeOrgao ?? '').toUpperCase();
+  if (tribunal.includes('PJE') || org.includes('PJE')) return 'PJE_TJBA';
+  return 'PROJUDI';
+}
+
+function extrairVara(item: ComunicaApiItem): string | null {
+  const org = item.nomeOrgao?.trim();
+  return org ? org.slice(0, 50) : null;
+}
+
+export type OrigemCriacaoProcesso = 'DJEN_AUTO' | 'ONBOARDING';
+
+export type IngestCapturaOpts = {
+  origemCriacao?: OrigemCriacaoProcesso;
+};
+
+export type IngestCapturaResult = {
+  nova: boolean;
+  orfa: boolean;
+  comunicacaoId?: string;
+  processoCriado?: boolean;
+};
 
 type ComunicaRegra = {
   criar_pendencia?: boolean;
@@ -176,6 +228,9 @@ export class ComunicacoesService {
     private readonly processos: ProcessosService,
     private readonly faseDerivacao: FaseDerivacaoService,
     private readonly notificacoes: NotificacoesService,
+    private readonly audit: AuditService,
+    private readonly encadeamentos: EncadeamentosQueueService,
+    private readonly hipossuf: ProcessosHipossuficienciaService,
   ) {}
 
   private async validarTokenEscritorio(
@@ -395,6 +450,183 @@ export class ComunicacoesService {
     };
   }
 
+  private async obterConfigEscritorio(
+    escritorioId: string,
+  ): Promise<EscritorioConfig> {
+    const [row] = await this.drizzle.db
+      .select({ config: escritorio.config })
+      .from(escritorio)
+      .where(eq(escritorio.id, escritorioId))
+      .limit(1);
+    return (row?.config ?? {}) as EscritorioConfig;
+  }
+
+  private async countComunicacoesProcesso(processoId: string): Promise<number> {
+    const [row] = await this.drizzle.db
+      .select({ c: count() })
+      .from(comunicacao)
+      .where(eq(comunicacao.processoId, processoId));
+    return row?.c ?? 0;
+  }
+
+  private async avaliarAlertaCrVara(
+    escritorioId: string,
+    processoId: string,
+  ): Promise<void> {
+    const [proc] = await this.drizzle.db
+      .select({
+        vara: processo.vara,
+        comprovanteResidenciaTipo: processo.comprovanteResidenciaTipo,
+        alertaCrVara: processo.alertaCrVara,
+      })
+      .from(processo)
+      .where(
+        and(eq(processo.id, processoId), eq(processo.escritorioId, escritorioId)),
+      )
+      .limit(1);
+
+    if (!proc || proc.comprovanteResidenciaTipo?.trim() || proc.alertaCrVara) {
+      return;
+    }
+
+    const cfg = await this.obterConfigEscritorio(escritorioId);
+    const varaKey = (proc.vara ?? '').trim().toUpperCase();
+    if (!varaKey) return;
+
+    const varasCfg = cfg.varas_config as Record<string, VaraConfig> | undefined;
+    const varaConfig = varasCfg?.[varaKey];
+    if (!varaConfig?.comprovantes_aceitos?.length) return;
+
+    const total = await this.countComunicacoesProcesso(processoId);
+    if (total > 1) return;
+
+    await this.drizzle.db
+      .update(processo)
+      .set({ alertaCrVara: true, updatedAt: new Date() })
+      .where(eq(processo.id, processoId));
+  }
+
+  private async temPendenciaAberta(
+    escritorioId: string,
+    processoId: string,
+    tipo: string,
+  ): Promise<boolean> {
+    const [row] = await this.drizzle.db
+      .select({ id: pendencia.id })
+      .from(pendencia)
+      .where(
+        and(
+          eq(pendencia.escritorioId, escritorioId),
+          eq(pendencia.processoId, processoId),
+          eq(pendencia.tipo, tipo),
+          eq(pendencia.status, 'ABERTA'),
+        ),
+      )
+      .limit(1);
+    return Boolean(row);
+  }
+
+  /** Primeira comunicação + vara exigente → pendência ATENDIMENTO (Fase 2 [4]). */
+  private async avaliarVaraExigenteDocumento(
+    escritorioId: string,
+    processoId: string,
+  ): Promise<void> {
+    const total = await this.countComunicacoesProcesso(processoId);
+    if (total > 1) return;
+
+    const [proc] = await this.drizzle.db
+      .select({
+        varaExigeDocFrequente: processo.varaExigeDocFrequente,
+        vara: processo.vara,
+      })
+      .from(processo)
+      .where(
+        and(eq(processo.id, processoId), eq(processo.escritorioId, escritorioId)),
+      )
+      .limit(1);
+
+    if (!proc?.varaExigeDocFrequente) return;
+
+    if (
+      await this.temPendenciaAberta(
+        escritorioId,
+        processoId,
+        'SOLICITAR_DOC_CONFORME_VARA',
+      )
+    ) {
+      return;
+    }
+
+    const cfg = await this.obterConfigEscritorio(escritorioId);
+    const varaKey = (proc.vara ?? '').trim().toUpperCase();
+    const varasCfg = cfg.varas_config as Record<string, VaraConfig> | undefined;
+    const aceitos = varaKey ? varasCfg?.[varaKey]?.comprovantes_aceitos : undefined;
+    const docHint = aceitos?.length ? aceitos.join(', ') : 'conforme vara';
+    const observacao = proc.vara
+      ? `Vara ${proc.vara}: exige documentação (${docHint})`
+      : `Vara exige documentação (${docHint})`;
+
+    await this.encadeamentos.dispatch(escritorioId, 'vara_exigente_documento', {
+      processoId,
+      observacao,
+    });
+  }
+
+  private async posComunicacaoVinculada(
+    escritorioId: string,
+    processoId: string,
+  ): Promise<void> {
+    const total = await this.countComunicacoesProcesso(processoId);
+    if (total <= 1) {
+      const [proc] = await this.drizzle.db
+        .select({ vara: processo.vara })
+        .from(processo)
+        .where(eq(processo.id, processoId))
+        .limit(1);
+      await this.hipossuf.aplicarContatoProativoVara(
+        escritorioId,
+        processoId,
+        proc?.vara,
+      );
+    }
+    await this.avaliarAlertaCrVara(escritorioId, processoId);
+    await this.avaliarVaraExigenteDocumento(escritorioId, processoId);
+  }
+
+  private async criarProcessoDeComunica(
+    escritorioId: string,
+    numeroProcessoBruto: string | null,
+    digits: string,
+    item: ComunicaApiItem,
+    origemCriacao: OrigemCriacaoProcesso,
+  ): Promise<string> {
+    const numero = numeroExibicao(numeroProcessoBruto, digits);
+    const [row] = await this.drizzle.db
+      .insert(processo)
+      .values({
+        escritorioId,
+        numero,
+        clienteNome: item.nomeParteAutora?.trim()?.slice(0, 300) || null,
+        vara: extrairVara(item),
+        sistema: inferirSistema(item),
+        statusProcesso: 'ATIVO',
+        faseAtual: 'AGUARDANDO_DISTRIBUICAO',
+        requerConferencia: true,
+        origemCriacao,
+      })
+      .returning({ id: processo.id });
+
+    const id = row!.id;
+    await this.audit.registrar({
+      escritorioId,
+      entidade: 'processo',
+      entidadeId: id,
+      acao: 'AUTO_CRIADO_DJEN',
+      diff: { origemCriacao, numero },
+    });
+    return id;
+  }
+
   private async resolverProcessoId(
     escritorioId: string,
     numeroProcessoBruto: string | null | undefined,
@@ -432,7 +664,8 @@ export class ComunicacoesService {
     escritorioId: string,
     oab: string,
     item: ComunicaApiItem,
-  ): Promise<{ nova: boolean; orfa: boolean; comunicacaoId?: string }> {
+    opts?: IngestCapturaOpts,
+  ): Promise<IngestCapturaResult> {
     if (!item.hash?.trim()) {
       return { nova: false, orfa: false };
     }
@@ -456,7 +689,23 @@ export class ComunicacoesService {
       item.numeroprocessocommascara?.trim() ||
       item.numero_processo?.trim() ||
       null;
-    const processoId = await this.resolverProcessoId(escritorioId, numeroProcessoBruto);
+    const digits = normNumero(numeroProcessoBruto ?? undefined);
+
+    let processoId = await this.resolverProcessoId(escritorioId, numeroProcessoBruto);
+    let processoCriado = false;
+
+    if (!processoId && numeroProcessoValido(digits)) {
+      const origem = opts?.origemCriacao ?? 'DJEN_AUTO';
+      processoId = await this.criarProcessoDeComunica(
+        escritorioId,
+        numeroProcessoBruto,
+        digits!,
+        item,
+        origem,
+      );
+      processoCriado = true;
+    }
+
     const tipo = item.tipoComunicacao?.trim() || item.tipoDocumento?.trim() || null;
 
     const [row] = await this.drizzle.db
@@ -478,8 +727,16 @@ export class ComunicacoesService {
       .returning();
 
     if (row) {
+      if (row.processoId) {
+        await this.posComunicacaoVinculada(escritorioId, row.processoId);
+      }
       await this.aplicarRegras(escritorioId, row, tipo);
-      return { nova: true, comunicacaoId: row.id, orfa: row.status === 'ORFA' };
+      return {
+        nova: true,
+        comunicacaoId: row.id,
+        orfa: row.status === 'ORFA',
+        processoCriado,
+      };
     }
 
     return { nova: false, orfa: false };

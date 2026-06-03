@@ -10,6 +10,7 @@ export type ComunicaApiItem = {
   texto?: string;
   tipoDocumento?: string;
   nomeOrgao?: string;
+  nomeParteAutora?: string;
   ativo?: boolean;
 };
 

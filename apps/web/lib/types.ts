@@ -44,6 +44,8 @@ export type Processo = {
   observacoes?: string | null
   observacaoGeral?: string | null
   requerConferencia: boolean
+  origemCriacao?: string | null
+  alertaCrVara?: boolean
   comprovanteResidenciaTipo?: string | null
   createdAt: string
   updatedAt?: string
@@ -74,6 +76,8 @@ export type PatchProcessoPayload = Partial<{
   ultimaMovimentacaoDt: string | null
   ultimaMovimentacaoTipo: string | null
   requerConferencia: boolean
+  alertaCrVara?: boolean
+  litiganciaMaFe?: boolean
   observacoes: string | null
   observacaoGeral: string | null
   tipoCr: string | null
@@ -105,6 +109,7 @@ export type CreateSentencaPayload = {
   favoravelPara: string
   turma?: string | null
   observacoes?: string | null
+  acordoProcuracaoSolicitada?: boolean
 }
 
 export type ProcessoTimelineEvento = {

@@ -133,6 +133,14 @@ export class UpdateProcessoDto {
   requerConferencia?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  alertaCrVara?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  litiganciaMaFe?: boolean;
+
+  @IsOptional()
   @IsString()
   observacoes?: string | null;
 

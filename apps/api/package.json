@@ -12,7 +12,8 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/db/seeds/seed_inicial.ts",
-    "db:migrate-login-aliases": "tsx src/db/scripts/migrar_login_aliases.ts"
+    "db:migrate-login-aliases": "tsx src/db/scripts/migrar_login_aliases.ts",
+    "test:fase1": "tsx src/db/scripts/test-fase1-lite.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",

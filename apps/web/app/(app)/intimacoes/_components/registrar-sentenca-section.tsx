@@ -38,6 +38,10 @@ function normResultado(r: string): string {
   return r.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
 }
 
+function isAcordo(resultado: string): boolean {
+  return normResultado(resultado) === 'ACORDO'
+}
+
 function isPrimeiroGrau(grau: string): boolean {
   const g = grau.trim().toUpperCase()
   return !g.includes('SEGUNDO') && g !== 'STJ' && g !== 'TST'
@@ -62,6 +66,7 @@ export function RegistrarSentencaSection({
   const [valor, setValor] = useState('')
   const [resultado, setResultado] = useState('')
   const [favoravelPara, setFavoravelPara] = useState('AUTOR')
+  const [acordoProcuracao, setAcordoProcuracao] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
   const resultadoOpts = useMemo(
@@ -88,11 +93,14 @@ export function RegistrarSentencaSection({
         resultado: resultado.trim(),
         favoravelPara: favoravelPara.trim().toUpperCase(),
         valor: valor.trim() ? valor.trim() : null,
+        acordoProcuracaoSolicitada:
+          isAcordo(resultado) && acordoProcuracao ? true : undefined,
       })
       toast.success('Sentença registrada.')
       setOpen(false)
       setValor('')
       setResultado('')
+      setAcordoProcuracao(false)
       onCreated()
       const res = normResultado(created.resultado)
       if (!isPrimeiroGrau(created.grau)) return
@@ -220,6 +228,16 @@ export function RegistrarSentencaSection({
                     className="rounded border border-[var(--color-border-default)] px-2 py-1 text-sm"
                   />
                 </label>
+                {isAcordo(resultado) ? (
+                  <label className="col-span-2 flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={acordoProcuracao}
+                      onChange={(e) => setAcordoProcuracao(e.target.checked)}
+                    />
+                    Juiz solicitou nova procuração para homologação
+                  </label>
+                ) : null}
               </div>
               <div className="flex gap-2">
                 <button

@@ -269,6 +269,11 @@ export default function ProcedentesPage() {
                           Obrigação de fazer
                         </span>
                       ) : null}
+                      {p.serasajudAcionado && !p.obrigacaoFazerCumprida ? (
+                        <span className="mt-1 inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900">
+                          Aguardando SerasaJud
+                        </span>
+                      ) : null}
                       {p.situacao && <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">{p.situacao}</p>}
                     </td>
                     <td className="px-4 py-2.5 text-xs text-[var(--color-text-secondary)]">{p.responsavel ?? '—'}</td>

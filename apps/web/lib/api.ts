@@ -1137,6 +1137,34 @@ export async function cadastrarOab(oab: string): Promise<OabEscuta> {
   })
 }
 
+export type OnboardingStatus = {
+  status: 'IDLE' | 'RUNNING' | 'DONE' | 'ERROR'
+  progresso: { processado: number; total: number }
+  relatorio: {
+    processosNovos: number
+    comunicacoesNovas: number
+    jaExistiam: number
+    erros: number
+  } | null
+  erroMsg?: string | null
+}
+
+export async function iniciarOnboardingDjen(payload: {
+  oab: string
+  ufOab: string
+  diasJanela?: number
+}): Promise<{ jobId: string; status: OnboardingStatus }> {
+  return apiFetch('/onboarding/djen', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function getOnboardingStatus(): Promise<OnboardingStatus> {
+  return apiFetch<OnboardingStatus>('/onboarding/status')
+}
+
 export async function resolverComunicacao(
   id: string,
   payload: import('@/lib/types').ResolverComunicacaoPayload,

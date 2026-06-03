@@ -3,11 +3,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, count, eq, isNull, ne, sql } from 'drizzle-orm';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
 import { DrizzleService } from '../db/drizzle.service';
+import { CalcularPrazoProcessualService } from '../encadeamentos/calcular-prazo-processual.service';
 import { EncadeamentosQueueService } from '../encadeamentos/encadeamentos-queue.service';
 import { FaseDerivacaoService } from '../fase-derivacao/fase-derivacao.service';
+import { pendencia } from '../db/schema/pendencia';
 import { processo } from '../db/schema/processo';
 import {
   processoProcedente,
@@ -67,7 +69,69 @@ export class ProcedentesService {
     private readonly drizzle: DrizzleService,
     private readonly faseDerivacao: FaseDerivacaoService,
     private readonly encadeamentos: EncadeamentosQueueService,
+    private readonly prazos: CalcularPrazoProcessualService,
   ) {}
+
+  private hojeYmd(): string {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  /** Fase 2 [6] — captação orgânica após cumprimento da obrigação de fazer. */
+  private async garantirPendenciaVerificarNegativacoes(
+    escritorioId: string,
+    processoId: string,
+    proc: typeof processo.$inferSelect,
+    serasajud: boolean,
+  ): Promise<void> {
+    let deveVerificar =
+      Boolean(proc.comprovanteResidenciaTipo?.trim()) || serasajud;
+
+    if (!deveVerificar && proc.clienteCpf?.trim()) {
+      const [row] = await this.drizzle.db
+        .select({ c: count() })
+        .from(processo)
+        .where(
+          and(
+            eq(processo.escritorioId, escritorioId),
+            eq(processo.clienteCpf, proc.clienteCpf.trim()),
+            ne(processo.id, processoId),
+          ),
+        );
+      deveVerificar = (row?.c ?? 0) > 0;
+    }
+
+    if (!deveVerificar) return;
+
+    const [existente] = await this.drizzle.db
+      .select({ id: pendencia.id })
+      .from(pendencia)
+      .where(
+        and(
+          eq(pendencia.escritorioId, escritorioId),
+          eq(pendencia.processoId, processoId),
+          eq(pendencia.tipo, 'VERIFICAR_NOVAS_NEGATIVACOES'),
+          eq(pendencia.status, 'ABERTA'),
+        ),
+      )
+      .limit(1);
+    if (existente) return;
+
+    const hoje = this.hojeYmd();
+    const dataLimite = await this.prazos.calcular(escritorioId, 5, hoje);
+    await this.drizzle.db.insert(pendencia).values({
+      escritorioId,
+      processoId,
+      tipo: 'VERIFICAR_NOVAS_NEGATIVACOES',
+      dataAbertura: hoje,
+      dataLimite,
+      responsavel: 'ADV',
+      status: 'ABERTA',
+      observacao:
+        'Negativação cumprida — verificar outras restrições ativas do cliente',
+      origem: 'AUTOMATICO',
+      fila: 'ADV',
+    });
+  }
 
   private isoDate(d: unknown): string | null {
     if (d == null) {
@@ -416,6 +480,9 @@ export class ProcedentesService {
       throw new NotFoundException('Linha de procedente não encontrada.');
     }
 
+    const cumpridaAntes = row.procedente.obrigacaoFazerCumprida;
+    const serasajudAntes = row.procedente.serasajudAcionado;
+
     const patch: Partial<typeof processoProcedente.$inferInsert> = {
       temObrigacaoFazer: dto.temObrigacaoFazer ?? true,
       obrigacaoFazerDescricao: dto.descricao.trim(),
@@ -435,6 +502,19 @@ export class ProcedentesService {
       .update(processoProcedente)
       .set(patch)
       .where(eq(processoProcedente.processoId, processoId));
+
+    const serasajud =
+      dto.serasajudAcionado !== undefined
+        ? dto.serasajudAcionado
+        : serasajudAntes;
+    if (dto.cumprida === true && !cumpridaAntes) {
+      await this.garantirPendenciaVerificarNegativacoes(
+        escritorioId,
+        processoId,
+        row.processo,
+        serasajud,
+      );
+    }
 
     return this.obter(escritorioId, processoId);
   }

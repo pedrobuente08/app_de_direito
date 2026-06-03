@@ -46,6 +46,24 @@ export function ProcessosGrid({
                 Conferir
               </span>
             ) : null}
+            {row.original.requerConferencia &&
+            (row.original.origemCriacao === 'DJEN_AUTO' ||
+              row.original.origemCriacao === 'ONBOARDING') ? (
+              <span
+                className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] text-blue-900"
+                title="Processo criado automaticamente pelo DJEN. Verifique e complete os dados."
+              >
+                Auto
+              </span>
+            ) : null}
+            {row.original.litiganciaMaFe ? (
+              <span
+                className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-800"
+                title="Processo com litigância de má-fé — monitoramento prioritário. Risco de penhora/bloqueio de conta do cliente."
+              >
+                MÁ-FÉ
+              </span>
+            ) : null}
           </div>
         )
       },
@@ -55,11 +73,24 @@ export function ProcessosGrid({
       header: 'Número',
       size: 168,
       accessorKey: 'numero',
-      cell: ({ row }) => (
-        <span className="block whitespace-nowrap font-mono text-xs text-[var(--color-text-primary)]">
-          {row.original.numero}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const auto =
+          row.original.requerConferencia &&
+          (row.original.origemCriacao === 'DJEN_AUTO' ||
+            row.original.origemCriacao === 'ONBOARDING')
+        return (
+          <span
+            className="block whitespace-nowrap font-mono text-xs text-[var(--color-text-primary)]"
+            title={
+              auto
+                ? 'Processo criado automaticamente pelo DJEN. Verifique e complete os dados.'
+                : undefined
+            }
+          >
+            {row.original.numero}
+          </span>
+        )
+      },
     },
     {
       id: 'clienteNome',
@@ -90,7 +121,19 @@ export function ProcessosGrid({
       header: 'Situação',
       size: 170,
       cell: ({ row }) => (
-        <span className="block truncate text-sm">
+        <span
+          className="flex items-center gap-1 truncate text-sm"
+          title={
+            row.original.alertaCrVara
+              ? 'Esta vara exige tipo específico de comprovante de residência. Verifique no modal.'
+              : undefined
+          }
+        >
+          {row.original.alertaCrVara ? (
+            <span className="shrink-0 text-orange-500" aria-hidden>
+              ⚠
+            </span>
+          ) : null}
           {row.original.qualidadeCaso?.trim() || '—'}
         </span>
       ),
@@ -163,7 +206,11 @@ export function ProcessosGrid({
             <tr
               key={row.id}
               onClick={() => onRowClick(row.original)}
-              className="cursor-pointer hover:bg-[var(--color-bg-hover)]"
+              className={`cursor-pointer hover:bg-[var(--color-bg-hover)] ${
+                row.original.alertaCrVara ? 'border-l-4 border-l-orange-400' : ''
+              } ${
+                row.original.litiganciaMaFe ? 'border-l-4 border-l-red-500' : ''
+              }`}
             >
               {row.getVisibleCells().map((cell) => (
                 <td

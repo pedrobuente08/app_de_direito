@@ -98,6 +98,10 @@ export const processo = pgTable(
     /** Quando true, a derivação automática não sobrescreve faseAtual. */
     faseTravada: boolean('fase_travada').notNull().default(false),
     requerConferencia: boolean('requer_conferencia').default(false).notNull(),
+    /** MANUAL | PDF | DJEN_AUTO | ONBOARDING */
+    origemCriacao: varchar('origem_criacao', { length: 20 }).default('MANUAL'),
+    /** Primeira comunicação em vara com comprovantes_aceitos e sem tipo CR. */
+    alertaCrVara: boolean('alerta_cr_vara').notNull().default(false),
     comprovanteResidenciaTipo: varchar('comprovante_residencia_tipo', { length: 50 }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()

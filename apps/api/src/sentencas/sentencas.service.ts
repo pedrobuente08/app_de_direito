@@ -84,6 +84,16 @@ export class SentencasService {
         processoId: dto.processoId,
         observacao: dto.observacoes?.trim() || null,
       });
+      if (dto.acordoProcuracaoSolicitada) {
+        await this.encadeamentos.dispatch(
+          escritorioId,
+          'acordo_procuracao_solicitada',
+          {
+            processoId: dto.processoId,
+            observacao: 'Juiz solicitou nova procuração para homologação do acordo',
+          },
+        );
+      }
     }
 
     return row;

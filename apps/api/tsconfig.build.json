@@ -1,4 +1,4 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "dist", "**/*.spec.ts", "src/db/seeds"]
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "src/db/seeds", "src/db/scripts/test-*.ts"]
 }

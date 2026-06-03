@@ -1,4 +1,4 @@
-import { IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 export class CreateSentencaDto {
   @IsString()
@@ -46,4 +46,9 @@ export class CreateSentencaDto {
 
   @IsOptional()
   turmaRecursal?: number | null;
+
+  /** Acordo homologado — juiz solicitou nova procuração (Fase 2 [7]). */
+  @IsOptional()
+  @IsBoolean()
+  acordoProcuracaoSolicitada?: boolean;
 }

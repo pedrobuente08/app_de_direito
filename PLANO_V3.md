@@ -628,4 +628,19 @@ Cada job cria notificações em `notificacao` (canal IN_APP) + dispara email (ca
 
 ---
 
+## Evolução Pauta (`novoConectar.md` — plano de produto)
+
+> Checklist V3 acima = revamp operacional CONECTAR. O plano **Pauta** (AI Gateway, captura DJEN, painel inteligente) está em `/novoConectar.md` na raiz do repo.
+
+| Fase Pauta | Status |
+|------------|--------|
+| 0 — Design System Pauta | ✅ |
+| 1 — AI Gateway + Billing | ✅ |
+| 2 — Captura DJEN ativa | ✅ |
+| 3 — Painel + Jurimetria básica | ✅ |
+| 4 — WhatsApp + IA | ⏳ |
+| 5 — Refinamento / ML | ⏳ |
+
+---
+
 *Plano criado em 2026-05-18. Stack: NestJS 11 · Drizzle ORM · Next.js 14 · Postgres 15 · Redis · BullMQ · FastAPI.*

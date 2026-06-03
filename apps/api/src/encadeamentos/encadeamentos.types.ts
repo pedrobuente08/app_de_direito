@@ -12,6 +12,9 @@ export const ENCADEAMENTO_EVENTOS = [
   'juizado_cliente_recorre',
   'decisao_monocratica',
   'decisao_colegiada',
+  'vara_exigente_documento',
+  'litigancia_ma_fe_detectada',
+  'acordo_procuracao_solicitada',
 ] as const;
 
 export type EncadeamentoEvento = (typeof ENCADEAMENTO_EVENTOS)[number];

@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AuditModule } from '../audit/audit.module';
+import { EncadeamentosModule } from '../encadeamentos/encadeamentos.module';
 import { AudienciasModule } from '../audiencias/audiencias.module';
 import { FaseDerivacaoModule } from '../fase-derivacao/fase-derivacao.module';
 import { NotificacoesModule } from '../notificacoes/notificacoes.module';
@@ -10,7 +12,15 @@ import { ComunicacoesController } from './comunicacoes.controller';
 import { ComunicacoesService } from './comunicacoes.service';
 
 @Module({
-  imports: [PendenciasModule, AudienciasModule, ProcessosModule, FaseDerivacaoModule, NotificacoesModule],
+  imports: [
+    AuditModule,
+    EncadeamentosModule,
+    PendenciasModule,
+    AudienciasModule,
+    ProcessosModule,
+    FaseDerivacaoModule,
+    NotificacoesModule,
+  ],
   controllers: [ComunicacoesController],
   providers: [ComunicacoesService, ComunicacoesDigestCronService, ComunicacoesOrfasCronService],
   exports: [ComunicacoesService],

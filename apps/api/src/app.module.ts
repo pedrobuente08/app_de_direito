@@ -16,6 +16,7 @@ import { ClientesModule } from './clientes/clientes.module';
 import { ComarcasModule } from './comarcas/comarcas.module';
 import { DajeModule } from './daje/daje.module';
 import { CapturaModule } from './captura/captura.module';
+import { OnboardingModule } from './onboarding/onboarding.module';
 import { AiGatewayModule } from './ai-gateway/ai-gateway.module';
 import { ComunicacoesModule } from './comunicacoes/comunicacoes.module';
 import { EscritorioConfigApiModule } from './config/config.module';
@@ -91,6 +92,7 @@ const adminImports = process.env.PLATFORM_JWT_SECRET?.trim()
     AudienciasModule,
     ComunicacoesModule,
     CapturaModule,
+    OnboardingModule,
     AiGatewayModule,
     DashboardsModule,
     ImportacaoModule,

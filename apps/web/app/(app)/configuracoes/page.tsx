@@ -7,6 +7,7 @@ import { ToastContainer, useToast } from '@/lib/toast'
 import { ComarcasSection } from './_components/comarcas-section'
 import { RegrasComunicaSection } from './_components/regras-comunica-section'
 import { UsuariosSection } from './_components/usuarios-section'
+import { OnboardingDjenSection } from './_components/onboarding-djen-section'
 import { VarasSection } from './_components/varas-section'
 import type { ComunicaRegra, VaraConfig } from '@/lib/types'
 
@@ -372,7 +373,10 @@ export default function ConfiguracoesPage() {
         )}
 
         {aba === 'varas' && (
-          <VarasSection varas={varasConfig} onChange={setVarasConfig} />
+          <>
+            <VarasSection varas={varasConfig} onChange={setVarasConfig} />
+            <OnboardingDjenSection />
+          </>
         )}
 
         {aba === 'provisao' && (

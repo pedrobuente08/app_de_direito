@@ -25,6 +25,6 @@ const redisUrl = process.env.REDIS_URL?.trim();
     CapturaSchedulerService,
     ...(redisUrl ? [CapturaProcessor] : []),
   ],
-  exports: [CapturaService],
+  exports: [CapturaService, ComunicaApiClient],
 })
 export class CapturaModule {}

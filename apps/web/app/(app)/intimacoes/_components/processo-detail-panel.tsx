@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ProcessoTimeline } from '@/components/drawers/processo-timeline'
 import {
   getProcesso,
@@ -89,6 +89,23 @@ export function ProcessoDetailPanel({
 
   useEffect(() => { setCurrent(processo) }, [processo])
 
+  const alertaCrClearRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!processo.alertaCrVara || readOnly) return
+    if (alertaCrClearRef.current === processo.id) return
+    alertaCrClearRef.current = processo.id
+    setCurrent((c) => ({ ...c, alertaCrVara: false }))
+    void patchProcesso(processo.id, { alertaCrVara: false })
+      .then((updated) => {
+        setCurrent(updated)
+        onUpdated(updated)
+      })
+      .catch(() => {
+        alertaCrClearRef.current = null
+      })
+  }, [processo.id, processo.alertaCrVara, readOnly, onUpdated])
+
   const reloadTimeline = useCallback(async () => {
     setTimelineLoading(true)
     setTimelineError(null)
@@ -118,7 +135,15 @@ export function ProcessoDetailPanel({
   }, [reloadTimeline, reloadSentencas])
 
   const patch = useCallback(async (payload: PatchProcessoPayload) => {
-    const updated = await patchProcesso(current.id, payload)
+    const extra: PatchProcessoPayload = { ...payload }
+    if (
+      current.requerConferencia &&
+      (current.origemCriacao === 'DJEN_AUTO' ||
+        current.origemCriacao === 'ONBOARDING')
+    ) {
+      extra.requerConferencia = false
+    }
+    const updated = await patchProcesso(current.id, extra)
     setCurrent(updated)
     onUpdated(updated)
     if (
@@ -127,7 +152,13 @@ export function ProcessoDetailPanel({
     ) {
       void reloadTimeline()
     }
-  }, [current.id, onUpdated, reloadTimeline])
+  }, [
+    current.id,
+    current.requerConferencia,
+    current.origemCriacao,
+    onUpdated,
+    reloadTimeline,
+  ])
 
   const ro = readOnly === true
   const statusOpts = useMemo(() => {
@@ -384,10 +415,20 @@ export function ProcessoDetailPanel({
               Órgão público (prazo em dobro na Justiça Comum)
             </p>
           ) : null}
-          {current.litiganciaMaFe ? (
+          {ro && current.litiganciaMaFe ? (
             <p className="col-span-2 text-xs text-[var(--urgencia-vencida-text)] sm:col-span-3">
               Litigância de má-fé
             </p>
+          ) : null}
+          {!ro ? (
+            <label className="col-span-2 flex items-center gap-2 text-sm sm:col-span-3">
+              <input
+                type="checkbox"
+                checked={!!current.litiganciaMaFe}
+                onChange={(e) => void patch({ litiganciaMaFe: e.target.checked })}
+              />
+              Litigância de má-fé
+            </label>
           ) : null}
           <Field label="Situação final">
             {ro ? <ReadField value={current.situacaoFinal} /> : (
