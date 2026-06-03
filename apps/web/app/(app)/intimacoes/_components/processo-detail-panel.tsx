@@ -22,7 +22,6 @@ import type {
   VaraConfig,
 } from '@/lib/types'
 import {
-  COMPROVANTE_RESIDENCIA_TIPOS,
   comprovanteLabel,
   comprovantesDisponiveis,
 } from '@/lib/comprovante-residencia'
