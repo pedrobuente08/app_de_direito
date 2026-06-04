@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   confirmarBatchPdf,
   getAuthMe,
@@ -107,6 +108,16 @@ export default function IntimacoesPage() {
   const [page, setPage] = useState(1)
 
   const [orfasPaginadas, setOrfasPaginadas] = useState<PaginatedComunicacoes | null>(null)
+
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    const numero = searchParams.get('numero')
+    if (numero?.trim()) {
+      setDraftNumero(numero.trim())
+      setAppliedNumero(numero.trim())
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [readOnly, setReadOnly] = useState(false)
   const [dropdowns, setDropdowns] = useState<DropdownsProcessoConfig | null>(null)
   const [varasConfig, setVarasConfig] = useState<Record<string, VaraConfig> | null>(null)

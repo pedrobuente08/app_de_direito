@@ -28,6 +28,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: '/importacao', label: 'Importação PDF' },
       { href: '/atendimento', label: 'Atendimento' },
+      { href: '/publicacoes', label: 'Publicações DJEN' },
       { href: '/comunicacoes', label: 'Comunicações Órfãs' },
     ],
   },
@@ -58,6 +59,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   '/pendencias': 'Pendências',
   '/importacao': 'Importação PDF',
   '/atendimento': 'Atendimento',
+  '/publicacoes': 'Publicações DJEN',
   '/comunicacoes': 'Comunicações Órfãs',
   '/dashboards': 'Dashboards',
   '/dashboards/varas': 'Varas & Teses',
