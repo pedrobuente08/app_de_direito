@@ -223,18 +223,35 @@ function plainTexto(html: string | null | undefined): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Valida que uma string extraída do texto parece um nome de pessoa ou empresa —
+ * não um trecho de sentença ou texto jurídico genérico.
+ */
+function pareceNomePessoa(s: string): boolean {
+  const palavras = s.trim().split(/\s+/).filter(Boolean);
+  if (palavras.length === 0 || palavras.length > 6) return false;
+  // Rejeita se qualquer palavra for um termo jurídico/verbal óbvio que não compõe nomes
+  const naoNome =
+    /^(intimad[ao]|penhor[ao]?|juiz|ju[ií]z[ao]|excelent[ií]ssim[ao]|exm[oa]|ordem|desta|deste|nesta|neste|total|online|virtual|fica|a[çc][aã]o|processo|autos|parte|polo|pelo|pela|para|com|que|uma?|nos|nas|daquela?|daquele|aquela?|aquele|dever[aá])$/i;
+  if (palavras.some((p) => naoNome.test(p))) return false;
+  // Primeira palavra deve começar com letra maiúscula (nomes próprios)
+  if (!/^[A-ZÁÉÍÓÚÃÕÂÊÔÇ]/i.test(palavras[0])) return false;
+  return true;
+}
+
 /** Tenta extrair nome do autor do corpo quando `nomeParteAutora` vem vazio. */
 function extrairAutorDoTexto(texto: string | null | undefined): string | null {
   const plain = plainTexto(texto);
   if (!plain) return null;
+  // Sem '.' na classe de caracteres para não cruzar fronteiras de frase
   const patterns = [
-    /\b(?:autor(?:a)?|requerente|promovente)[:\s\-–]+([A-ZÁÉÍÓÚÃÕÂÊÔÇ][A-ZÁÉÍÓÚÃÕÂÊÔÇ\s\.\-'"]{4,120})/i,
-    /\b([A-ZÁÉÍÓÚÃÕÂÊÔÇ][A-ZÁÉÍÓÚÃÕÂÊÔÇ\s\.\-'"]{4,80})\s+x\s+[A-ZÁÉÍÓÚÃÕÂÊÔÇ]/,
+    /\b(?:autor(?:a)?|requerente|promovente)[:\s\-–]+([A-ZÁÉÍÓÚÃÕÂÊÔÇ][A-ZÁÉÍÓÚÃÕÂÊÔÇ\s\-'"]{3,80})/i,
+    /\b([A-ZÁÉÍÓÚÃÕÂÊÔÇ][A-ZÁÉÍÓÚÃÕÂÊÔÇ\s\-'"]{4,80})\s+x\s+[A-ZÁÉÍÓÚÃÕÂÊÔÇ]/,
   ];
   for (const re of patterns) {
     const m = re.exec(plain);
     const nome = m?.[1]?.trim().replace(/\s+/g, ' ');
-    if (nome && nome.length >= 4 && !/^\d/.test(nome)) {
+    if (nome && nome.length >= 4 && !/^\d/.test(nome) && pareceNomePessoa(nome)) {
       return nome.slice(0, 300);
     }
   }
