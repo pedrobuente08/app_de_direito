@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import {
   confirmarBatchPdf,
   getAuthMe,
@@ -109,9 +108,9 @@ export default function IntimacoesPage() {
 
   const [orfasPaginadas, setOrfasPaginadas] = useState<PaginatedComunicacoes | null>(null)
 
-  const searchParams = useSearchParams()
   useEffect(() => {
-    const numero = searchParams.get('numero')
+    const params = new URLSearchParams(window.location.search)
+    const numero = params.get('numero')
     if (numero?.trim()) {
       setDraftNumero(numero.trim())
       setAppliedNumero(numero.trim())
