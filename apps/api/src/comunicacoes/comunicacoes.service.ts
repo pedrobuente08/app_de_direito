@@ -1074,7 +1074,7 @@ export class ComunicacoesService {
           ? new Date(item.data_disponibilizacao)
           : null,
         hashExterno: item.hash.trim(),
-        status: processoId ? 'LIDA' : 'ORFA',
+        status: processoId ? 'NAO_LIDA' : 'ORFA',
       })
       .returning();
 
@@ -1123,7 +1123,7 @@ export class ComunicacoesService {
         dataDisponibilizacao: dto.dataDisponibilizacao
           ? new Date(dto.dataDisponibilizacao)
           : null,
-        status: processoId ? 'LIDA' : 'ORFA',
+        status: processoId ? 'NAO_LIDA' : 'ORFA',
       })
       .returning();
 
@@ -1167,7 +1167,7 @@ export class ComunicacoesService {
 
       await this.drizzle.db
         .update(comunicacao)
-        .set({ processoId, status: 'LIDA' })
+        .set({ processoId, status: 'NAO_LIDA' })
         .where(eq(comunicacao.id, com.id));
 
       await this.aplicarRegras(escritorioId, { ...com, processoId }, com.tipo);
@@ -1386,12 +1386,32 @@ export class ComunicacoesService {
 
     const [updated] = await this.drizzle.db
       .update(comunicacao)
-      .set({ processoId, status: 'LIDA' })
+      .set({ processoId, status: 'NAO_LIDA' })
       .where(eq(comunicacao.id, comunicacaoId))
       .returning();
 
     await this.aplicarRegras(escritorioId, updated, updated.tipo);
 
+    return updated;
+  }
+
+  async patchStatus(
+    escritorioId: string,
+    id: string,
+    status: 'LIDA' | 'NAO_LIDA',
+  ) {
+    const [updated] = await this.drizzle.db
+      .update(comunicacao)
+      .set({ status })
+      .where(
+        and(
+          eq(comunicacao.id, id),
+          eq(comunicacao.escritorioId, escritorioId),
+        ),
+      )
+      .returning();
+
+    if (!updated) throw new NotFoundException('Comunicação não encontrada.');
     return updated;
   }
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -9,6 +9,7 @@ import { CadastrarOabDto } from './dto/cadastrar-oab.dto';
 import { ComunicacaoWebhookDto } from './dto/comunicacao-webhook.dto';
 import { ComunicacoesDigestQueryDto } from './dto/comunicacoes-digest.query.dto';
 import { ComunicacoesOrfasQueryDto } from './dto/comunicacoes-orfas.query.dto';
+import { PatchComunicacaoStatusDto } from './dto/patch-comunicacao-status.dto';
 import { ResolverComunicacaoDto } from './dto/resolver-comunicacao.dto';
 
 @Controller('comunicacoes')
@@ -75,6 +76,16 @@ export class ComunicacoesController {
   @Throttle(ThrottlePresets.comunicaWrite)
   cadastrarOab(@CurrentUser() user: AuthUser, @Body() dto: CadastrarOabDto) {
     return this.comunicacoes.cadastrarOab(user.escritorioId, dto);
+  }
+
+  @Patch(':id/status')
+  @Throttle(ThrottlePresets.comunicaWrite)
+  patchStatus(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PatchComunicacaoStatusDto,
+  ) {
+    return this.comunicacoes.patchStatus(user.escritorioId, id, dto.status);
   }
 
   @Post(':id/resolver')

@@ -1474,6 +1474,17 @@ export async function resolverComunicacao(
   })
 }
 
+export async function patchComunicacaoStatus(
+  id: string,
+  status: 'LIDA' | 'NAO_LIDA',
+): Promise<Comunicacao> {
+  return apiFetch<Comunicacao>(`/comunicacoes/${id}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  })
+}
+
 // ─── Captura DJEN ─────────────────────────────────────────────────────────────
 
 export async function getCapturaSaude(): Promise<import('@/lib/types').FonteSaude[]> {

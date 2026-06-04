@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getComunicacoes } from '@/lib/api'
+import { getComunicacoes, patchComunicacaoStatus } from '@/lib/api'
 import { FamiliaTabs } from '@/components/ui/familia-tabs'
 import { ToastContainer, useToast } from '@/lib/toast'
 import type { Comunicacao } from '@/lib/types'
@@ -62,7 +62,15 @@ export default function PublicacoesPage() {
   const naoLidas = useMemo(() => comunicacoes.filter((c) => c.status === 'NAO_LIDA').length, [comunicacoes])
   const orfas = useMemo(() => comunicacoes.filter((c) => c.status === 'ORFA').length, [comunicacoes])
 
-  function handleClick(c: Comunicacao) {
+  async function handleClick(c: Comunicacao) {
+    if (c.status === 'NAO_LIDA') {
+      try {
+        const updated = await patchComunicacaoStatus(c.id, 'LIDA')
+        setComunicacoes((prev) => prev.map((x) => x.id === updated.id ? updated : x))
+      } catch {
+        // silently ignore — navigate anyway
+      }
+    }
     if (c.status === 'ORFA' || !c.processoId) {
       router.push('/comunicacoes')
       return

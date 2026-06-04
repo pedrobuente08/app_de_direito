@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { getComunicacoesProcesso, patchProcesso } from '@/lib/api'
+import { getComunicacoesProcesso, patchComunicacaoStatus, patchProcesso } from '@/lib/api'
 import type { Comunicacao, Processo } from '@/lib/types'
 import { NovaPendenciaDialog } from '@/components/pendencias/nova-pendencia-dialog'
 import type { ToastApi } from './processo-editable'
@@ -63,6 +63,9 @@ export function ComunicacoesProcessoSection({
           comunicacoes={comunicacoes}
           processo={processo}
           onProcessoUpdated={onProcessoUpdated}
+          onComunicacaoUpdated={(updated) =>
+            setComunicacoes((prev) => prev.map((c) => c.id === updated.id ? updated : c))
+          }
           toast={toast}
           readOnly={readOnly}
           onClose={() => setListaOpen(false)}
@@ -85,10 +88,16 @@ export function ComunicacoesProcessoSection({
 
 // ─── Modal lista de publicações ───────────────────────────────────────────────
 
+const STATUS_LEITURA_CLASS: Record<string, string> = {
+  NAO_LIDA: 'bg-[var(--urgencia-atencao-bg)] text-[var(--urgencia-atencao-text)]',
+  LIDA: 'bg-[var(--color-bg-muted)] text-[var(--color-text-tertiary)]',
+}
+
 type ListaModalProps = {
   comunicacoes: Comunicacao[]
   processo: Processo
   onProcessoUpdated: (p: Processo) => void
+  onComunicacaoUpdated: (c: Comunicacao) => void
   toast: ToastApi
   readOnly?: boolean
   onClose: () => void
@@ -99,6 +108,7 @@ function ComunicacoesListaModal({
   comunicacoes,
   processo,
   onProcessoUpdated,
+  onComunicacaoUpdated,
   toast,
   readOnly,
   onClose,
@@ -159,6 +169,11 @@ function ComunicacoesListaModal({
                         {c.tipo}
                       </span>
                     )}
+                    {(c.status === 'NAO_LIDA' || c.status === 'LIDA') && (
+                      <span className={`rounded-full px-1.5 py-0.5 font-mono text-[10px] font-medium ${STATUS_LEITURA_CLASS[c.status] ?? ''}`}>
+                        {c.status === 'NAO_LIDA' ? 'Não lida' : 'Lida'}
+                      </span>
+                    )}
                     <span className="text-[11px] text-[var(--color-text-tertiary)]">
                       {formatDate(c.dataDisponibilizacao ?? c.createdAt)} · OAB {c.oab}
                     </span>
@@ -180,6 +195,10 @@ function ComunicacoesListaModal({
           comunicacao={selecionada}
           processo={processo}
           onProcessoUpdated={onProcessoUpdated}
+          onComunicacaoUpdated={(updated) => {
+            onComunicacaoUpdated(updated)
+            setSelecionada(updated)
+          }}
           toast={toast}
           readOnly={readOnly}
           onClose={() => setSelecionada(null)}
@@ -197,6 +216,7 @@ type DetalheModalProps = {
   comunicacao: Comunicacao
   processo: Processo
   onProcessoUpdated: (p: Processo) => void
+  onComunicacaoUpdated: (c: Comunicacao) => void
   toast: ToastApi
   readOnly?: boolean
   onClose: () => void
@@ -207,15 +227,43 @@ function ComunicacaoDetalheModal({
   comunicacao,
   processo,
   onProcessoUpdated,
+  onComunicacaoUpdated,
   toast,
   readOnly,
   onClose,
   onNovaPendencia,
 }: DetalheModalProps) {
+  const [statusAtual, setStatusAtual] = useState(comunicacao.status)
+  const [toggling, setToggling] = useState(false)
   const [dataAudiencia, setDataAudiencia] = useState(processo.dataAudiencia ?? '')
   const [horaAudiencia, setHoraAudiencia] = useState(
     processo.horaAudiencia ? String(processo.horaAudiencia).slice(0, 5) : '',
   )
+
+  useEffect(() => {
+    if (comunicacao.status !== 'NAO_LIDA') return
+    patchComunicacaoStatus(comunicacao.id, 'LIDA')
+      .then((updated) => {
+        setStatusAtual('LIDA')
+        onComunicacaoUpdated(updated)
+      })
+      .catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comunicacao.id])
+
+  async function toggleLeitura() {
+    const novo = statusAtual === 'LIDA' ? 'NAO_LIDA' : 'LIDA'
+    setToggling(true)
+    try {
+      const updated = await patchComunicacaoStatus(comunicacao.id, novo)
+      setStatusAtual(novo)
+      onComunicacaoUpdated(updated)
+    } catch {
+      toast.error('Não foi possível alterar o status.')
+    } finally {
+      setToggling(false)
+    }
+  }
   const [tipoAudiencia, setTipoAudiencia] = useState(processo.tipoAudiencia ?? '')
   const [salvando, setSalvando] = useState(false)
 
@@ -334,13 +382,23 @@ function ComunicacaoDetalheModal({
                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-tertiary)]">
                   Ações
                 </p>
-                <button
-                  type="button"
-                  onClick={onNovaPendencia}
-                  className="rounded border border-[var(--color-border-default)] px-3 py-1.5 text-xs hover:bg-[var(--color-bg-subtle)]"
-                >
-                  Criar pendência
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={onNovaPendencia}
+                    className="rounded border border-[var(--color-border-default)] px-3 py-1.5 text-xs hover:bg-[var(--color-bg-subtle)]"
+                  >
+                    Criar pendência
+                  </button>
+                  <button
+                    type="button"
+                    disabled={toggling}
+                    onClick={() => void toggleLeitura()}
+                    className="rounded border border-[var(--color-border-default)] px-3 py-1.5 text-xs hover:bg-[var(--color-bg-subtle)] disabled:opacity-50"
+                  >
+                    {statusAtual === 'LIDA' ? 'Marcar como não lida' : 'Marcar como lida'}
+                  </button>
+                </div>
               </div>
             </>
           )}
