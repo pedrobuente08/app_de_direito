@@ -143,6 +143,9 @@ export class ProcessosService {
     if (query.materia?.trim()) {
       filters.push(ilike(processo.materia, `%${query.materia.trim()}%`));
     }
+    if (query.login?.trim()) {
+      filters.push(ilike(processo.login, `%${query.login.trim()}%`));
+    }
     if (query.sistema?.trim()) {
       filters.push(ilike(processo.sistema, `%${query.sistema.trim()}%`));
     }

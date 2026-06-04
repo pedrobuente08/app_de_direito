@@ -29,6 +29,7 @@ import type {
 } from '@/lib/types'
 import { NovaPendenciaDialog } from '@/components/pendencias/nova-pendencia-dialog'
 import { FASE_OPCOES_CANONICAS, faseLabel } from '@/lib/fase-label'
+import { ComboFilter } from '@/components/ui/combo-filter'
 import { FilterBar, FilterField, filterControlClass } from '@/components/ui/filter-bar'
 import { KpiCard } from '@/components/ui/kpi-card'
 import { OrfasSection } from './_components/orfas-section'
@@ -94,6 +95,10 @@ export default function IntimacoesPage() {
   const [appliedArquivados30d, setAppliedArquivados30d] = useState(false)
   const [draftMovimentacaoRecenteDias, setDraftMovimentacaoRecenteDias] = useState('')
   const [appliedMovimentacaoRecenteDias, setAppliedMovimentacaoRecenteDias] = useState('')
+  const [draftMateria, setDraftMateria] = useState('')
+  const [appliedMateria, setAppliedMateria] = useState('')
+  const [draftLogin, setDraftLogin] = useState('')
+  const [appliedLogin, setAppliedLogin] = useState('')
   const [draftStatusProcesso, setDraftStatusProcesso] = useState('')
   const [draftFaseAtual, setDraftFaseAtual] = useState('')
   const [appliedStatusProcesso, setAppliedStatusProcesso] = useState('')
@@ -186,6 +191,8 @@ export default function IntimacoesPage() {
         ...(appliedNumero.trim() && { numero: appliedNumero.trim() }),
         ...(appliedCliente.trim() && { clienteNome: appliedCliente.trim() }),
         ...(appliedVara.trim() && { vara: appliedVara.trim() }),
+        ...(appliedMateria.trim() && { materia: appliedMateria.trim() }),
+        ...(appliedLogin.trim() && { login: appliedLogin.trim() }),
         ...(appliedQualidadeCaso.trim() && {
           qualidadeCaso: appliedQualidadeCaso.trim(),
         }),
@@ -214,6 +221,8 @@ export default function IntimacoesPage() {
     appliedNumero,
     appliedCliente,
     appliedVara,
+    appliedMateria,
+    appliedLogin,
     appliedQualidadeCaso,
     appliedFilterUltimaSentenca,
     appliedEmAvaliacao,
@@ -242,6 +251,8 @@ export default function IntimacoesPage() {
     setAppliedNumero(draftNumero)
     setAppliedCliente(draftCliente)
     setAppliedVara(draftVara)
+    setAppliedMateria(draftMateria)
+    setAppliedLogin(draftLogin)
     setAppliedQualidadeCaso(draftQualidadeCaso)
     setAppliedFilterUltimaSentenca(draftFilterUltimaSentenca)
     setAppliedEmAvaliacao(draftEmAvaliacao)
@@ -264,6 +275,8 @@ export default function IntimacoesPage() {
     setDraftNumero(appliedNumero)
     setDraftCliente(appliedCliente)
     setDraftVara(appliedVara)
+    setDraftMateria(appliedMateria)
+    setDraftLogin(appliedLogin)
     setDraftQualidadeCaso(appliedQualidadeCaso)
     setDraftFilterUltimaSentenca(appliedFilterUltimaSentenca)
     setDraftEmAvaliacao(appliedEmAvaliacao)
@@ -463,6 +476,22 @@ export default function IntimacoesPage() {
               onChange={(e) => setDraftVara(e.target.value)}
               placeholder="Contém…"
               className={filterControlClass}
+            />
+          </FilterField>
+          <FilterField label="Matéria" className="min-w-[160px]">
+            <ComboFilter
+              value={draftMateria}
+              onChange={setDraftMateria}
+              options={pdfCatalogo.materias}
+              placeholder="Todas…"
+            />
+          </FilterField>
+          <FilterField label="Advogado" className="min-w-[150px]">
+            <ComboFilter
+              value={draftLogin}
+              onChange={setDraftLogin}
+              options={pdfCatalogo.logins}
+              placeholder="Todos…"
             />
           </FilterField>
           <FilterField label="Situação" className="min-w-[140px]">

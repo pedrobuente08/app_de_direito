@@ -62,6 +62,11 @@ export class ListProcessosQueryDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(80)
+  login?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(20)
   sistema?: string;
 
