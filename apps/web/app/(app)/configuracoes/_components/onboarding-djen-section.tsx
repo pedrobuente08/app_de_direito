@@ -123,6 +123,7 @@ export function OnboardingDjenSection({ disabled }: Props) {
             disabled={disabled || running}
             className="mt-1 w-full rounded border px-2 py-1.5 text-sm"
           >
+            <option value={30}>30 dias (teste rápido)</option>
             <option value={90}>90 dias</option>
             <option value={180}>180 dias</option>
             <option value={365}>365 dias (recomendado)</option>

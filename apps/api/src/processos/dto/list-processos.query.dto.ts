@@ -18,6 +18,7 @@ const SORT_FIELDS = [
   'materia',
   'sistema',
   'clienteNome',
+  'ultimaMovimentacaoDt',
 ] as const;
 
 export class ListProcessosQueryDto {
@@ -114,4 +115,12 @@ export class ListProcessosQueryDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   arquivados30d?: boolean;
+
+  /** Filtra processos com `ultima_movimentacao_dt` nos últimos N dias (ex: 30). */
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? Number(value) : undefined))
+  @IsInt()
+  @Min(1)
+  @Max(730)
+  movimentacaoRecenteDias?: number;
 }

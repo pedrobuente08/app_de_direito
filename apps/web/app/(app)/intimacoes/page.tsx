@@ -42,11 +42,20 @@ const PAGE_SIZE = 50
 const SORT_OPTIONS = [
   { value: 'createdAt', label: 'Cadastro' },
   { value: 'updatedAt', label: 'Atualização' },
+  { value: 'ultimaMovimentacaoDt', label: 'Última movimentação' },
   { value: 'numero', label: 'Número' },
   { value: 'vara', label: 'Vara' },
   { value: 'materia', label: 'Matéria' },
   { value: 'sistema', label: 'Sistema' },
   { value: 'clienteNome', label: 'Cliente' },
+] as const
+
+const MOVIMENTACAO_OPCOES = [
+  { value: '', label: 'Qualquer data' },
+  { value: '7', label: 'Últimos 7 dias' },
+  { value: '30', label: 'Últimos 30 dias' },
+  { value: '60', label: 'Últimos 60 dias' },
+  { value: '90', label: 'Últimos 90 dias' },
 ] as const
 
 export default function IntimacoesPage() {
@@ -83,6 +92,8 @@ export default function IntimacoesPage() {
   const [appliedEmAvaliacao, setAppliedEmAvaliacao] = useState(false)
   const [appliedAcaoImediata, setAppliedAcaoImediata] = useState(false)
   const [appliedArquivados30d, setAppliedArquivados30d] = useState(false)
+  const [draftMovimentacaoRecenteDias, setDraftMovimentacaoRecenteDias] = useState('')
+  const [appliedMovimentacaoRecenteDias, setAppliedMovimentacaoRecenteDias] = useState('')
   const [draftStatusProcesso, setDraftStatusProcesso] = useState('')
   const [draftFaseAtual, setDraftFaseAtual] = useState('')
   const [appliedStatusProcesso, setAppliedStatusProcesso] = useState('')
@@ -174,6 +185,9 @@ export default function IntimacoesPage() {
         ...(appliedEmAvaliacao && { emAvaliacao: 'true' }),
         ...(appliedAcaoImediata && { acaoImediata: 'true' }),
         ...(appliedArquivados30d && { arquivados30d: 'true' }),
+        ...(appliedMovimentacaoRecenteDias && {
+          movimentacaoRecenteDias: appliedMovimentacaoRecenteDias,
+        }),
         ...(appliedStatusProcesso.trim() && {
           statusProcesso: appliedStatusProcesso.trim(),
         }),
@@ -195,6 +209,7 @@ export default function IntimacoesPage() {
     appliedEmAvaliacao,
     appliedAcaoImediata,
     appliedArquivados30d,
+    appliedMovimentacaoRecenteDias,
     appliedStatusProcesso,
     appliedFaseAtual,
     appliedSortField,
@@ -228,6 +243,7 @@ export default function IntimacoesPage() {
     }
     setAppliedStatusProcesso(draftStatusProcesso)
     setAppliedFaseAtual(draftFaseAtual)
+    setAppliedMovimentacaoRecenteDias(draftMovimentacaoRecenteDias)
     setAppliedSortField(draftSortField)
     setAppliedSortOrder(draftSortOrder)
     setPage(1)
@@ -243,6 +259,7 @@ export default function IntimacoesPage() {
     setDraftEmAvaliacao(appliedEmAvaliacao)
     setDraftStatusProcesso(appliedStatusProcesso)
     setDraftFaseAtual(appliedFaseAtual)
+    setDraftMovimentacaoRecenteDias(appliedMovimentacaoRecenteDias)
     setDraftSortField(appliedSortField)
     setDraftSortOrder(appliedSortOrder)
     setFiltrosAbertos(true)
@@ -317,6 +334,8 @@ export default function IntimacoesPage() {
     setAppliedEmAvaliacao(false)
     setAppliedAcaoImediata(false)
     setAppliedArquivados30d(false)
+    setAppliedMovimentacaoRecenteDias('')
+    setDraftMovimentacaoRecenteDias('')
     if (preset === 'acao') setAppliedAcaoImediata(true)
     if (preset === 'avaliar') setAppliedEmAvaliacao(true)
     if (preset === 'arquivados') setAppliedArquivados30d(true)
@@ -492,6 +511,19 @@ export default function IntimacoesPage() {
               />
               Em avaliação (recurso)
             </label>
+          </FilterField>
+          <FilterField label="Movimentação" className="min-w-[160px]">
+            <select
+              value={draftMovimentacaoRecenteDias}
+              onChange={(e) => setDraftMovimentacaoRecenteDias(e.target.value)}
+              className={filterControlClass}
+            >
+              {MOVIMENTACAO_OPCOES.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
           </FilterField>
           <FilterField label="Ordenar por">
             <select

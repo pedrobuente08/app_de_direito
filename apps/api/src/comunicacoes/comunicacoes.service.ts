@@ -179,6 +179,109 @@ function extrairDataHoraDeResumo(
   return { data, hora };
 }
 
+function hojeYmdBr(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+  }).format(new Date());
+}
+
+function textoIndicaAudiencia(
+  tipo: string | null | undefined,
+  texto: string | null | undefined,
+): boolean {
+  const blob = `${tipo ?? ''} ${texto ?? ''}`
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '');
+  return (
+    blob.includes('audiencia') ||
+    blob.includes('sessao de conciliacao') ||
+    (blob.includes('designad') && blob.includes('dia')) ||
+    blob.includes('comparecer') ||
+    blob.includes('pauta de audiencia') ||
+    blob.includes('ata de audiencia')
+  );
+}
+
+/** Extrai data/hora próximas a menções de audiência no corpo da publicação. */
+function extrairDataHoraAudiencia(
+  texto: string | null | undefined,
+): { data: string | null; hora: string | null } {
+  if (!texto?.trim()) return { data: null, hora: null };
+  const plain = texto.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  const lower = plain.toLowerCase();
+  const idx = lower.search(
+    /audi[eê]ncia|sess[aã]o de concilia|designo o dia|designada para|comparecer.*ju[ií]zo/,
+  );
+  const slice =
+    idx >= 0 ? plain.slice(Math.max(0, idx - 40), idx + 900) : plain;
+  return extrairDataHoraDeResumo(slice);
+}
+
+function plainTexto(html: string | null | undefined): string {
+  if (!html?.trim()) return '';
+  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Tenta extrair nome do autor do corpo quando `nomeParteAutora` vem vazio. */
+function extrairAutorDoTexto(texto: string | null | undefined): string | null {
+  const plain = plainTexto(texto);
+  if (!plain) return null;
+  const patterns = [
+    /\b(?:autor(?:a)?|requerente|promovente)[:\s\-–]+([A-ZÁÉÍÓÚÃÕÂÊÔÇ][A-ZÁÉÍÓÚÃÕÂÊÔÇ\s\.\-'"]{4,120})/i,
+    /\b([A-ZÁÉÍÓÚÃÕÂÊÔÇ][A-ZÁÉÍÓÚÃÕÂÊÔÇ\s\.\-'"]{4,80})\s+x\s+[A-ZÁÉÍÓÚÃÕÂÊÔÇ]/,
+  ];
+  for (const re of patterns) {
+    const m = re.exec(plain);
+    const nome = m?.[1]?.trim().replace(/\s+/g, ' ');
+    if (nome && nome.length >= 4 && !/^\d/.test(nome)) {
+      return nome.slice(0, 300);
+    }
+  }
+  return null;
+}
+
+/** Tenta extrair réu do corpo da publicação. */
+function extrairReuDoTexto(texto: string | null | undefined): string | null {
+  const plain = plainTexto(texto);
+  if (!plain) return null;
+  const patterns = [
+    /\b(?:r[eé]u|requerid[oa]|demandad[oa])[:\s\-–]+([A-ZÁÉÍÓÚÃÕÂÊÔÇ0-9][A-ZÁÉÍÓÚÃÕÂÊÔÇ0-9\s\.\-&\/\(\)]{3,120})/i,
+    /\bx\s+([A-ZÁÉÍÓÚÃÕÂÊÔÇ0-9][A-ZÁÉÍÓÚÃÕÂÊÔÇ0-9\s\.\-&\/\(\)]{3,120})(?:\s+[,.\n]|$)/i,
+  ];
+  for (const re of patterns) {
+    const m = re.exec(plain);
+    const nome = m?.[1]?.trim().replace(/\s+/g, ' ');
+    if (nome && nome.length >= 3) {
+      return nome.slice(0, 300);
+    }
+  }
+  return null;
+}
+
+function ymdFromDisponibilizacao(raw: string | undefined): string | null {
+  if (!raw?.trim()) return null;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
+}
+
+function inferirFaseInicialDjen(
+  tipo: string | null,
+  audData: string | null,
+  hoje: string,
+): string {
+  const t = normTipo(tipo ?? '');
+  if (t.includes('SENTENC')) return 'AGUARDANDO_SENTENCA';
+  if (t.includes('TRANSIT') || t.includes('TRANSITO')) return 'AGUARDANDO_TRANSITO';
+  if (t.includes('ALVAR')) return 'AGUARDANDO_ALVARA';
+  if (t.includes('RECUR') || t.includes('APEL')) return 'EM_RECURSO';
+  if (audData && audData >= hoje) return 'AGUARDANDO_AUDIENCIA';
+  if (t.includes('AUDIEN') || t.includes('CONCILI')) return 'AGUARDANDO_AUDIENCIA';
+  if (t.includes('CONTEST') || t.includes('REPLIC')) return 'AGUARDANDO_CONTESTACAO';
+  return 'AGUARDANDO_DISTRIBUICAO';
+}
+
 function addDaysIso(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
@@ -606,6 +709,149 @@ export class ComunicacoesService {
     await this.avaliarVaraExigenteDocumento(escritorioId, processoId);
   }
 
+  /**
+   * Promove campos estruturados do DJEN para `processo` e agenda audiência futura
+   * quando o texto da publicação indicar data ainda não passada.
+   */
+  private async aplicarEnriquecimentoDjen(
+    escritorioId: string,
+    processoId: string,
+    item: ComunicaApiItem,
+    tipo: string | null,
+  ): Promise<void> {
+    const textoPlain =
+      resumoDeTexto(item.texto, 50000) ?? item.texto?.trim() ?? null;
+    const hoje = hojeYmdBr();
+
+    const [proc] = await this.drizzle.db
+      .select({
+        clienteNome: processo.clienteNome,
+        reuTexto: processo.reuTexto,
+        observacaoGeral: processo.observacaoGeral,
+        dataDistribuicao: processo.dataDistribuicao,
+        dataAudiencia: processo.dataAudiencia,
+        horaAudiencia: processo.horaAudiencia,
+        tipoAudiencia: processo.tipoAudiencia,
+        faseAtual: processo.faseAtual,
+        ultimaMovimentacaoDt: processo.ultimaMovimentacaoDt,
+      })
+      .from(processo)
+      .where(
+        and(eq(processo.id, processoId), eq(processo.escritorioId, escritorioId)),
+      )
+      .limit(1);
+    if (!proc) return;
+
+    const patch: Record<string, unknown> = { updatedAt: new Date() };
+    let changed = false;
+
+    const clienteDestinatario = item.destinatarios
+      ?.find((d) => d.polo === 'A')
+      ?.nome?.trim();
+    const cliente =
+      clienteDestinatario ||
+      item.nomeParteAutora?.trim() ||
+      extrairAutorDoTexto(textoPlain) ||
+      null;
+    if (cliente && !proc.clienteNome?.trim()) {
+      patch.clienteNome = cliente.slice(0, 300);
+      changed = true;
+    }
+
+    const reu = extrairReuDoTexto(textoPlain);
+    if (reu && !proc.reuTexto?.trim()) {
+      patch.reuTexto = reu;
+      changed = true;
+    }
+
+    const resumoCurto = resumoDeTexto(item.texto, 500);
+    if (resumoCurto && !proc.observacaoGeral?.trim()) {
+      patch.observacaoGeral = resumoCurto;
+      patch.observacoes = resumoCurto;
+      changed = true;
+    }
+
+    const distYmd = ymdFromDisponibilizacao(item.data_disponibilizacao);
+    if (distYmd && !proc.dataDistribuicao) {
+      patch.dataDistribuicao = distYmd;
+      changed = true;
+    }
+
+    const movTs = item.data_disponibilizacao
+      ? new Date(item.data_disponibilizacao)
+      : null;
+    if (
+      movTs &&
+      !Number.isNaN(movTs.getTime()) &&
+      (!proc.ultimaMovimentacaoDt || movTs > proc.ultimaMovimentacaoDt)
+    ) {
+      patch.ultimaMovimentacaoDt = movTs;
+      patch.ultimaMovimentacaoTipo = (tipo ?? 'COMUNICA').slice(0, 50);
+      changed = true;
+    }
+
+    let audData: string | null = null;
+    let audHora: string | null = null;
+    if (textoIndicaAudiencia(tipo, textoPlain)) {
+      const ext = extrairDataHoraAudiencia(textoPlain);
+      audData = ext.data;
+      audHora = ext.hora;
+    }
+
+    const tipoAud = (
+      tipo?.trim() ||
+      item.tipoDocumento?.trim() ||
+      'AUDIENCIA'
+    ).slice(0, 50);
+
+    if (audData && audData >= hoje) {
+      patch.dataAudiencia = audData;
+      patch.horaAudiencia = audHora;
+      patch.tipoAudiencia = tipoAud;
+      patch.statusAudiencia = 'AGENDADA';
+      changed = true;
+
+      try {
+        await this.audiencias.sincronizarDaExtracaoPdf(escritorioId, processoId, {
+          dataAudiencia: audData,
+          horaAudiencia: audHora,
+          tipoAudiencia: tipoAud,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        this.log.warn(
+          `aplicarEnriquecimentoDjen audiencia processo=${processoId}: ${msg}`,
+        );
+      }
+    } else if (audData && !proc.dataAudiencia) {
+      patch.dataAudiencia = audData;
+      patch.horaAudiencia = audHora;
+      patch.tipoAudiencia = tipoAud;
+      changed = true;
+    }
+
+    const faseSugerida = inferirFaseInicialDjen(tipo, audData, hoje);
+    if (
+      faseSugerida &&
+      (!proc.faseAtual?.trim() ||
+        proc.faseAtual === 'AGUARDANDO_DISTRIBUICAO') &&
+      faseSugerida !== proc.faseAtual
+    ) {
+      patch.faseAtual = faseSugerida;
+      patch.faseUpdatedAt = new Date();
+      changed = true;
+    }
+
+    if (changed) {
+      await this.drizzle.db
+        .update(processo)
+        .set(patch)
+        .where(eq(processo.id, processoId));
+    }
+
+    await this.faseDerivacao.aplicarAposMutacao(escritorioId, processoId);
+  }
+
   private async criarProcessoDeComunica(
     escritorioId: string,
     numeroProcessoBruto: string | null,
@@ -614,16 +860,57 @@ export class ComunicacoesService {
     origemCriacao: OrigemCriacaoProcesso,
   ): Promise<string> {
     const numero = numeroExibicao(numeroProcessoBruto, digits);
+    const tipo =
+      item.tipoComunicacao?.trim() || item.tipoDocumento?.trim() || null;
+    const textoPlain =
+      resumoDeTexto(item.texto, 50000) ?? item.texto?.trim() ?? null;
+    const hoje = hojeYmdBr();
+    const clienteDestinatario = item.destinatarios
+      ?.find((d) => d.polo === 'A')
+      ?.nome?.trim();
+    const cliente =
+      clienteDestinatario?.slice(0, 300) ||
+      item.nomeParteAutora?.trim()?.slice(0, 300) ||
+      extrairAutorDoTexto(textoPlain)?.slice(0, 300) ||
+      null;
+    const reu = extrairReuDoTexto(textoPlain);
+    const distYmd = ymdFromDisponibilizacao(item.data_disponibilizacao);
+    const movTs = item.data_disponibilizacao
+      ? new Date(item.data_disponibilizacao)
+      : null;
+    let audData: string | null = null;
+    let audHora: string | null = null;
+    if (textoIndicaAudiencia(tipo, textoPlain)) {
+      const ext = extrairDataHoraAudiencia(textoPlain);
+      audData = ext.data;
+      audHora = ext.hora;
+    }
+    const faseInicial = inferirFaseInicialDjen(tipo, audData, hoje);
+    const resumoCurto = resumoDeTexto(item.texto, 500);
+
     const [row] = await this.drizzle.db
       .insert(processo)
       .values({
         escritorioId,
         numero,
-        clienteNome: item.nomeParteAutora?.trim()?.slice(0, 300) || null,
+        clienteNome: cliente,
+        reuTexto: reu,
         vara: extrairVara(item),
         sistema: inferirSistema(item),
         statusProcesso: 'ATIVO',
-        faseAtual: 'AGUARDANDO_DISTRIBUICAO',
+        faseAtual: faseInicial,
+        faseUpdatedAt: new Date(),
+        dataDistribuicao: distYmd,
+        dataAudiencia: audData,
+        horaAudiencia: audHora,
+        tipoAudiencia: audData
+          ? (tipo?.slice(0, 50) ?? 'AUDIENCIA')
+          : null,
+        statusAudiencia: audData && audData >= hoje ? 'AGENDADA' : null,
+        ultimaMovimentacaoDt: movTs,
+        ultimaMovimentacaoTipo: (tipo ?? 'COMUNICA').slice(0, 50),
+        observacaoGeral: resumoCurto,
+        observacoes: resumoCurto,
         requerConferencia: true,
         origemCriacao,
       })
@@ -638,14 +925,16 @@ export class ComunicacoesService {
       diff: { origemCriacao, numero },
     });
 
-    const textoObs = item.texto?.slice(0, 500) ?? null;
-    const parceiroId = await this.parceiros.resolverParceiroParaProcesso(
-      escritorioId,
-      null,
-      textoObs,
-    );
-    if (parceiroId) {
-      await this.parceiros.aplicarParceiroNoProcesso(escritorioId, id, parceiroId);
+    if (origemCriacao !== 'ONBOARDING') {
+      const textoObs = item.texto?.slice(0, 500) ?? null;
+      const parceiroId = await this.parceiros.resolverParceiroParaProcesso(
+        escritorioId,
+        null,
+        textoObs,
+      );
+      if (parceiroId) {
+        await this.parceiros.aplicarParceiroNoProcesso(escritorioId, id, parceiroId);
+      }
     }
 
     return id;
@@ -752,7 +1041,15 @@ export class ComunicacoesService {
 
     if (row) {
       if (row.processoId) {
-        await this.posComunicacaoVinculada(escritorioId, row.processoId);
+        if (opts?.origemCriacao !== 'ONBOARDING') {
+          await this.posComunicacaoVinculada(escritorioId, row.processoId);
+        }
+        await this.aplicarEnriquecimentoDjen(
+          escritorioId,
+          row.processoId,
+          item,
+          tipo,
+        );
       }
       await this.aplicarRegras(escritorioId, row, tipo);
       return {

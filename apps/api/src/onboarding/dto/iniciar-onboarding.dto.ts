@@ -13,6 +13,6 @@ export class IniciarOnboardingDto {
   @IsInt()
   @Min(30)
   @Max(365)
-  @IsIn([90, 180, 365])
+  @IsIn([30, 90, 180, 365])
   diasJanela?: number;
 }

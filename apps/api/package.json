@@ -13,6 +13,8 @@
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/db/seeds/seed_inicial.ts",
     "db:migrate-login-aliases": "tsx src/db/scripts/migrar_login_aliases.ts",
+    "db:reset-reimport-djen": "tsx src/db/scripts/reset-reimportar-djen.ts",
+    "db:importar-djen": "tsx src/db/scripts/importar-djen-standalone.ts",
     "test:fase1": "tsx src/db/scripts/test-fase1-lite.ts"
   },
   "dependencies": {

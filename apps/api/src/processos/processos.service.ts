@@ -203,6 +203,12 @@ export class ProcessosService {
       filters.push(sql`${processo.statusProcesso} <> 'ARQUIVADO'`);
     }
 
+    if (query.movimentacaoRecenteDias) {
+      filters.push(
+        sql`${processo.ultimaMovimentacaoDt} >= (current_timestamp - (${query.movimentacaoRecenteDias} || ' days')::interval)`,
+      );
+    }
+
     const whereClause = and(...filters);
 
     const col = {
@@ -213,6 +219,7 @@ export class ProcessosService {
       materia: processo.materia,
       sistema: processo.sistema,
       clienteNome: processo.clienteNome,
+      ultimaMovimentacaoDt: processo.ultimaMovimentacaoDt,
     }[sort];
 
     const orderExpr = order === 'asc' ? asc(col) : desc(col);
