@@ -27,6 +27,7 @@ import {
 } from '@/lib/comprovante-residencia'
 import {
   EditableDate,
+  EditableCombo,
   EditableSelect,
   EditableText,
   EditableTextarea,
@@ -66,6 +67,8 @@ type Props = {
   dropdowns?: DropdownsProcessoConfig | null
   varasConfig?: Record<string, VaraConfig> | null
   onNovaPendencia?: (p: Processo) => void
+  materias?: string[]
+  logins?: string[]
 }
 
 export function ProcessoDetailPanel({
@@ -76,6 +79,8 @@ export function ProcessoDetailPanel({
   dropdowns,
   varasConfig,
   onNovaPendencia,
+  materias = [],
+  logins = [],
 }: Props) {
   const [current, setCurrent] = useState<Processo>(processo)
   const [sobrestarOpen, setSobrestarOpen] = useState(false)
@@ -269,7 +274,7 @@ export function ProcessoDetailPanel({
           </Field>
           <Field label="Login">
             {ro ? <ReadField value={current.login} /> : (
-              <EditableText value={current.login} toast={toast} onCommit={(v) => patch({ login: v })} />
+              <EditableCombo value={current.login} options={logins} toast={toast} onCommit={(v) => patch({ login: v })} />
             )}
           </Field>
           <Field label="Vara">
@@ -279,7 +284,7 @@ export function ProcessoDetailPanel({
           </Field>
           <Field label="Matéria">
             {ro ? <ReadField value={current.materia} /> : (
-              <EditableText value={current.materia} toast={toast} onCommit={(v) => patch({ materia: v })} />
+              <EditableCombo value={current.materia} options={materias} toast={toast} onCommit={(v) => patch({ materia: v })} />
             )}
           </Field>
           <Field label="Status do processo">

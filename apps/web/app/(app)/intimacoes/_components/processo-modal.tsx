@@ -15,6 +15,8 @@ type Props = {
   dropdowns?: DropdownsProcessoConfig | null
   varasConfig?: Record<string, VaraConfig> | null
   onNovaPendencia?: (p: Processo) => void
+  materias?: string[]
+  logins?: string[]
 }
 
 /** Modal centralizado de detalhe do processo (Sprint 1 — F0.1). */
@@ -27,6 +29,8 @@ export function ProcessoModal({
   dropdowns,
   varasConfig,
   onNovaPendencia,
+  materias,
+  logins,
 }: Props) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -89,6 +93,8 @@ export function ProcessoModal({
             dropdowns={dropdowns}
             varasConfig={varasConfig}
             onNovaPendencia={onNovaPendencia}
+            materias={materias}
+            logins={logins}
           />
         </div>
       </div>

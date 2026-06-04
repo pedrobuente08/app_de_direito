@@ -680,6 +680,8 @@ export default function IntimacoesPage() {
             setSelectedProcesso(null)
             setPendenciaProcesso(p)
           }}
+          materias={pdfCatalogo.materias}
+          logins={pdfCatalogo.logins}
         />
       )}
 

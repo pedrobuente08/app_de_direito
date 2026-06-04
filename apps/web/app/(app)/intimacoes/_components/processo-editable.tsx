@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 export type ToastApi = {
   success: (msg: string) => void
@@ -154,6 +154,82 @@ export function EditableSelect({
         <option key={o.value} value={o.value}>{o.label}</option>
       ))}
     </select>
+  )
+}
+
+export function EditableCombo({
+  value, options, onCommit, toast,
+}: {
+  value: string | null | undefined
+  options: string[]
+  onCommit: (next: string | null) => Promise<void>
+  toast: ToastApi
+}) {
+  const [local, setLocal] = useState(() => value ?? '')
+  const [open, setOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => { setLocal(value ?? '') }, [value])
+
+  const filtered = local.trim()
+    ? options.filter((o) => o.toLowerCase().includes(local.toLowerCase()))
+    : options
+
+  useEffect(() => {
+    function onOut(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onOut)
+    return () => document.removeEventListener('mousedown', onOut)
+  }, [])
+
+  async function commit(raw = local) {
+    const trimmed = raw.trim()
+    const nextVal = trimmed === '' ? null : trimmed
+    const prevVal = value == null || String(value).trim() === '' ? null : String(value).trim()
+    if (nextVal === prevVal) return
+    setSaving(true)
+    try { await onCommit(nextVal) } catch (e) {
+      toast.error((e as Error).message)
+      setLocal(value ?? '')
+    } finally { setSaving(false) }
+  }
+
+  function pick(opt: string) {
+    setLocal(opt)
+    setOpen(false)
+    void commit(opt)
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <input
+        type="text"
+        disabled={saving}
+        value={local}
+        onChange={(e) => { setLocal(e.target.value); setOpen(true) }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => { setTimeout(() => { void commit(); setOpen(false) }, 150) }}
+        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+        className="min-h-[32px] w-full rounded border border-transparent bg-[var(--color-bg-subtle)] px-2 py-1 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-brand)] disabled:opacity-60"
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-50 mt-0.5 max-h-44 w-full overflow-y-auto rounded border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shadow-md">
+          {filtered.map((o) => (
+            <li key={o}>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => pick(o)}
+                className="w-full px-3 py-1.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)]"
+              >
+                {o}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 
