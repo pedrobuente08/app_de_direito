@@ -41,6 +41,7 @@ import { PopUpSobrestamento } from '@/components/popups'
 import { Btn } from '@/components/ui/btn'
 import { RegistrarSentencaSection } from './registrar-sentenca-section'
 import { ProWorkflowsSection } from './pro-workflows-section'
+import { ComunicacoesProcessoSection } from './comunicacoes-processo-section'
 import { DajeSection } from '@/components/processos/daje-section'
 import { desistirProcesso } from '@/lib/api'
 
@@ -228,6 +229,15 @@ export function ProcessoDetailPanel({
             ) : null}
           </div>
         ) : null}
+
+        <Section title="Publicações DJEN">
+          <ComunicacoesProcessoSection
+            processo={current}
+            onProcessoUpdated={(p) => { setCurrent(p); onUpdated(p) }}
+            toast={toast}
+            readOnly={ro}
+          />
+        </Section>
 
         <Section title="Observações">
           <Field label="Observação geral" className="col-span-2 sm:col-span-3">

@@ -1406,6 +1406,10 @@ export async function getComunicacoes(): Promise<Comunicacao[]> {
   return apiFetch<Comunicacao[]>('/comunicacoes')
 }
 
+export async function getComunicacoesProcesso(processoId: string): Promise<Comunicacao[]> {
+  return apiFetch<Comunicacao[]>(`/comunicacoes/processo/${processoId}`)
+}
+
 export async function getComunicacoesOrfas(page = 1, pageSize = 20): Promise<PaginatedComunicacoes> {
   return apiFetch<PaginatedComunicacoes>(`/comunicacoes/orfas?page=${page}&pageSize=${pageSize}`)
 }

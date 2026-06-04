@@ -38,6 +38,15 @@ export class ComunicacoesController {
     return this.comunicacoes.listar(user.escritorioId);
   }
 
+  @Get('processo/:processoId')
+  @Throttle(ThrottlePresets.comunicaList)
+  listarPorProcesso(
+    @CurrentUser() user: AuthUser,
+    @Param('processoId', ParseUUIDPipe) processoId: string,
+  ) {
+    return this.comunicacoes.listarPorProcesso(user.escritorioId, processoId);
+  }
+
   @Get('orfas')
   @Throttle(ThrottlePresets.comunicaList)
   listarOrfas(

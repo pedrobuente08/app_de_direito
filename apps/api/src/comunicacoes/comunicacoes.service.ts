@@ -1160,6 +1160,19 @@ export class ComunicacoesService {
     return { resolvidas };
   }
 
+  async listarPorProcesso(escritorioId: string, processoId: string) {
+    return this.drizzle.db
+      .select()
+      .from(comunicacao)
+      .where(
+        and(
+          eq(comunicacao.escritorioId, escritorioId),
+          eq(comunicacao.processoId, processoId),
+        ),
+      )
+      .orderBy(desc(comunicacao.createdAt));
+  }
+
   async listarOrfas(escritorioId: string, page: number, pageSize: number) {
     const offset = (page - 1) * pageSize;
     const where = and(
