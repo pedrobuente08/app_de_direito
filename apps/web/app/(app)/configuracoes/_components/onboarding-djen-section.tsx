@@ -5,6 +5,7 @@ import {
   getOnboardingStatus,
   getOabs,
   iniciarOnboardingDjen,
+  limparNomesDjen,
 } from '@/lib/api'
 import type { OnboardingStatus } from '@/lib/api'
 
@@ -59,6 +60,26 @@ export function OnboardingDjenSection({ disabled }: Props) {
   }, [status?.status, refreshStatus])
 
   const running = status?.status === 'RUNNING'
+
+  const [limpando, setLimpando] = useState(false)
+  const [resultadoLimpeza, setResultadoLimpeza] = useState<{
+    total: number; corrigidos: number; zerados: number; semMudanca: number
+  } | null>(null)
+  const [erroLimpeza, setErroLimpeza] = useState<string | null>(null)
+
+  async function onLimparNomes() {
+    setLimpando(true)
+    setResultadoLimpeza(null)
+    setErroLimpeza(null)
+    try {
+      const res = await limparNomesDjen()
+      setResultadoLimpeza(res)
+    } catch (e) {
+      setErroLimpeza((e as Error).message)
+    } finally {
+      setLimpando(false)
+    }
+  }
 
   async function onIniciar() {
     setError(null)
@@ -179,6 +200,42 @@ export function OnboardingDjenSection({ disabled }: Props) {
         <p className="mt-3 text-sm text-red-600">
           {status.erroMsg ?? 'Falha na importação.'}
         </p>
+      ) : null}
+
+      <hr className="my-5 border-[var(--color-border-default)]" />
+
+      <h3 className="mb-1 text-sm font-semibold text-[var(--color-text-primary)]">
+        Corrigir nomes de processos criados pelo DJEN
+      </h3>
+      <p className="mb-3 text-xs text-[var(--color-text-secondary)]">
+        Processos criados automaticamente podem ter nomes inválidos (texto da publicação no lugar do nome do cliente).
+        Esta operação verifica todos os processos criados pelo DJEN e tenta corrigir nomes ruins —
+        onde não for possível, o campo é zerado para preenchimento manual.
+      </p>
+
+      <button
+        type="button"
+        onClick={() => void onLimparNomes()}
+        disabled={disabled || limpando}
+        className="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] px-4 py-2 text-sm font-medium disabled:opacity-50 hover:bg-[var(--color-bg-subtle)]"
+      >
+        {limpando ? 'Corrigindo…' : 'Corrigir nomes inválidos'}
+      </button>
+
+      {erroLimpeza ? (
+        <p className="mt-2 text-sm text-red-600">{erroLimpeza}</p>
+      ) : null}
+
+      {resultadoLimpeza ? (
+        <div className="mt-3 rounded border border-[var(--color-border-default)] bg-[var(--color-bg-subtle)] p-3 text-xs">
+          <p className="font-semibold text-[var(--color-text-primary)]">Operação concluída</p>
+          <ul className="mt-1.5 space-y-0.5 text-[var(--color-text-secondary)]">
+            <li>{resultadoLimpeza.total} processos DJEN verificados</li>
+            <li>{resultadoLimpeza.semMudanca} já tinham nome válido (sem alteração)</li>
+            <li>{resultadoLimpeza.corrigidos} corrigidos com nome extraído da publicação</li>
+            <li>{resultadoLimpeza.zerados} zerados — nome em branco para preenchimento manual</li>
+          </ul>
+        </div>
       ) : null}
     </section>
   )

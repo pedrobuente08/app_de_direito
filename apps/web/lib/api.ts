@@ -1406,6 +1406,15 @@ export async function getComunicacoes(): Promise<Comunicacao[]> {
   return apiFetch<Comunicacao[]>('/comunicacoes')
 }
 
+export async function limparNomesDjen(): Promise<{
+  total: number
+  corrigidos: number
+  zerados: number
+  semMudanca: number
+}> {
+  return apiFetch('/comunicacoes/admin/limpar-nomes-djen', { method: 'POST' })
+}
+
 export async function getComunicacoesProcesso(processoId: string): Promise<Comunicacao[]> {
   return apiFetch<Comunicacao[]>(`/comunicacoes/processo/${processoId}`)
 }

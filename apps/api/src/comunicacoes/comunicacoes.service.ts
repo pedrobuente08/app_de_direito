@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { and, count, desc, eq, gte, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { EscritorioConfig } from '../db/schema/escritorio';
 import { escritorio } from '../db/schema/escritorio';
 import { comunicacao } from '../db/schema/comunicacao';
@@ -1175,6 +1175,79 @@ export class ComunicacoesService {
     }
 
     return { resolvidas };
+  }
+
+  /**
+   * Corrige em massa nomes de cliente em processos criados automaticamente pelo DJEN.
+   * Para cada processo com nome ausente ou inválido, tenta re-extrair do texto da publicação.
+   * Se não encontrar, zera o campo (fica em branco para preenchimento manual).
+   */
+  async limparNomesDjen(escritorioId: string): Promise<{
+    total: number;
+    corrigidos: number;
+    zerados: number;
+    semMudanca: number;
+  }> {
+    const processosDjen = await this.drizzle.db
+      .select({ id: processo.id, clienteNome: processo.clienteNome })
+      .from(processo)
+      .where(
+        and(
+          eq(processo.escritorioId, escritorioId),
+          inArray(processo.origemCriacao, ['DJEN_AUTO', 'DJEN_WEBHOOK']),
+        ),
+      );
+
+    let corrigidos = 0;
+    let zerados = 0;
+    let semMudanca = 0;
+
+    for (const proc of processosDjen) {
+      const nomeAtual = proc.clienteNome?.trim() || null;
+
+      if (nomeAtual && pareceNomePessoa(nomeAtual)) {
+        semMudanca++;
+        continue;
+      }
+
+      // Tenta extrair nome das publicações vinculadas ao processo
+      const coms = await this.drizzle.db
+        .select({ texto: comunicacao.conteudoCompleto, resumo: comunicacao.resumo })
+        .from(comunicacao)
+        .where(
+          and(
+            eq(comunicacao.escritorioId, escritorioId),
+            eq(comunicacao.processoId, proc.id),
+            or(
+              isNull(comunicacao.conteudoCompleto),
+              sql`${comunicacao.conteudoCompleto} <> ''`,
+            ),
+          ),
+        )
+        .limit(5);
+
+      let novoNome: string | null = null;
+      for (const com of coms) {
+        const extraido = extrairAutorDoTexto(com.texto ?? com.resumo);
+        if (extraido) {
+          novoNome = extraido;
+          break;
+        }
+      }
+
+      await this.drizzle.db
+        .update(processo)
+        .set({ clienteNome: novoNome })
+        .where(eq(processo.id, proc.id));
+
+      if (novoNome) {
+        corrigidos++;
+      } else {
+        zerados++;
+      }
+    }
+
+    return { total: processosDjen.length, corrigidos, zerados, semMudanca };
   }
 
   async listarPorProcesso(escritorioId: string, processoId: string) {

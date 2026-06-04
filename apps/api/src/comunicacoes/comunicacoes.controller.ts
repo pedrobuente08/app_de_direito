@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -36,6 +36,14 @@ export class ComunicacoesController {
   @Throttle(ThrottlePresets.comunicaList)
   listar(@CurrentUser() user: AuthUser) {
     return this.comunicacoes.listar(user.escritorioId);
+  }
+
+  @Post('admin/limpar-nomes-djen')
+  @Roles('admin', 'adm')
+  @HttpCode(200)
+  @Throttle(ThrottlePresets.comunicaWrite)
+  limparNomesDjen(@CurrentUser() user: AuthUser) {
+    return this.comunicacoes.limparNomesDjen(user.escritorioId);
   }
 
   @Get('processo/:processoId')
