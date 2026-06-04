@@ -990,6 +990,14 @@ export type Comunicacao = {
   createdAt: string
 }
 
+export type PaginatedComunicacoes = {
+  data: Comunicacao[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
 export type ResolverComunicacaoPayload = {
   decisao: 'VINCULAR' | 'NAO_E_NOSSO' | 'ERRO'
   processoId?: string

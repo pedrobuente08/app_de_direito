@@ -1,26 +1,31 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import type { Comunicacao } from '@/lib/types'
 import { RegistrarProcessoModal } from './registrar-processo-modal'
 
 type Props = {
   orfas: Comunicacao[]
+  total?: number
   materias?: string[]
   onResolved: () => void
 }
 
-export function OrfasSection({ orfas, materias, onResolved }: Props) {
+export function OrfasSection({ orfas, total, materias, onResolved }: Props) {
   const [selecionada, setSelecionada] = useState<Comunicacao | null>(null)
 
   if (orfas.length === 0) return null
+
+  const totalReal = total ?? orfas.length
+  const temMais = totalReal > orfas.length
 
   return (
     <>
       <section className="mb-6 rounded-[var(--radius-md)] border border-amber-400/60 bg-amber-50/60 p-4 dark:border-amber-600/40 dark:bg-amber-900/10">
         <div className="mb-3 flex items-center gap-2">
           <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-white">
-            {orfas.length}
+            {totalReal}
           </span>
           <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-200">
             Publicações aguardando registro de processo
@@ -78,6 +83,17 @@ export function OrfasSection({ orfas, materias, onResolved }: Props) {
             )
           })}
         </div>
+
+        {temMais && (
+          <div className="mt-3 text-center">
+            <Link
+              href="/comunicacoes"
+              className="text-xs font-medium text-amber-800 underline underline-offset-2 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200"
+            >
+              Ver todas as {totalReal} publicações →
+            </Link>
+          </div>
+        )}
       </section>
 
       {selecionada && (

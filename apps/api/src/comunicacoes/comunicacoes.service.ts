@@ -946,7 +946,9 @@ export class ComunicacoesService {
   ): Promise<string | null> {
     const digits = normNumero(numeroProcessoBruto ?? undefined);
     if (!digits) return null;
-    const candidatos = await this.drizzle.db
+
+    // Tentativa 1: match exato (caminho normal — número CNJ completo)
+    const [exato] = await this.drizzle.db
       .select({ id: processo.id })
       .from(processo)
       .where(
@@ -956,7 +958,27 @@ export class ComunicacoesService {
         ),
       )
       .limit(1);
-    return candidatos[0]?.id ?? null;
+
+    if (exato) return exato.id;
+
+    // Tentativa 2: match por prefixo quando o DJEN enviou número incompleto (< 15 dígitos).
+    // Só vincula se houver exatamente 1 processo correspondente — ambiguidade = não vincula.
+    if (digits.length >= 7 && digits.length < MIN_DIGITOS_NUMERO_PROCESSO) {
+      const parciais = await this.drizzle.db
+        .select({ id: processo.id })
+        .from(processo)
+        .where(
+          and(
+            eq(processo.escritorioId, escritorioId),
+            sql`regexp_replace(${processo.numero}, '[^0-9]', '', 'g') LIKE ${digits + '%'}`,
+          ),
+        )
+        .limit(2);
+
+      if (parciais.length === 1) return parciais[0].id;
+    }
+
+    return null;
   }
 
   /** Classificador rule-based: tipo consta em comunica_regras com criar_pendencia? */
@@ -1138,18 +1160,28 @@ export class ComunicacoesService {
     return { resolvidas };
   }
 
-  async listarOrfas(escritorioId: string) {
-    return this.drizzle.db
+  async listarOrfas(escritorioId: string, page: number, pageSize: number) {
+    const offset = (page - 1) * pageSize;
+    const where = and(
+      eq(comunicacao.escritorioId, escritorioId),
+      eq(comunicacao.status, 'ORFA'),
+    );
+
+    const [totalRow] = await this.drizzle.db
+      .select({ c: count() })
+      .from(comunicacao)
+      .where(where);
+
+    const data = await this.drizzle.db
       .select()
       .from(comunicacao)
-      .where(
-        and(
-          eq(comunicacao.escritorioId, escritorioId),
-          eq(comunicacao.status, 'ORFA'),
-        ),
-      )
+      .where(where)
       .orderBy(desc(comunicacao.createdAt))
-      .limit(100);
+      .limit(pageSize)
+      .offset(offset);
+
+    const total = totalRow?.c ?? 0;
+    return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) || 1 };
   }
 
   async cadastrarOab(escritorioId: string, dto: CadastrarOabDto) {

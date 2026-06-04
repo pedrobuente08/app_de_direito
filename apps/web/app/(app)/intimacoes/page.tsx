@@ -17,9 +17,9 @@ import {
 import { ToastContainer, useToast } from '@/lib/toast'
 import type {
   Comarca,
-  Comunicacao,
   ConfirmarBatchItem,
   DropdownsProcessoConfig,
+  PaginatedComunicacoes,
   PdfPreviewItem,
   Processo,
   ProcessosListMeta,
@@ -106,7 +106,7 @@ export default function IntimacoesPage() {
   const [appliedSortOrder, setAppliedSortOrder] = useState<'asc' | 'desc'>('desc')
   const [page, setPage] = useState(1)
 
-  const [orfas, setOrfas] = useState<Comunicacao[]>([])
+  const [orfasPaginadas, setOrfasPaginadas] = useState<PaginatedComunicacoes | null>(null)
   const [readOnly, setReadOnly] = useState(false)
   const [dropdowns, setDropdowns] = useState<DropdownsProcessoConfig | null>(null)
   const [varasConfig, setVarasConfig] = useState<Record<string, VaraConfig> | null>(null)
@@ -221,7 +221,7 @@ export default function IntimacoesPage() {
 
   useEffect(() => {
     getProcessosResumo().then(setResumo).catch(() => setResumo(null))
-    getComunicacoesOrfas().then(setOrfas).catch(() => setOrfas([]))
+    getComunicacoesOrfas(1, 20).then(setOrfasPaginadas).catch(() => setOrfasPaginadas(null))
   }, [])
 
   const onRowUpdated = useCallback((row: Processo) => {
@@ -408,10 +408,11 @@ export default function IntimacoesPage() {
       </div>
 
       <OrfasSection
-        orfas={orfas}
+        orfas={orfasPaginadas?.data ?? []}
+        total={orfasPaginadas?.total}
         materias={pdfCatalogo.materias}
         onResolved={() => {
-          getComunicacoesOrfas().then(setOrfas).catch(() => setOrfas([]))
+          getComunicacoesOrfas(1, 20).then(setOrfasPaginadas).catch(() => setOrfasPaginadas(null))
           load()
         }}
       />

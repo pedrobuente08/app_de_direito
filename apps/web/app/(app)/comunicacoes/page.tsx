@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   cadastrarOab,
   getComunicacoes,
+  getComunicacoesOrfas,
   getOabs,
   getProcessos,
   resolverComunicacao,
@@ -12,7 +13,7 @@ import { FamiliaTabs } from '@/components/ui/familia-tabs'
 import { FilterBar, FilterField, filterControlClass } from '@/components/ui/filter-bar'
 import { Btn } from '@/components/ui/btn'
 import { ToastContainer, useToast } from '@/lib/toast'
-import type { Comunicacao, OabEscuta, ResolverComunicacaoPayload } from '@/lib/types'
+import type { Comunicacao, OabEscuta, PaginatedComunicacoes, ResolverComunicacaoPayload } from '@/lib/types'
 
 const STATUS_CLASS: Record<string, string> = {
   LIDA: 'bg-[var(--urgencia-normal-bg)] text-[var(--urgencia-normal-text)]',
@@ -30,6 +31,8 @@ function formatDate(iso?: string | null) {
 
 export default function ComunicacoesPage() {
   const [comunicacoes, setComunicacoes] = useState<Comunicacao[]>([])
+  const [orfasPaginadas, setOrfasPaginadas] = useState<PaginatedComunicacoes | null>(null)
+  const [orfasPage, setOrfasPage] = useState(1)
   const [oabs, setOabs] = useState<OabEscuta[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +45,21 @@ export default function ComunicacoesPage() {
   const [vinculoSistema, setVinculoSistema] = useState('ESAJ')
   const toast = useToast()
 
-  const load = useCallback(async () => {
+  const loadOrfas = useCallback(async (page: number) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const [result, o] = await Promise.all([getComunicacoesOrfas(page, 20), getOabs()])
+      setOrfasPaginadas(result)
+      setOabs(o)
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const loadTodas = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -56,16 +73,19 @@ export default function ComunicacoesPage() {
     }
   }, [])
 
+  const load = useCallback(async () => {
+    if (aba === 'orfas') {
+      await loadOrfas(orfasPage)
+    } else {
+      await loadTodas()
+    }
+  }, [aba, orfasPage, loadOrfas, loadTodas])
+
   useEffect(() => {
     void load()
   }, [load])
 
-  const orfas = useMemo(
-    () => comunicacoes.filter((c) => !c.processoId && c.status === 'ORFA'),
-    [comunicacoes],
-  )
-
-  const lista = aba === 'orfas' ? orfas : comunicacoes
+  const lista = aba === 'orfas' ? (orfasPaginadas?.data ?? []) : comunicacoes
 
   async function handleCadastrarOab(e: React.FormEvent) {
     e.preventDefault()
@@ -175,11 +195,14 @@ export default function ComunicacoesPage() {
 
       <FamiliaTabs
         tabs={[
-          { id: 'orfas', label: 'Sem processo', count: orfas.length },
+          { id: 'orfas', label: 'Sem processo', count: orfasPaginadas?.total ?? 0 },
           { id: 'todas', label: 'Todas', count: comunicacoes.length },
         ]}
         activeId={aba}
-        onChange={(id) => setAba(id as 'orfas' | 'todas')}
+        onChange={(id) => {
+          setAba(id as 'orfas' | 'todas')
+          setOrfasPage(1)
+        }}
       />
 
       {loading ? (
@@ -295,6 +318,32 @@ export default function ComunicacoesPage() {
               ) : null}
             </article>
           ))}
+
+          {aba === 'orfas' && orfasPaginadas && orfasPaginadas.totalPages > 1 && (
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-xs text-[var(--color-text-secondary)]">
+                Página {orfasPaginadas.page} de {orfasPaginadas.totalPages} · {orfasPaginadas.total} comunicações
+              </span>
+              <div className="flex gap-2">
+                <Btn
+                  variant="default"
+                  className="!py-1.5 text-xs"
+                  disabled={orfasPaginadas.page <= 1}
+                  onClick={() => setOrfasPage((p) => p - 1)}
+                >
+                  ← Anterior
+                </Btn>
+                <Btn
+                  variant="default"
+                  className="!py-1.5 text-xs"
+                  disabled={orfasPaginadas.page >= orfasPaginadas.totalPages}
+                  onClick={() => setOrfasPage((p) => p + 1)}
+                >
+                  Próxima →
+                </Btn>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

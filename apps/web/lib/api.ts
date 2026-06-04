@@ -2,6 +2,7 @@ import type {
   Audiencia,
   Comarca,
   Comunicacao,
+  PaginatedComunicacoes,
   ConfirmarBatchItem,
   ConfirmarBatchResult,
   DashTeseReuVara,
@@ -1405,8 +1406,8 @@ export async function getComunicacoes(): Promise<Comunicacao[]> {
   return apiFetch<Comunicacao[]>('/comunicacoes')
 }
 
-export async function getComunicacoesOrfas(): Promise<Comunicacao[]> {
-  return apiFetch<Comunicacao[]>('/comunicacoes/orfas')
+export async function getComunicacoesOrfas(page = 1, pageSize = 20): Promise<PaginatedComunicacoes> {
+  return apiFetch<PaginatedComunicacoes>(`/comunicacoes/orfas?page=${page}&pageSize=${pageSize}`)
 }
 
 export async function getOabs(): Promise<OabEscuta[]> {

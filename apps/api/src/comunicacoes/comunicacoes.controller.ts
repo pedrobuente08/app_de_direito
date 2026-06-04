@@ -8,6 +8,7 @@ import { ComunicacoesService } from './comunicacoes.service';
 import { CadastrarOabDto } from './dto/cadastrar-oab.dto';
 import { ComunicacaoWebhookDto } from './dto/comunicacao-webhook.dto';
 import { ComunicacoesDigestQueryDto } from './dto/comunicacoes-digest.query.dto';
+import { ComunicacoesOrfasQueryDto } from './dto/comunicacoes-orfas.query.dto';
 import { ResolverComunicacaoDto } from './dto/resolver-comunicacao.dto';
 
 @Controller('comunicacoes')
@@ -39,8 +40,11 @@ export class ComunicacoesController {
 
   @Get('orfas')
   @Throttle(ThrottlePresets.comunicaList)
-  listarOrfas(@CurrentUser() user: AuthUser) {
-    return this.comunicacoes.listarOrfas(user.escritorioId);
+  listarOrfas(
+    @CurrentUser() user: AuthUser,
+    @Query() query: ComunicacoesOrfasQueryDto,
+  ) {
+    return this.comunicacoes.listarOrfas(user.escritorioId, query.page ?? 1, query.pageSize ?? 20);
   }
 
   @Get('oabs')
