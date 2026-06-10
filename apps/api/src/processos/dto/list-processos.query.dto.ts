@@ -5,6 +5,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -49,6 +50,11 @@ export class ListProcessosQueryDto {
   @IsString()
   @MaxLength(30)
   numero?: string;
+
+  /** Filtro exato por UUID do processo (deep-link desde publicações DJEN). */
+  @IsOptional()
+  @IsUUID()
+  id?: string;
 
   @IsOptional()
   @IsString()

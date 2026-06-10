@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { patchProcesso } from '@/lib/api'
 import type { DropdownsProcessoConfig, Processo, VaraConfig } from '@/lib/types'
 import { ProcessoDetailPanel } from './processo-detail-panel'
 import type { ToastApi } from './processo-editable'
@@ -32,6 +33,8 @@ export function ProcessoModal({
   materias,
   logins,
 }: Props) {
+  const conferidoRef = useRef(false)
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -39,6 +42,16 @@ export function ProcessoModal({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  useEffect(() => {
+    if (readOnly || !processo.requerConferencia || conferidoRef.current) return
+    conferidoRef.current = true
+    void patchProcesso(processo.id, { requerConferencia: false })
+      .then(onUpdated)
+      .catch(() => {
+        conferidoRef.current = false
+      })
+  }, [processo.id, processo.requerConferencia, readOnly, onUpdated])
 
   if (typeof document === 'undefined') return null
 

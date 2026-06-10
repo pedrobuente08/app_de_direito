@@ -256,8 +256,16 @@ export function ProcessosGrid({
             <tr
               key={row.id}
               onClick={() => onRowClick(row.original)}
-              style={rowTintStyle(row.original.parceiroCorHex)}
-              className={`cursor-pointer hover:bg-[var(--color-bg-hover)] ${
+              style={
+                row.original.requerConferencia
+                  ? undefined
+                  : rowTintStyle(row.original.parceiroCorHex)
+              }
+              className={`cursor-pointer ${
+                row.original.requerConferencia
+                  ? 'bg-[var(--urgencia-atencao-bg)]/45 hover:bg-[var(--urgencia-atencao-bg)]/70'
+                  : 'hover:bg-[var(--color-bg-hover)]'
+              } ${
                 row.original.alertaCrVara ? 'border-l-4 border-l-orange-400' : ''
               } ${
                 row.original.litiganciaMaFe ? 'border-l-4 border-l-red-500' : ''

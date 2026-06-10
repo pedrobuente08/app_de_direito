@@ -63,23 +63,20 @@ export default function PublicacoesPage() {
   const orfas = useMemo(() => comunicacoes.filter((c) => c.status === 'ORFA').length, [comunicacoes])
 
   async function handleClick(c: Comunicacao) {
-    if (c.status === 'NAO_LIDA') {
-      try {
-        const updated = await patchComunicacaoStatus(c.id, 'LIDA')
-        setComunicacoes((prev) => prev.map((x) => x.id === updated.id ? updated : x))
-      } catch {
-        // silently ignore — navigate anyway
-      }
-    }
     if (c.status === 'ORFA' || !c.processoId) {
       router.push('/comunicacoes')
       return
     }
-    const numero = c.numeroProcessoBruto?.trim()
-    if (numero) {
-      router.push(`/intimacoes?numero=${encodeURIComponent(numero)}`)
-    } else {
-      router.push('/intimacoes')
+
+    router.push(`/intimacoes?processoId=${encodeURIComponent(c.processoId)}`)
+
+    if (c.status === 'NAO_LIDA') {
+      try {
+        const updated = await patchComunicacaoStatus(c.id, 'LIDA')
+        setComunicacoes((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))
+      } catch {
+        // navegação já ocorreu — falha ao marcar lida não bloqueia
+      }
     }
   }
 

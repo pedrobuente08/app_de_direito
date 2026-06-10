@@ -8,6 +8,7 @@ import { PendenciasModule } from '../pendencias/pendencias.module';
 import { ProcessosModule } from '../processos/processos.module';
 import { PjeModule } from '../pje/pje.module';
 import { ParceirosModule } from '../parceiros/parceiros.module';
+import { EnriquecimentoModule } from '../enriquecimento/enriquecimento.module';
 import { ComunicacoesDigestCronService } from './comunicacoes-digest.cron';
 import { ComunicacoesOrfasCronService } from './comunicacoes-orfas.cron';
 import { ComunicacoesController } from './comunicacoes.controller';
@@ -24,6 +25,7 @@ import { ComunicacoesService } from './comunicacoes.service';
     NotificacoesModule,
     PjeModule,
     ParceirosModule,
+    EnriquecimentoModule,
   ],
   controllers: [ComunicacoesController],
   providers: [ComunicacoesService, ComunicacoesDigestCronService, ComunicacoesOrfasCronService],

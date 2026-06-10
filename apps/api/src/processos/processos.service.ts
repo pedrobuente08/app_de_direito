@@ -134,6 +134,9 @@ export class ProcessosService {
 
     const filters = [eq(processo.escritorioId, escritorioId)];
 
+    if (query.id?.trim()) {
+      filters.push(eq(processo.id, query.id.trim()));
+    }
     if (query.numero?.trim()) {
       filters.push(ilike(processo.numero, `%${query.numero.trim()}%`));
     }

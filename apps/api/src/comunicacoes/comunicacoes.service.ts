@@ -23,6 +23,7 @@ import { ProcessosHipossuficienciaService } from '../processos/processos-hipossu
 import { PendenciasService } from '../pendencias/pendencias.service';
 import { ProcessosService } from '../processos/processos.service';
 import { ParceirosService } from '../parceiros/parceiros.service';
+import { EnriquecimentoQueueService } from '../enriquecimento/enriquecimento-queue.service';
 import { PjeService } from '../pje/pje.service';
 import type { CadastrarOabDto } from './dto/cadastrar-oab.dto';
 import type { ComunicacaoWebhookDto } from './dto/comunicacao-webhook.dto';
@@ -75,6 +76,28 @@ function inferirSistema(item: ComunicaApiItem): string {
 function extrairVara(item: ComunicaApiItem): string | null {
   const org = item.nomeOrgao?.trim();
   return org ? org.slice(0, 50) : null;
+}
+
+/** OAB do advogado destinatário (ex.: `66364/BA`), preferindo a OAB da escuta. */
+function extrairLoginDeComunica(
+  item: ComunicaApiItem,
+  oabEscuta?: string | null,
+): string | null {
+  const candidatos = (item.destinatarioadvogados ?? [])
+    .map((row) => row.advogado)
+    .filter((adv) => adv?.numero_oab?.trim() && adv?.uf_oab?.trim())
+    .map((adv) =>
+      `${adv!.numero_oab.trim()}/${adv!.uf_oab.trim()}`.toUpperCase(),
+    );
+
+  const alvo = oabEscuta?.trim().toUpperCase();
+  if (alvo) {
+    const match = candidatos.find((c) => c === alvo);
+    if (match) return match.slice(0, 50);
+    if (!candidatos.length) return alvo.slice(0, 50);
+  }
+
+  return candidatos[0]?.slice(0, 50) ?? null;
 }
 
 export type OrigemCriacaoProcesso = 'DJEN_AUTO' | 'ONBOARDING';
@@ -355,6 +378,7 @@ export class ComunicacoesService {
     private readonly hipossuf: ProcessosHipossuficienciaService,
     private readonly pje: PjeService,
     private readonly parceiros: ParceirosService,
+    private readonly enriquecimentoQueue: EnriquecimentoQueueService,
   ) {}
 
   private async validarTokenEscritorio(
@@ -875,6 +899,7 @@ export class ComunicacoesService {
     digits: string,
     item: ComunicaApiItem,
     origemCriacao: OrigemCriacaoProcesso,
+    oabEscuta?: string | null,
   ): Promise<string> {
     const numero = numeroExibicao(numeroProcessoBruto, digits);
     const tipo =
@@ -904,12 +929,14 @@ export class ComunicacoesService {
     }
     const faseInicial = inferirFaseInicialDjen(tipo, audData, hoje);
     const resumoCurto = resumoDeTexto(item.texto, 500);
+    const login = extrairLoginDeComunica(item, oabEscuta);
 
     const [row] = await this.drizzle.db
       .insert(processo)
       .values({
         escritorioId,
         numero,
+        login,
         clienteNome: cliente,
         reuTexto: reu,
         vara: extrairVara(item),
@@ -1054,8 +1081,25 @@ export class ComunicacoesService {
         digits!,
         item,
         origem,
+        oab,
       );
       processoCriado = true;
+
+      const oabRaw = oab.trim().toUpperCase();
+      const [numeroOab, ufOab] = oabRaw.includes('/')
+        ? oabRaw.split('/')
+        : [oabRaw, ''];
+      void this.enriquecimentoQueue
+        .enfileirar({
+          processoId,
+          escritorioId,
+          numeroProcesso: numeroProcessoBruto ?? digits!,
+          oab: numeroOab,
+          ufOab: ufOab,
+        })
+        .catch((err) =>
+          this.log.warn(`Falha ao enfileirar enriquecimento processo=${processoId}: ${err}`),
+        );
     }
 
     const tipo = item.tipoComunicacao?.trim() || item.tipoDocumento?.trim() || null;

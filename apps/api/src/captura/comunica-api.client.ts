@@ -11,6 +11,12 @@ export type ConsultaOabParams = {
   itensPorPagina?: number;
 };
 
+export type ConsultaProcessoParams = {
+  numeroOab: string;
+  ufOab: string;
+  numeroProcesso: string;
+};
+
 @Injectable()
 export class ComunicaApiClient {
   private readonly log = new Logger(ComunicaApiClient.name);
@@ -78,6 +84,44 @@ export class ComunicaApiClient {
       items.push(...page.items);
       if (page.items.length < (params.itensPorPagina ?? 100)) break;
       pagina += 1;
+    }
+
+    return items;
+  }
+
+  async consultarPorNumeroProcesso(
+    params: ConsultaProcessoParams,
+    maxPaginas = 5,
+  ): Promise<ComunicaApiItem[]> {
+    const items: ComunicaApiItem[] = [];
+
+    for (let pagina = 1; pagina <= maxPaginas; pagina++) {
+      const url = new URL(`${this.baseUrl.replace(/\/$/, '')}/comunicacao`);
+      url.searchParams.set('pagina', String(pagina));
+      url.searchParams.set('itensPorPagina', '100');
+      url.searchParams.set('numeroOab', params.numeroOab);
+      url.searchParams.set('ufOab', params.ufOab);
+      url.searchParams.set('numeroProcesso', params.numeroProcesso);
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+
+      try {
+        const res = await fetch(url.toString(), {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
+        });
+        if (!res.ok) break;
+        const data = (await res.json()) as ComunicaApiResponse;
+        if (data.status !== 'success' || !data.items?.length) break;
+        items.push(...data.items);
+        if (data.items.length < 100) break;
+      } catch {
+        break;
+      } finally {
+        clearTimeout(timer);
+      }
     }
 
     return items;

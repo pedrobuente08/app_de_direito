@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import {
   confirmarBatchPdf,
   getAuthMe,
@@ -60,6 +61,25 @@ const MOVIMENTACAO_OPCOES = [
 ] as const
 
 export default function IntimacoesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-2 p-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-9 animate-pulse rounded bg-[var(--color-bg-subtle)]" />
+          ))}
+        </div>
+      }
+    >
+      <IntimacoesPageContent />
+    </Suspense>
+  )
+}
+
+function IntimacoesPageContent() {
+  const searchParams = useSearchParams()
+  const deepLinkProcessoId = searchParams.get('processoId')?.trim() ?? ''
+  const deepLinkNumero = searchParams.get('numero')?.trim() ?? ''
   const [processos, setProcessos] = useState<Processo[]>([])
   const [meta, setMeta] = useState<ProcessosListMeta | null>(null)
   const [loading, setLoading] = useState(true)
@@ -70,7 +90,7 @@ export default function IntimacoesPage() {
 
   const [filtrosAbertos, setFiltrosAbertos] = useState(false)
 
-  const [draftNumero, setDraftNumero] = useState('')
+  const [draftNumero, setDraftNumero] = useState(deepLinkNumero)
   const [draftCliente, setDraftCliente] = useState('')
   const [draftVara, setDraftVara] = useState('')
   const [draftQualidadeCaso, setDraftQualidadeCaso] = useState('')
@@ -83,7 +103,8 @@ export default function IntimacoesPage() {
   >('createdAt')
   const [draftSortOrder, setDraftSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  const [appliedNumero, setAppliedNumero] = useState('')
+  const [appliedNumero, setAppliedNumero] = useState(deepLinkNumero)
+  const [appliedProcessoId, setAppliedProcessoId] = useState(deepLinkProcessoId)
   const [appliedCliente, setAppliedCliente] = useState('')
   const [appliedVara, setAppliedVara] = useState('')
   const [appliedQualidadeCaso, setAppliedQualidadeCaso] = useState('')
@@ -114,14 +135,20 @@ export default function IntimacoesPage() {
   const [orfasPaginadas, setOrfasPaginadas] = useState<PaginatedComunicacoes | null>(null)
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const numero = params.get('numero')
-    if (numero?.trim()) {
-      setDraftNumero(numero.trim())
-      setAppliedNumero(numero.trim())
+    const processoId = searchParams.get('processoId')?.trim() ?? ''
+    const numero = searchParams.get('numero')?.trim() ?? ''
+    if (processoId) {
+      setAppliedProcessoId(processoId)
+      setAppliedNumero('')
+      setDraftNumero('')
+      setPage(1)
+    } else if (numero) {
+      setAppliedProcessoId('')
+      setAppliedNumero(numero)
+      setDraftNumero(numero)
+      setPage(1)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [searchParams])
   const [readOnly, setReadOnly] = useState(false)
   const [dropdowns, setDropdowns] = useState<DropdownsProcessoConfig | null>(null)
   const [varasConfig, setVarasConfig] = useState<Record<string, VaraConfig> | null>(null)
@@ -188,6 +215,7 @@ export default function IntimacoesPage() {
         page,
         sort: appliedSortField,
         order: appliedSortOrder,
+        ...(appliedProcessoId.trim() && { id: appliedProcessoId.trim() }),
         ...(appliedNumero.trim() && { numero: appliedNumero.trim() }),
         ...(appliedCliente.trim() && { clienteNome: appliedCliente.trim() }),
         ...(appliedVara.trim() && { vara: appliedVara.trim() }),
@@ -219,6 +247,7 @@ export default function IntimacoesPage() {
     }
   }, [
     appliedNumero,
+    appliedProcessoId,
     appliedCliente,
     appliedVara,
     appliedMateria,
@@ -248,6 +277,7 @@ export default function IntimacoesPage() {
   }, [])
 
   function aplicarFiltros() {
+    setAppliedProcessoId('')
     setAppliedNumero(draftNumero)
     setAppliedCliente(draftCliente)
     setAppliedVara(draftVara)
@@ -633,7 +663,20 @@ export default function IntimacoesPage() {
         <>
           <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
             Clique em um processo para ver detalhes{readOnly ? '.' : ' e editar.'}
+            {' · '}
+            <span className="inline-block rounded bg-[var(--urgencia-atencao-bg)]/50 px-1.5 py-0.5">
+              Amarelo
+            </span>
+            {' '}= ainda não aberto no modal
           </p>
+          {appliedProcessoId ? (
+            <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
+              Filtrando 1 processo (vindo de publicação DJEN).{' '}
+              <Link href="/intimacoes" className="text-[var(--color-brand)] hover:underline">
+                Ver todos
+              </Link>
+            </p>
+          ) : null}
           <ProcessosGrid
             data={processos}
             onRowClick={setSelectedProcesso}

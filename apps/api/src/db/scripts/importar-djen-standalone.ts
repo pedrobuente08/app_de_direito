@@ -195,6 +195,9 @@ type DjenItem = {
   nomeParteAutora?: string | null;
   ativo?: boolean;
   destinatarios?: Array<{ nome: string; polo: string }>;
+  destinatarioadvogados?: Array<{
+    advogado: { nome: string; numero_oab: string; uf_oab: string };
+  }>;
   nomeClasse?: string;
   link?: string;
 };
@@ -205,6 +208,24 @@ type DjenResponse = {
   items?: DjenItem[];
   totalItems?: number;
 };
+
+function extrairLoginDeComunica(
+  item: DjenItem,
+  oabEscuta: string,
+): string | null {
+  const candidatos = (item.destinatarioadvogados ?? [])
+    .map((row) => row.advogado)
+    .filter((adv) => adv?.numero_oab?.trim() && adv?.uf_oab?.trim())
+    .map((adv) =>
+      `${adv!.numero_oab.trim()}/${adv!.uf_oab.trim()}`.toUpperCase(),
+    );
+
+  const alvo = oabEscuta.trim().toUpperCase();
+  const match = candidatos.find((c) => c === alvo);
+  if (match) return match.slice(0, 50);
+  if (!candidatos.length) return alvo.slice(0, 50);
+  return candidatos[0]?.slice(0, 50) ?? null;
+}
 
 async function fetchDjenPage(
   oab: string, uf: string, dataInicio: string, dataFim: string, pagina: number,
@@ -319,11 +340,12 @@ async function main() {
         item.nomeParteAutora?.trim() ||
         extrairAutorDoTexto(texto);
       const reuTexto = extrairReuDoTexto(texto);
+      const login = extrairLoginDeComunica(item, `${oabNumero}/${oabUf}`);
 
       // Upsert processo (ignora se já existe pelo UNIQUE escritorio_id + numero)
       const procRes = await pg.query<{ id: string; existed: boolean }>(
         `INSERT INTO processo (
-           id, escritorio_id, numero, sistema, vara,
+           id, escritorio_id, numero, login, sistema, vara,
            cliente_nome, reu_texto,
            fase_atual, status_processo,
            data_distribuicao,
@@ -331,18 +353,18 @@ async function main() {
            requer_conferencia, origem_criacao,
            created_at, updated_at
          ) VALUES (
-           $1, $2, $3, $4, $5,
-           $6, $7,
-           $8, 'ATIVO',
-           $9::date,
-           $10, $11,
+           $1, $2, $3, $4, $5, $6,
+           $7, $8,
+           $9, 'ATIVO',
+           $10::date,
+           $11, $12,
            true, 'ONBOARDING',
            now(), now()
          )
          ON CONFLICT (escritorio_id, numero) DO NOTHING
          RETURNING id, false AS existed`,
         [
-          randomUUID(), escritorioId, numero, sistema, vara,
+          randomUUID(), escritorioId, numero, login, sistema, vara,
           clienteNome ?? null, reuTexto,
           fase,
           dispYmd,
