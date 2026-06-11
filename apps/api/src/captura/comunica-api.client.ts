@@ -27,7 +27,7 @@ export class ComunicaApiClient {
     this.baseUrl =
       config.get<string>('COMUNICA_API_BASE_URL')?.trim() ||
       'https://comunicaapi.pje.jus.br/api/v1';
-    this.timeoutMs = Number(config.get('COMUNICA_API_TIMEOUT_MS') ?? 30_000);
+    this.timeoutMs = Number(config.get('COMUNICA_API_TIMEOUT_MS') ?? 60_000);
   }
 
   async consultarPorOab(params: ConsultaOabParams): Promise<ComunicaApiResponse> {

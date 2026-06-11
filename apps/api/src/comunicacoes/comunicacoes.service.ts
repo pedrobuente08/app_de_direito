@@ -1178,13 +1178,19 @@ export class ComunicacoesService {
     return row;
   }
 
-  async listar(escritorioId: string, limit = 200) {
-    return this.drizzle.db
+  async listar(escritorioId: string, page = 1, pageSize = 30) {
+    const offset = (page - 1) * pageSize;
+    const where = eq(comunicacao.escritorioId, escritorioId);
+    const [totalRow] = await this.drizzle.db.select({ c: count() }).from(comunicacao).where(where);
+    const data = await this.drizzle.db
       .select()
       .from(comunicacao)
-      .where(eq(comunicacao.escritorioId, escritorioId))
+      .where(where)
       .orderBy(desc(comunicacao.createdAt))
-      .limit(limit);
+      .limit(pageSize)
+      .offset(offset);
+    const total = totalRow?.c ?? 0;
+    return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) || 1 };
   }
 
   /**

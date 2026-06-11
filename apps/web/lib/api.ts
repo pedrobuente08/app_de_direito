@@ -1402,8 +1402,8 @@ export async function previewMigracaoComplemento(linhas: string[]): Promise<{
 
 // ─── Comunicações ─────────────────────────────────────────────────────────────
 
-export async function getComunicacoes(): Promise<Comunicacao[]> {
-  return apiFetch<Comunicacao[]>('/comunicacoes')
+export async function getComunicacoes(page = 1, pageSize = 30): Promise<PaginatedComunicacoes> {
+  return apiFetch<PaginatedComunicacoes>(`/comunicacoes?page=${page}&pageSize=${pageSize}`)
 }
 
 export async function limparNomesDjen(): Promise<{

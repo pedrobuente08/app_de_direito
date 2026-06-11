@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation'
 import { getComunicacoes, patchComunicacaoStatus } from '@/lib/api'
 import { FamiliaTabs } from '@/components/ui/familia-tabs'
 import { ToastContainer, useToast } from '@/lib/toast'
-import type { Comunicacao } from '@/lib/types'
+import type { Comunicacao, PaginatedComunicacoes } from '@/lib/types'
+
+const PAGE_SIZE = 30
 
 const STATUS_LABEL: Record<string, string> = {
   LIDA: 'Lida',
@@ -37,19 +39,24 @@ export default function PublicacoesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [aba, setAba] = useState<Aba>('todas')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
 
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const data = await getComunicacoes()
-      setComunicacoes(data)
+      const result: PaginatedComunicacoes = await getComunicacoes(page, PAGE_SIZE)
+      setComunicacoes(result.data)
+      setTotal(result.total)
+      setTotalPages(result.totalPages)
     } catch (e) {
       setError((e as Error).message)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [page])
 
   useEffect(() => { void load() }, [load])
 
@@ -95,12 +102,12 @@ export default function PublicacoesPage() {
 
       <FamiliaTabs
         tabs={[
-          { id: 'todas', label: 'Todas', count: comunicacoes.length },
+          { id: 'todas', label: 'Todas', count: total },
           { id: 'nao_lida', label: 'Não lidas', count: naoLidas },
           { id: 'orfa', label: 'Sem processo', count: orfas },
         ]}
         activeId={aba}
-        onChange={(id) => setAba(id as Aba)}
+        onChange={(id) => { setAba(id as Aba); setPage(1) }}
       />
 
       {loading ? (
@@ -119,40 +126,66 @@ export default function PublicacoesPage() {
       ) : lista.length === 0 ? (
         <p className="text-sm text-[var(--color-text-secondary)]">Nenhuma publicação nesta visão.</p>
       ) : (
-        <div className="space-y-2">
-          {lista.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => handleClick(c)}
-              className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-4 py-3 text-left transition-colors hover:bg-[var(--color-bg-subtle)]"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                {c.tipo && (
-                  <span className="rounded bg-[var(--urgencia-atencao-bg)] px-1.5 py-0.5 font-mono text-[10px] font-medium text-[var(--urgencia-atencao-text)]">
-                    {c.tipo}
+        <>
+          <div className="space-y-2">
+            {lista.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => handleClick(c)}
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-4 py-3 text-left transition-colors hover:bg-[var(--color-bg-subtle)]"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  {c.tipo && (
+                    <span className="rounded bg-[var(--urgencia-atencao-bg)] px-1.5 py-0.5 font-mono text-[10px] font-medium text-[var(--urgencia-atencao-text)]">
+                      {c.tipo}
+                    </span>
+                  )}
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_CLASS[c.status] ?? ''}`}
+                  >
+                    {STATUS_LABEL[c.status] ?? c.status}
                   </span>
+                  <span className="font-mono text-xs text-[var(--color-text-secondary)]">
+                    {c.numeroProcessoBruto ?? '—'}
+                  </span>
+                  <span className="ml-auto text-[11px] text-[var(--color-text-tertiary)]">
+                    {formatDate(c.dataDisponibilizacao ?? c.createdAt)} · OAB {c.oab}
+                  </span>
+                </div>
+                {c.resumo && (
+                  <p className="mt-1.5 line-clamp-2 text-[11px] leading-snug text-[var(--color-text-secondary)]">
+                    {c.resumo}
+                  </p>
                 )}
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_CLASS[c.status] ?? ''}`}
-                >
-                  {STATUS_LABEL[c.status] ?? c.status}
-                </span>
-                <span className="font-mono text-xs text-[var(--color-text-secondary)]">
-                  {c.numeroProcessoBruto ?? '—'}
-                </span>
-                <span className="ml-auto text-[11px] text-[var(--color-text-tertiary)]">
-                  {formatDate(c.dataDisponibilizacao ?? c.createdAt)} · OAB {c.oab}
-                </span>
-              </div>
-              {c.resumo && (
-                <p className="mt-1.5 line-clamp-2 text-[11px] leading-snug text-[var(--color-text-secondary)]">
-                  {c.resumo}
-                </p>
-              )}
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="rounded border border-[var(--color-border-default)] px-3 py-1.5 text-sm disabled:opacity-40"
+              >
+                Anterior
+              </button>
+              <span className="text-sm text-[var(--color-text-secondary)]">
+                {page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={page >= totalPages || loading}
+                onClick={() => setPage((p) => p + 1)}
+                className="rounded border border-[var(--color-border-default)] px-3 py-1.5 text-sm disabled:opacity-40"
+              >
+                Próxima
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

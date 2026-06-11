@@ -8,6 +8,7 @@ import { ComunicacoesService } from './comunicacoes.service';
 import { CadastrarOabDto } from './dto/cadastrar-oab.dto';
 import { ComunicacaoWebhookDto } from './dto/comunicacao-webhook.dto';
 import { ComunicacoesDigestQueryDto } from './dto/comunicacoes-digest.query.dto';
+import { ComunicacoesListQueryDto } from './dto/comunicacoes-list.query.dto';
 import { ComunicacoesOrfasQueryDto } from './dto/comunicacoes-orfas.query.dto';
 import { PatchComunicacaoStatusDto } from './dto/patch-comunicacao-status.dto';
 import { ResolverComunicacaoDto } from './dto/resolver-comunicacao.dto';
@@ -35,8 +36,8 @@ export class ComunicacoesController {
 
   @Get()
   @Throttle(ThrottlePresets.comunicaList)
-  listar(@CurrentUser() user: AuthUser) {
-    return this.comunicacoes.listar(user.escritorioId);
+  listar(@CurrentUser() user: AuthUser, @Query() query: ComunicacoesListQueryDto) {
+    return this.comunicacoes.listar(user.escritorioId, query.page ?? 1, query.pageSize ?? 30);
   }
 
   @Post('admin/limpar-nomes-djen')

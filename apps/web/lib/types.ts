@@ -11,6 +11,7 @@ export type Processo = {
   materia?: string | null
   sistema?: string | null
   login?: string | null
+  advogadoNome?: string | null
   dataDistribuicao?: string | null
   dataAudiencia?: string | null
   horaAudiencia?: string | null

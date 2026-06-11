@@ -163,7 +163,9 @@ export function ProcessosGrid({
       header: 'Login',
       size: 110,
       cell: ({ row }) => (
-        <span className="block truncate text-sm">{row.original.login ?? '—'}</span>
+        <span className="block truncate text-sm" title={row.original.login ?? undefined}>
+          {row.original.advogadoNome ?? row.original.login ?? '—'}
+        </span>
       ),
     },
     {
