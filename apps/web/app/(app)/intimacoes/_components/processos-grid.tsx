@@ -160,13 +160,17 @@ export function ProcessosGrid({
     },
     {
       id: 'login',
-      header: 'Login',
-      size: 110,
-      cell: ({ row }) => (
-        <span className="block truncate text-sm" title={row.original.login ?? undefined}>
-          {row.original.advogadoNome ?? row.original.login ?? '—'}
-        </span>
-      ),
+      header: 'Advogado',
+      size: 130,
+      cell: ({ row }) => {
+        const { advogadoNome, login } = row.original
+        const display = advogadoNome ?? (login ? `OAB ${login}` : '—')
+        return (
+          <span className="block truncate text-sm" title={display}>
+            {display}
+          </span>
+        )
+      },
     },
     {
       id: 'qualidadeCaso',
@@ -266,7 +270,7 @@ export function ProcessosGrid({
                     ? 'border-l-4 border-l-orange-400'
                     : row.original.clienteNome && !row.original.requerConferencia
                       ? 'border-l-4 border-l-green-400'
-                      : 'border-l-4 border-l-yellow-400'
+                      : 'border-l-4 border-l-yellow-400 bg-[var(--urgencia-atencao-bg)]/30'
               }`}
             >
               {row.getVisibleCells().map((cell) => (
