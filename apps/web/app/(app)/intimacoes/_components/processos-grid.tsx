@@ -258,19 +258,15 @@ export function ProcessosGrid({
             <tr
               key={row.id}
               onClick={() => onRowClick(row.original)}
-              style={
-                row.original.requerConferencia
-                  ? undefined
-                  : rowTintStyle(row.original.parceiroCorHex)
-              }
-              className={`cursor-pointer ${
-                row.original.requerConferencia
-                  ? 'bg-[var(--urgencia-atencao-bg)]/45 hover:bg-[var(--urgencia-atencao-bg)]/70'
-                  : 'hover:bg-[var(--color-bg-hover)]'
-              } ${
-                row.original.alertaCrVara ? 'border-l-4 border-l-orange-400' : ''
-              } ${
-                row.original.litiganciaMaFe ? 'border-l-4 border-l-red-500' : ''
+              style={rowTintStyle(row.original.parceiroCorHex)}
+              className={`cursor-pointer hover:bg-[var(--color-bg-hover)] ${
+                row.original.litiganciaMaFe
+                  ? 'border-l-4 border-l-red-500'
+                  : row.original.alertaCrVara
+                    ? 'border-l-4 border-l-orange-400'
+                    : row.original.clienteNome && !row.original.requerConferencia
+                      ? 'border-l-4 border-l-green-400'
+                      : 'border-l-4 border-l-yellow-400'
               }`}
             >
               {row.getVisibleCells().map((cell) => (

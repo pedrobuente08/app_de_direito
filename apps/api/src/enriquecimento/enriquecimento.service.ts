@@ -9,9 +9,15 @@ import type { ComunicaApiItem } from '../comunicacoes/comunica-api.types';
 const NOME_SUSPEITO =
   /REGISTRADO\(A\)\s+CIVILMENTE\s+COMO|^ESP[OÓ]LIO\s+DE|^MASSA\s+FALIDA|MENOR\s+REPRESENTADO/i;
 
+function nomeEhIniciais(nome: string): boolean {
+  const palavras = nome.trim().split(/\s+/);
+  return palavras.length >= 2 && palavras.every((p) => /^[A-ZÀ-Ú]\.$/.test(p));
+}
+
 function nomePareceLimpo(nome: string): boolean {
   if (!nome || nome !== nome.toUpperCase()) return false;
   if (NOME_SUSPEITO.test(nome)) return false;
+  if (nomeEhIniciais(nome)) return false;
   const palavras = nome.trim().split(/\s+/);
   if (palavras.length < 2 || palavras.length > 8) return false;
   return true;
@@ -30,12 +36,13 @@ function extrairMelhorNome(items: ComunicaApiItem[]): string | null {
   }
   for (const item of items) {
     const dest = item.destinatarios?.find((d) => d.polo === 'A');
-    if (dest?.nome?.trim()) return dest.nome.trim();
+    const nome = dest?.nome?.trim();
+    if (nome && !nomeEhIniciais(nome)) return nome;
   }
   for (const item of items) {
     if (item.destinatarios?.length === 1) {
       const nome = item.destinatarios[0].nome?.trim();
-      if (nome) return nome;
+      if (nome && !nomeEhIniciais(nome)) return nome;
     }
   }
   return null;

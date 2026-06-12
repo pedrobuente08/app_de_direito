@@ -64,7 +64,7 @@ export default function ComunicacoesPage() {
     setError(null)
     try {
       const [c, o] = await Promise.all([getComunicacoes(), getOabs()])
-      setComunicacoes(c)
+      setComunicacoes(c.data)
       setOabs(o)
     } catch (e) {
       setError((e as Error).message)
