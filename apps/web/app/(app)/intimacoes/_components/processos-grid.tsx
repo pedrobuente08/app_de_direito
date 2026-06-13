@@ -10,18 +10,16 @@ import { useMemo } from 'react'
 import { faseLabel } from '@/lib/fase-label'
 import type { Processo } from '@/lib/types'
 
-function rowStyle(p: Processo): React.CSSProperties {
-  const tint = p.parceiroCorHex?.startsWith('#') && p.parceiroCorHex.length >= 7
-    ? { backgroundColor: `${p.parceiroCorHex}14` }
-    : {}
-  const color = p.litiganciaMaFe
-    ? '#ef4444'
-    : p.alertaCrVara
-      ? '#fb923c'
-      : p.clienteNome && !p.requerConferencia
-        ? '#4ade80'
-        : '#facc15'
-  return { ...tint, boxShadow: `inset 4px 0 0 ${color}` }
+function rowTintStyle(hex?: string | null): React.CSSProperties | undefined {
+  if (!hex?.startsWith('#') || hex.length < 7) return undefined
+  return { backgroundColor: `${hex}14` }
+}
+
+function rowBorderColor(p: Processo): string {
+  if (p.litiganciaMaFe) return '#ef4444'
+  if (p.alertaCrVara) return '#fb923c'
+  if (p.clienteNome && !p.requerConferencia) return '#4ade80'
+  return '#facc15'
 }
 
 function isAutorFalecido(p: Processo): boolean {
@@ -169,7 +167,7 @@ export function ProcessosGrid({
     },
     {
       id: 'login',
-      header: 'Advogado',
+      header: 'Login',
       size: 130,
       cell: ({ row }) => {
         const { advogadoNome, login } = row.original
@@ -271,7 +269,7 @@ export function ProcessosGrid({
             <tr
               key={row.id}
               onClick={() => onRowClick(row.original)}
-              style={rowStyle(row.original)}
+              style={rowTintStyle(row.original.parceiroCorHex)}
               className={`cursor-pointer hover:bg-[var(--color-bg-hover)] ${
                 !row.original.litiganciaMaFe &&
                 !row.original.alertaCrVara &&
@@ -280,9 +278,10 @@ export function ProcessosGrid({
                   : ''
               }`}
             >
-              {row.getVisibleCells().map((cell) => (
+              {row.getVisibleCells().map((cell, cellIndex) => (
                 <td
                   key={cell.id}
+                  style={cellIndex === 0 ? { boxShadow: `inset 4px 0 0 ${rowBorderColor(row.original)}` } : undefined}
                   className="border-r border-[var(--color-border-default)] px-2 py-2 align-middle last:border-r-0"
                 >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
