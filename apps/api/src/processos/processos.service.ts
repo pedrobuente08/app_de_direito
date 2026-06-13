@@ -257,7 +257,10 @@ export class ProcessosService {
         parceiroCorHex: sql<string | null>`(select p.cor_hex from parceiro p where p.id = ${processo.parceiroId})`.as(
           'parceiroCorHex',
         ),
-        advogadoNome: sql<string | null>`(select u.nome from usuario u where u.escritorio_id = ${escritorioId} and (${processo.login} = ANY(u.login_aliases) or ${processo.login} = ANY(u.oabs)) limit 1)`.as('advogadoNome'),
+        advogadoNome: sql<string | null>`COALESCE(
+          (select u.nome from usuario u where u.escritorio_id = ${escritorioId} and (${processo.login} = ANY(u.login_aliases) or ${processo.login} = ANY(u.oabs)) limit 1),
+          ${processo.advogadoNome}
+        )`.as('advogadoNome'),
       })
       .from(processo)
       .where(whereClause)

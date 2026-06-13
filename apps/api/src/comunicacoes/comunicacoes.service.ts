@@ -100,6 +100,28 @@ function extrairLoginDeComunica(
   return candidatos[0]?.slice(0, 50) ?? null;
 }
 
+/** Nome do advogado destinatário, preferindo o que corresponde à OAB da escuta. */
+function extrairNomeAdvogadoDeComunica(
+  item: ComunicaApiItem,
+  oabEscuta?: string | null,
+): string | null {
+  const advs = (item.destinatarioadvogados ?? []).map((r) => r.advogado).filter(Boolean);
+  if (!advs.length) return null;
+
+  const alvo = oabEscuta?.trim().toUpperCase();
+  if (alvo) {
+    const match = advs.find(
+      (adv) =>
+        adv?.numero_oab?.trim() &&
+        adv?.uf_oab?.trim() &&
+        `${adv.numero_oab.trim()}/${adv.uf_oab.trim()}`.toUpperCase() === alvo,
+    );
+    if (match?.nome?.trim()) return match.nome.trim().slice(0, 300);
+  }
+
+  return advs[0]?.nome?.trim()?.slice(0, 300) ?? null;
+}
+
 export type OrigemCriacaoProcesso = 'DJEN_AUTO' | 'ONBOARDING';
 
 export type IngestCapturaOpts = {
@@ -930,6 +952,7 @@ export class ComunicacoesService {
     const faseInicial = inferirFaseInicialDjen(tipo, audData, hoje);
     const resumoCurto = resumoDeTexto(item.texto, 500);
     const login = extrairLoginDeComunica(item, oabEscuta);
+    const advogadoNome = extrairNomeAdvogadoDeComunica(item, oabEscuta);
 
     const [row] = await this.drizzle.db
       .insert(processo)
@@ -937,6 +960,7 @@ export class ComunicacoesService {
         escritorioId,
         numero,
         login,
+        advogadoNome,
         clienteNome: cliente,
         reuTexto: reu,
         vara: extrairVara(item),

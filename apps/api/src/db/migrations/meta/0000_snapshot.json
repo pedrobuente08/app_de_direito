@@ -1,0 +1,5527 @@
+{
+  "id": "7e5e7875-bd18-4a17-a150-65c6588cc81d",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.escritorio": {
+      "name": "escritorio",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cnpj": {
+          "name": "cnpj",
+          "type": "varchar(18)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "config": {
+          "name": "config",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "escritorio_cnpj_unique": {
+          "name": "escritorio_cnpj_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "cnpj"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.usuario": {
+      "name": "usuario",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "senha_hash": {
+          "name": "senha_hash",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "login_aliases": {
+          "name": "login_aliases",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "perfil": {
+          "name": "perfil",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "eh_pautista": {
+          "name": "eh_pautista",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "oabs": {
+          "name": "oabs",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "usuario_escritorio_id_escritorio_id_fk": {
+          "name": "usuario_escritorio_id_escritorio_id_fk",
+          "tableFrom": "usuario",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "usuario_email_unique": {
+          "name": "usuario_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.refresh_tokens": {
+      "name": "refresh_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revogado": {
+          "name": "revogado",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "refresh_tokens_usuario_id_usuario_id_fk": {
+          "name": "refresh_tokens_usuario_id_usuario_id_fk",
+          "tableFrom": "refresh_tokens",
+          "tableTo": "usuario",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.comarca": {
+      "name": "comarca",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "codigo": {
+          "name": "codigo",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "abreviado": {
+          "name": "abreviado",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "perfil_diligencia": {
+          "name": "perfil_diligencia",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exige_doc_frequente": {
+          "name": "exige_doc_frequente",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "comarca_escritorio_id_escritorio_id_fk": {
+          "name": "comarca_escritorio_id_escritorio_id_fk",
+          "tableFrom": "comarca",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "comarca_escritorio_id_codigo_unique": {
+          "name": "comarca_escritorio_id_codigo_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "escritorio_id",
+            "codigo"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.reu": {
+      "name": "reu",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome_canonico": {
+          "name": "nome_canonico",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cnpj": {
+          "name": "cnpj",
+          "type": "varchar(18)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "reu_escritorio_id_escritorio_id_fk": {
+          "name": "reu_escritorio_id_escritorio_id_fk",
+          "tableFrom": "reu",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "reu_escritorio_id_nome_canonico_unique": {
+          "name": "reu_escritorio_id_nome_canonico_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "escritorio_id",
+            "nome_canonico"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.reu_alias": {
+      "name": "reu_alias",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "reu_id": {
+          "name": "reu_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alias": {
+          "name": "alias",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "reu_alias_reu_id_reu_id_fk": {
+          "name": "reu_alias_reu_id_reu_id_fk",
+          "tableFrom": "reu_alias",
+          "tableTo": "reu",
+          "columnsFrom": [
+            "reu_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "reu_alias_reu_id_alias_unique": {
+          "name": "reu_alias_reu_id_alias_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "reu_id",
+            "alias"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.processo": {
+      "name": "processo",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "numero": {
+          "name": "numero",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "login": {
+          "name": "login",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "advogado_nome": {
+          "name": "advogado_nome",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cliente_nome": {
+          "name": "cliente_nome",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cliente_cpf": {
+          "name": "cliente_cpf",
+          "type": "varchar(14)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reu_id": {
+          "name": "reu_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reu_texto": {
+          "name": "reu_texto",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "materia": {
+          "name": "materia",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sistema": {
+          "name": "sistema",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vara": {
+          "name": "vara",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_distribuicao": {
+          "name": "data_distribuicao",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_audiencia": {
+          "name": "data_audiencia",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hora_audiencia": {
+          "name": "hora_audiencia",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo_audiencia": {
+          "name": "tipo_audiencia",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status_processo": {
+          "name": "status_processo",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ATIVO'"
+        },
+        "fase_atual": {
+          "name": "fase_atual",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fase_updated_at": {
+          "name": "fase_updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revelia_decretada": {
+          "name": "revelia_decretada",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "litigancia_ma_fe": {
+          "name": "litigancia_ma_fe",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "hipossuficiencia_comprovada": {
+          "name": "hipossuficiencia_comprovada",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "vara_exige_doc_frequente": {
+          "name": "vara_exige_doc_frequente",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "reu_orgao_publico": {
+          "name": "reu_orgao_publico",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "daje_emitido": {
+          "name": "daje_emitido",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "daje_valor": {
+          "name": "daje_valor",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "daje_data_emissao": {
+          "name": "daje_data_emissao",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "daje_status": {
+          "name": "daje_status",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "daje_data_pedido_isencao": {
+          "name": "daje_data_pedido_isencao",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "daje_data_pagamento": {
+          "name": "daje_data_pagamento",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo_cr": {
+          "name": "tipo_cr",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_transito": {
+          "name": "data_transito",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qualidade_caso": {
+          "name": "qualidade_caso",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avaliacao_recurso": {
+          "name": "avaliacao_recurso",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "justica_gratuita": {
+          "name": "justica_gratuita",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "justica_gratuita_concedida_em": {
+          "name": "justica_gratuita_concedida_em",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "justica_gratuita_expira_em": {
+          "name": "justica_gratuita_expira_em",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "justica_gratuita_revisada_em": {
+          "name": "justica_gratuita_revisada_em",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sucumbencia_devida": {
+          "name": "sucumbencia_devida",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "honorario_sucumbencial_valor": {
+          "name": "honorario_sucumbencial_valor",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "honorario_sucumbencial_status": {
+          "name": "honorario_sucumbencial_status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "honorario_sucumbencial_pago_em": {
+          "name": "honorario_sucumbencial_pago_em",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sobrestamento_motivo": {
+          "name": "sobrestamento_motivo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sobrestado_desde": {
+          "name": "sobrestado_desde",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sobrestamento_motivo_codigo": {
+          "name": "sobrestamento_motivo_codigo",
+          "type": "varchar(40)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sobrestamento_tema_afetado": {
+          "name": "sobrestamento_tema_afetado",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sobrestamento_previsao_retorno": {
+          "name": "sobrestamento_previsao_retorno",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sobrestamento_revisado_em": {
+          "name": "sobrestamento_revisado_em",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recurso_adversario": {
+          "name": "recurso_adversario",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "parceiro_escritorio": {
+          "name": "parceiro_escritorio",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parceiro_id": {
+          "name": "parceiro_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "comissao_calculada": {
+          "name": "comissao_calculada",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "comissao_paga": {
+          "name": "comissao_paga",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "comissao_paga_em": {
+          "name": "comissao_paga_em",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "situacao_final": {
+          "name": "situacao_final",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "telefone": {
+          "name": "telefone",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status_audiencia": {
+          "name": "status_audiencia",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ultima_movimentacao_dt": {
+          "name": "ultima_movimentacao_dt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ultima_movimentacao_tipo": {
+          "name": "ultima_movimentacao_tipo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacao_geral": {
+          "name": "observacao_geral",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fase_travada": {
+          "name": "fase_travada",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "requer_conferencia": {
+          "name": "requer_conferencia",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "origem_criacao": {
+          "name": "origem_criacao",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'MANUAL'"
+        },
+        "alerta_cr_vara": {
+          "name": "alerta_cr_vara",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "comprovante_residencia_tipo": {
+          "name": "comprovante_residencia_tipo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_processo_escritorio_status": {
+          "name": "idx_processo_escritorio_status",
+          "columns": [
+            {
+              "expression": "escritorio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status_processo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_processo_escritorio_fase": {
+          "name": "idx_processo_escritorio_fase",
+          "columns": [
+            {
+              "expression": "escritorio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "fase_atual",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_processo_escritorio_updated": {
+          "name": "idx_processo_escritorio_updated",
+          "columns": [
+            {
+              "expression": "escritorio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "processo_escritorio_id_escritorio_id_fk": {
+          "name": "processo_escritorio_id_escritorio_id_fk",
+          "tableFrom": "processo",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "processo_reu_id_reu_id_fk": {
+          "name": "processo_reu_id_reu_id_fk",
+          "tableFrom": "processo",
+          "tableTo": "reu",
+          "columnsFrom": [
+            "reu_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "processo_parceiro_id_parceiro_id_fk": {
+          "name": "processo_parceiro_id_parceiro_id_fk",
+          "tableFrom": "processo",
+          "tableTo": "parceiro",
+          "columnsFrom": [
+            "parceiro_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "processo_escritorio_id_numero_unique": {
+          "name": "processo_escritorio_id_numero_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "escritorio_id",
+            "numero"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.extracao_pendente": {
+      "name": "extracao_pendente",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "arquivo_nome": {
+          "name": "arquivo_nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "arquivo_storage_key": {
+          "name": "arquivo_storage_key",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "texto_extraido": {
+          "name": "texto_extraido",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resultado_skill": {
+          "name": "resultado_skill",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "confidence": {
+          "name": "confidence",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alerta": {
+          "name": "alerta",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revisao_status": {
+          "name": "revisao_status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PENDENTE'"
+        },
+        "sugestao_ia": {
+          "name": "sugestao_ia",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revisado_por": {
+          "name": "revisado_por",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revisado_em": {
+          "name": "revisado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "extracao_pendente_escritorio_id_escritorio_id_fk": {
+          "name": "extracao_pendente_escritorio_id_escritorio_id_fk",
+          "tableFrom": "extracao_pendente",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "extracao_pendente_revisado_por_usuario_id_fk": {
+          "name": "extracao_pendente_revisado_por_usuario_id_fk",
+          "tableFrom": "extracao_pendente",
+          "tableTo": "usuario",
+          "columnsFrom": [
+            "revisado_por"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "extracao_pendente_processo_id_processo_id_fk": {
+          "name": "extracao_pendente_processo_id_processo_id_fk",
+          "tableFrom": "extracao_pendente",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pendencia": {
+      "name": "pendencia",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_abertura": {
+          "name": "data_abertura",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_limite": {
+          "name": "data_limite",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "solicitante": {
+          "name": "solicitante",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "responsavel": {
+          "name": "responsavel",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ABERTA'"
+        },
+        "data_cumprimento": {
+          "name": "data_cumprimento",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacao": {
+          "name": "observacao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "origem": {
+          "name": "origem",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'MANUAL_INTIMACOES'"
+        },
+        "fila": {
+          "name": "fila",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resultado": {
+          "name": "resultado",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_pendencia_escritorio_status": {
+          "name": "idx_pendencia_escritorio_status",
+          "columns": [
+            {
+              "expression": "escritorio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "data_limite",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_pendencia_processo": {
+          "name": "idx_pendencia_processo",
+          "columns": [
+            {
+              "expression": "processo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "pendencia_escritorio_id_escritorio_id_fk": {
+          "name": "pendencia_escritorio_id_escritorio_id_fk",
+          "tableFrom": "pendencia",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "pendencia_processo_id_processo_id_fk": {
+          "name": "pendencia_processo_id_processo_id_fk",
+          "tableFrom": "pendencia",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "pendencia_escritorio_id_processo_id_tipo_data_abertura_unique": {
+          "name": "pendencia_escritorio_id_processo_id_tipo_data_abertura_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "escritorio_id",
+            "processo_id",
+            "tipo",
+            "data_abertura"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pendencia_historico": {
+      "name": "pendencia_historico",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "pendencia_id_origem": {
+          "name": "pendencia_id_origem",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_abertura": {
+          "name": "data_abertura",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_limite": {
+          "name": "data_limite",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "solicitante": {
+          "name": "solicitante",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "responsavel": {
+          "name": "responsavel",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_cumprimento": {
+          "name": "data_cumprimento",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacao": {
+          "name": "observacao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "origem": {
+          "name": "origem",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at_origem": {
+          "name": "created_at_origem",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pendencia_historico_escritorio_id_escritorio_id_fk": {
+          "name": "pendencia_historico_escritorio_id_escritorio_id_fk",
+          "tableFrom": "pendencia_historico",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pendencia_problema": {
+      "name": "pendencia_problema",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "pendencia_id_origem": {
+          "name": "pendencia_id_origem",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_abertura": {
+          "name": "data_abertura",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_limite": {
+          "name": "data_limite",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "solicitante": {
+          "name": "solicitante",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "responsavel": {
+          "name": "responsavel",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "observacao": {
+          "name": "observacao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "origem": {
+          "name": "origem",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at_origem": {
+          "name": "created_at_origem",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "moved_at": {
+          "name": "moved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pendencia_problema_escritorio_id_escritorio_id_fk": {
+          "name": "pendencia_problema_escritorio_id_escritorio_id_fk",
+          "tableFrom": "pendencia_problema",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.escritorio_adversario": {
+      "name": "escritorio_adversario",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome_canonico": {
+          "name": "nome_canonico",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cnpj": {
+          "name": "cnpj",
+          "type": "varchar(18)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "escritorio_adversario_escritorio_id_escritorio_id_fk": {
+          "name": "escritorio_adversario_escritorio_id_escritorio_id_fk",
+          "tableFrom": "escritorio_adversario",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "escritorio_adversario_escritorio_id_nome_canonico_unique": {
+          "name": "escritorio_adversario_escritorio_id_nome_canonico_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "escritorio_id",
+            "nome_canonico"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.escritorio_adversario_alias": {
+      "name": "escritorio_adversario_alias",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_adversario_id": {
+          "name": "escritorio_adversario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alias": {
+          "name": "alias",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "escritorio_adversario_alias_escritorio_adversario_id_escritorio_adversario_id_fk": {
+          "name": "escritorio_adversario_alias_escritorio_adversario_id_escritorio_adversario_id_fk",
+          "tableFrom": "escritorio_adversario_alias",
+          "tableTo": "escritorio_adversario",
+          "columnsFrom": [
+            "escritorio_adversario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.advogado_adversario": {
+      "name": "advogado_adversario",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "escritorio_adversario_id": {
+          "name": "escritorio_adversario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nome_canonico": {
+          "name": "nome_canonico",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oab": {
+          "name": "oab",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "advogado_adversario_escritorio_id_escritorio_id_fk": {
+          "name": "advogado_adversario_escritorio_id_escritorio_id_fk",
+          "tableFrom": "advogado_adversario",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "advogado_adversario_escritorio_adversario_id_escritorio_adversario_id_fk": {
+          "name": "advogado_adversario_escritorio_adversario_id_escritorio_adversario_id_fk",
+          "tableFrom": "advogado_adversario",
+          "tableTo": "escritorio_adversario",
+          "columnsFrom": [
+            "escritorio_adversario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "advogado_adversario_escritorio_id_nome_canonico_unique": {
+          "name": "advogado_adversario_escritorio_id_nome_canonico_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "escritorio_id",
+            "nome_canonico"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.advogado_adversario_alias": {
+      "name": "advogado_adversario_alias",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "advogado_adversario_id": {
+          "name": "advogado_adversario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alias": {
+          "name": "alias",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "advogado_adversario_alias_advogado_adversario_id_advogado_adversario_id_fk": {
+          "name": "advogado_adversario_alias_advogado_adversario_id_advogado_adversario_id_fk",
+          "tableFrom": "advogado_adversario_alias",
+          "tableTo": "advogado_adversario",
+          "columnsFrom": [
+            "advogado_adversario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.vara_documento_regra": {
+      "name": "vara_documento_regra",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vara": {
+          "name": "vara",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo_documento": {
+          "name": "tipo_documento",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "formato_documento": {
+          "name": "formato_documento",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aceita": {
+          "name": "aceita",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "observacao": {
+          "name": "observacao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_vara_doc_regra_escritorio": {
+          "name": "idx_vara_doc_regra_escritorio",
+          "columns": [
+            {
+              "expression": "escritorio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "vara",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "vara_documento_regra_escritorio_id_escritorio_id_fk": {
+          "name": "vara_documento_regra_escritorio_id_escritorio_id_fk",
+          "tableFrom": "vara_documento_regra",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.processo_reprotocolo": {
+      "name": "processo_reprotocolo",
+      "schema": "",
+      "columns": {
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sub_estado": {
+          "name": "sub_estado",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "motivo_extincao": {
+          "name": "motivo_extincao",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modalidade_extincao": {
+          "name": "modalidade_extincao",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_extincao": {
+          "name": "data_extincao",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_isencao_pedida": {
+          "name": "data_isencao_pedida",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_isencao_resultado": {
+          "name": "data_isencao_resultado",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_reprotocolo": {
+          "name": "data_reprotocolo",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "processo_novo_id": {
+          "name": "processo_novo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "processo_reprotocolo_processo_id_processo_id_fk": {
+          "name": "processo_reprotocolo_processo_id_processo_id_fk",
+          "tableFrom": "processo_reprotocolo",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "processo_reprotocolo_escritorio_id_escritorio_id_fk": {
+          "name": "processo_reprotocolo_escritorio_id_escritorio_id_fk",
+          "tableFrom": "processo_reprotocolo",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "processo_reprotocolo_processo_novo_id_processo_id_fk": {
+          "name": "processo_reprotocolo_processo_novo_id_processo_id_fk",
+          "tableFrom": "processo_reprotocolo",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_novo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.notificacao": {
+      "name": "notificacao",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fila": {
+          "name": "fila",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo_gatilho": {
+          "name": "tipo_gatilho",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entidade": {
+          "name": "entidade",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entidade_id": {
+          "name": "entidade_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "canal": {
+          "name": "canal",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prioridade": {
+          "name": "prioridade",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "conteudo": {
+          "name": "conteudo",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lida_em": {
+          "name": "lida_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agendada_para": {
+          "name": "agendada_para",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "enviada_em": {
+          "name": "enviada_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_notificacao_escritorio": {
+          "name": "idx_notificacao_escritorio",
+          "columns": [
+            {
+              "expression": "escritorio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "notificacao_escritorio_id_escritorio_id_fk": {
+          "name": "notificacao_escritorio_id_escritorio_id_fk",
+          "tableFrom": "notificacao",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "notificacao_usuario_id_usuario_id_fk": {
+          "name": "notificacao_usuario_id_usuario_id_fk",
+          "tableFrom": "notificacao",
+          "tableTo": "usuario",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.feriado": {
+      "name": "feriado",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data": {
+          "name": "data",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "feriado_escritorio_id_escritorio_id_fk": {
+          "name": "feriado_escritorio_id_escritorio_id_fk",
+          "tableFrom": "feriado",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "feriado_escritorio_id_data_unique": {
+          "name": "feriado_escritorio_id_data_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "escritorio_id",
+            "data"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.audiencia": {
+      "name": "audiencia",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "escritorio_adversario_id": {
+          "name": "escritorio_adversario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "advogado_adversario_id": {
+          "name": "advogado_adversario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data": {
+          "name": "data",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hora": {
+          "name": "hora",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pautista": {
+          "name": "pautista",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'AGENDADA'"
+        },
+        "autor_presenca": {
+          "name": "autor_presenca",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reu_presenca": {
+          "name": "reu_presenca",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "motivo_ausencia": {
+          "name": "motivo_ausencia",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "obs_pre": {
+          "name": "obs_pre",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "obs_pos": {
+          "name": "obs_pos",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "link": {
+          "name": "link",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cenario": {
+          "name": "cenario",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cenario_observacao": {
+          "name": "cenario_observacao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_audiencia_escritorio_data": {
+          "name": "idx_audiencia_escritorio_data",
+          "columns": [
+            {
+              "expression": "escritorio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "data",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_audiencia_status": {
+          "name": "idx_audiencia_status",
+          "columns": [
+            {
+              "expression": "escritorio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "data",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "audiencia_escritorio_id_escritorio_id_fk": {
+          "name": "audiencia_escritorio_id_escritorio_id_fk",
+          "tableFrom": "audiencia",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "audiencia_processo_id_processo_id_fk": {
+          "name": "audiencia_processo_id_processo_id_fk",
+          "tableFrom": "audiencia",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "audiencia_escritorio_adversario_id_escritorio_adversario_id_fk": {
+          "name": "audiencia_escritorio_adversario_id_escritorio_adversario_id_fk",
+          "tableFrom": "audiencia",
+          "tableTo": "escritorio_adversario",
+          "columnsFrom": [
+            "escritorio_adversario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "audiencia_advogado_adversario_id_advogado_adversario_id_fk": {
+          "name": "audiencia_advogado_adversario_id_advogado_adversario_id_fk",
+          "tableFrom": "audiencia",
+          "tableTo": "advogado_adversario",
+          "columnsFrom": [
+            "advogado_adversario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "audiencia_escritorio_id_processo_id_data_unique": {
+          "name": "audiencia_escritorio_id_processo_id_data_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "escritorio_id",
+            "processo_id",
+            "data"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.audiencia_historico": {
+      "name": "audiencia_historico",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "audiencia_id_origem": {
+          "name": "audiencia_id_origem",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "escritorio_adversario_id": {
+          "name": "escritorio_adversario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data": {
+          "name": "data",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hora": {
+          "name": "hora",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pautista": {
+          "name": "pautista",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "autor_presenca": {
+          "name": "autor_presenca",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reu_presenca": {
+          "name": "reu_presenca",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "motivo_ausencia": {
+          "name": "motivo_ausencia",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cenario": {
+          "name": "cenario",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cenario_observacao": {
+          "name": "cenario_observacao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "obs_pre": {
+          "name": "obs_pre",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "obs_pos": {
+          "name": "obs_pos",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "link": {
+          "name": "link",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at_origem": {
+          "name": "created_at_origem",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "audiencia_historico_escritorio_id_escritorio_id_fk": {
+          "name": "audiencia_historico_escritorio_id_escritorio_id_fk",
+          "tableFrom": "audiencia_historico",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.audiencia_lixeira": {
+      "name": "audiencia_lixeira",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "audiencia_id_origem": {
+          "name": "audiencia_id_origem",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data": {
+          "name": "data",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hora": {
+          "name": "hora",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pautista": {
+          "name": "pautista",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "obs_pre": {
+          "name": "obs_pre",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "obs_pos": {
+          "name": "obs_pos",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "link": {
+          "name": "link",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at_origem": {
+          "name": "created_at_origem",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "discarded_at": {
+          "name": "discarded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "audiencia_lixeira_escritorio_id_escritorio_id_fk": {
+          "name": "audiencia_lixeira_escritorio_id_escritorio_id_fk",
+          "tableFrom": "audiencia_lixeira",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.audiencia_ausente": {
+      "name": "audiencia_ausente",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "audiencia_id": {
+          "name": "audiencia_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "numero_processo": {
+          "name": "numero_processo",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cliente_nome": {
+          "name": "cliente_nome",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reu_id": {
+          "name": "reu_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "materia": {
+          "name": "materia",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vara": {
+          "name": "vara",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qualidade_caso": {
+          "name": "qualidade_caso",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_audiencia": {
+          "name": "data_audiencia",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "motivo_ausencia": {
+          "name": "motivo_ausencia",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reaproveitavel": {
+          "name": "reaproveitavel",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reaproveitado_em": {
+          "name": "reaproveitado_em",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacoes_revisao": {
+          "name": "observacoes_revisao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "audiencia_ausente_escritorio_id_escritorio_id_fk": {
+          "name": "audiencia_ausente_escritorio_id_escritorio_id_fk",
+          "tableFrom": "audiencia_ausente",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "audiencia_ausente_audiencia_id_audiencia_id_fk": {
+          "name": "audiencia_ausente_audiencia_id_audiencia_id_fk",
+          "tableFrom": "audiencia_ausente",
+          "tableTo": "audiencia",
+          "columnsFrom": [
+            "audiencia_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "audiencia_ausente_processo_id_processo_id_fk": {
+          "name": "audiencia_ausente_processo_id_processo_id_fk",
+          "tableFrom": "audiencia_ausente",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.comunicacao": {
+      "name": "comunicacao",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "oab": {
+          "name": "oab",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "numero_processo_bruto": {
+          "name": "numero_processo_bruto",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resumo": {
+          "name": "resumo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "conteudo_completo": {
+          "name": "conteudo_completo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_disponibilizacao": {
+          "name": "data_disponibilizacao",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pendencia_gerada_id": {
+          "name": "pendencia_gerada_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'NAO_LIDA'"
+        },
+        "hash_externo": {
+          "name": "hash_externo",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "regras_resultado": {
+          "name": "regras_resultado",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "regras_erro": {
+          "name": "regras_erro",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_comunicacao_escritorio_created": {
+          "name": "idx_comunicacao_escritorio_created",
+          "columns": [
+            {
+              "expression": "escritorio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_comunicacao_status_created": {
+          "name": "idx_comunicacao_status_created",
+          "columns": [
+            {
+              "expression": "escritorio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_comunicacao_hash": {
+          "name": "idx_comunicacao_hash",
+          "columns": [
+            {
+              "expression": "escritorio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "hash_externo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_comunicacao_processo": {
+          "name": "idx_comunicacao_processo",
+          "columns": [
+            {
+              "expression": "processo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "comunicacao_escritorio_id_escritorio_id_fk": {
+          "name": "comunicacao_escritorio_id_escritorio_id_fk",
+          "tableFrom": "comunicacao",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "comunicacao_processo_id_processo_id_fk": {
+          "name": "comunicacao_processo_id_processo_id_fk",
+          "tableFrom": "comunicacao",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "comunicacao_pendencia_gerada_id_pendencia_id_fk": {
+          "name": "comunicacao_pendencia_gerada_id_pendencia_id_fk",
+          "tableFrom": "comunicacao",
+          "tableTo": "pendencia",
+          "columnsFrom": [
+            "pendencia_gerada_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.oab_escuta": {
+      "name": "oab_escuta",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oab": {
+          "name": "oab",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "oab_escuta_escritorio_id_escritorio_id_fk": {
+          "name": "oab_escuta_escritorio_id_escritorio_id_fk",
+          "tableFrom": "oab_escuta",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "oab_escuta_escritorio_id_oab_unique": {
+          "name": "oab_escuta_escritorio_id_oab_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "escritorio_id",
+            "oab"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.capturas_log": {
+      "name": "capturas_log",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oab": {
+          "name": "oab",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fonte": {
+          "name": "fonte",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "iniciado_em": {
+          "name": "iniciado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "concluido_em": {
+          "name": "concluido_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_items": {
+          "name": "total_items",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "novos_items": {
+          "name": "novos_items",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "orfas_geradas": {
+          "name": "orfas_geradas",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "erro_msg": {
+          "name": "erro_msg",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "capturas_log_escritorio_id_escritorio_id_fk": {
+          "name": "capturas_log_escritorio_id_escritorio_id_fk",
+          "tableFrom": "capturas_log",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.fontes_saude": {
+      "name": "fontes_saude",
+      "schema": "",
+      "columns": {
+        "fonte": {
+          "name": "fonte",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ultimo_ok_em": {
+          "name": "ultimo_ok_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ultima_falha_em": {
+          "name": "ultima_falha_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "falhas_consecutivas": {
+          "name": "falhas_consecutivas",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "fontes_saude_escritorio_id_escritorio_id_fk": {
+          "name": "fontes_saude_escritorio_id_escritorio_id_fk",
+          "tableFrom": "fontes_saude",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "fontes_saude_fonte_escritorio_id_pk": {
+          "name": "fontes_saude_fonte_escritorio_id_pk",
+          "columns": [
+            "fonte",
+            "escritorio_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ai_usage": {
+      "name": "ai_usage",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "feature": {
+          "name": "feature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'anthropic'"
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "input_tokens": {
+          "name": "input_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "output_tokens": {
+          "name": "output_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cache_read_tokens": {
+          "name": "cache_read_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "cache_write_tokens": {
+          "name": "cache_write_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "custo_brl": {
+          "name": "custo_brl",
+          "type": "numeric(10, 6)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "creditos": {
+          "name": "creditos",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cache_hit": {
+          "name": "cache_hit",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "latency_ms": {
+          "name": "latency_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "conversa_id": {
+          "name": "conversa_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "ai_usage_tenant_id_escritorio_id_fk": {
+          "name": "ai_usage_tenant_id_escritorio_id_fk",
+          "tableFrom": "ai_usage",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "ai_usage_user_id_usuario_id_fk": {
+          "name": "ai_usage_user_id_usuario_id_fk",
+          "tableFrom": "ai_usage",
+          "tableTo": "usuario",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "ai_usage_processo_id_processo_id_fk": {
+          "name": "ai_usage_processo_id_processo_id_fk",
+          "tableFrom": "ai_usage",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ai_quota": {
+      "name": "ai_quota",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "periodo": {
+          "name": "periodo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "plano": {
+          "name": "plano",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "creditos_total": {
+          "name": "creditos_total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "creditos_usados": {
+          "name": "creditos_usados",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "overage_policy": {
+          "name": "overage_policy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'block'"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "ai_quota_tenant_id_escritorio_id_fk": {
+          "name": "ai_quota_tenant_id_escritorio_id_fk",
+          "tableFrom": "ai_quota",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "ai_quota_tenant_periodo": {
+          "name": "ai_quota_tenant_periodo",
+          "nullsNotDistinct": false,
+          "columns": [
+            "tenant_id",
+            "periodo"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.model_registry": {
+      "name": "model_registry",
+      "schema": "",
+      "columns": {
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "input_price_usd": {
+          "name": "input_price_usd",
+          "type": "numeric(12, 8)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "output_price_usd": {
+          "name": "output_price_usd",
+          "type": "numeric(12, 8)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cache_read_discount": {
+          "name": "cache_read_discount",
+          "type": "numeric(4, 3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0.1'"
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.procedente_transicao": {
+      "name": "procedente_transicao",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "situacao_anterior": {
+          "name": "situacao_anterior",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "situacao_nova": {
+          "name": "situacao_nova",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "origem": {
+          "name": "origem",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "procedente_transicao_processo_id_processo_id_fk": {
+          "name": "procedente_transicao_processo_id_processo_id_fk",
+          "tableFrom": "procedente_transicao",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "procedente_transicao_escritorio_id_escritorio_id_fk": {
+          "name": "procedente_transicao_escritorio_id_escritorio_id_fk",
+          "tableFrom": "procedente_transicao",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "procedente_transicao_usuario_id_usuario_id_fk": {
+          "name": "procedente_transicao_usuario_id_usuario_id_fk",
+          "tableFrom": "procedente_transicao",
+          "tableTo": "usuario",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.processo_procedente": {
+      "name": "processo_procedente",
+      "schema": "",
+      "columns": {
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "familia_situacao": {
+          "name": "familia_situacao",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "situacao": {
+          "name": "situacao",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recurso_tipo": {
+          "name": "recurso_tipo",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recurso_origem": {
+          "name": "recurso_origem",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recurso_resultado": {
+          "name": "recurso_resultado",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "doc_pendente": {
+          "name": "doc_pendente",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "responsavel": {
+          "name": "responsavel",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "obs_curta": {
+          "name": "obs_curta",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ultimo_visto": {
+          "name": "ultimo_visto",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_estimada_recebimento": {
+          "name": "data_estimada_recebimento",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valor_recebido": {
+          "name": "valor_recebido",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_recebimento": {
+          "name": "data_recebimento",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_protocolo_alvara": {
+          "name": "data_protocolo_alvara",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_alvara_expedido": {
+          "name": "data_alvara_expedido",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_peticao_cumprimento": {
+          "name": "data_peticao_cumprimento",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_penhora_realizada": {
+          "name": "data_penhora_realizada",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valor_penhorado": {
+          "name": "valor_penhorado",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "penhora_origem": {
+          "name": "penhora_origem",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacoes_execucao": {
+          "name": "observacoes_execucao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tem_obrigacao_fazer": {
+          "name": "tem_obrigacao_fazer",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "obrigacao_fazer_descricao": {
+          "name": "obrigacao_fazer_descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "obrigacao_fazer_cumprida": {
+          "name": "obrigacao_fazer_cumprida",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "obrigacao_fazer_cumprida_em": {
+          "name": "obrigacao_fazer_cumprida_em",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "serasajud_acionado": {
+          "name": "serasajud_acionado",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "tipo_execucao": {
+          "name": "tipo_execucao",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "penhora_status": {
+          "name": "penhora_status",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "astreintes_ativa": {
+          "name": "astreintes_ativa",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "astreintes_valor_diario": {
+          "name": "astreintes_valor_diario",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "astreintes_data_inicio": {
+          "name": "astreintes_data_inicio",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "astreintes_total_acumulado": {
+          "name": "astreintes_total_acumulado",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "astreintes_ultima_atualizacao": {
+          "name": "astreintes_ultima_atualizacao",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "astreintes_teto": {
+          "name": "astreintes_teto",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "astreintes_suspensa_em": {
+          "name": "astreintes_suspensa_em",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "astreintes_paga_em": {
+          "name": "astreintes_paga_em",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "penhora_sistema": {
+          "name": "penhora_sistema",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sisbajud_numero_ordem": {
+          "name": "sisbajud_numero_ordem",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sisbajud_data_bloqueio": {
+          "name": "sisbajud_data_bloqueio",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sisbajud_valor_bloqueado": {
+          "name": "sisbajud_valor_bloqueado",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bacenjud_data_oficio": {
+          "name": "bacenjud_data_oficio",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bacenjud_banco_alvo": {
+          "name": "bacenjud_banco_alvo",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "execucao_contra_orgao_publico": {
+          "name": "execucao_contra_orgao_publico",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "modalidade_execucao_pub": {
+          "name": "modalidade_execucao_pub",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "numero_rpv": {
+          "name": "numero_rpv",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "numero_precatorio": {
+          "name": "numero_precatorio",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previsao_pagamento_pub": {
+          "name": "previsao_pagamento_pub",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "processo_procedente_processo_id_processo_id_fk": {
+          "name": "processo_procedente_processo_id_processo_id_fk",
+          "tableFrom": "processo_procedente",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "processo_procedente_escritorio_id_escritorio_id_fk": {
+          "name": "processo_procedente_escritorio_id_escritorio_id_fk",
+          "tableFrom": "processo_procedente",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sentenca": {
+      "name": "sentenca",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grau": {
+          "name": "grau",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data": {
+          "name": "data",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "valor": {
+          "name": "valor",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resultado": {
+          "name": "resultado",
+          "type": "varchar(40)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "favoravel_para": {
+          "name": "favoravel_para",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "turma": {
+          "name": "turma",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "assessor_julgador": {
+          "name": "assessor_julgador",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "turno_julgamento": {
+          "name": "turno_julgamento",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extincao_modalidade": {
+          "name": "extincao_modalidade",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "motivo_extincao": {
+          "name": "motivo_extincao",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sub_resultado": {
+          "name": "sub_resultado",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "turma_recursal": {
+          "name": "turma_recursal",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo_decisao": {
+          "name": "tipo_decisao",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_sentenca_processo": {
+          "name": "idx_sentenca_processo",
+          "columns": [
+            {
+              "expression": "processo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_sentenca_escritorio": {
+          "name": "idx_sentenca_escritorio",
+          "columns": [
+            {
+              "expression": "escritorio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "data",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sentenca_processo_id_processo_id_fk": {
+          "name": "sentenca_processo_id_processo_id_fk",
+          "tableFrom": "sentenca",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sentenca_escritorio_id_escritorio_id_fk": {
+          "name": "sentenca_escritorio_id_escritorio_id_fk",
+          "tableFrom": "sentenca",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.embargos_declaracao": {
+      "name": "embargos_declaracao",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "sentenca_id": {
+          "name": "sentenca_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "origem": {
+          "name": "origem",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_interposicao": {
+          "name": "data_interposicao",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prazo_julgamento": {
+          "name": "prazo_julgamento",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resultado": {
+          "name": "resultado",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_julgamento": {
+          "name": "data_julgamento",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "interrompe_prazo_recurso": {
+          "name": "interrompe_prazo_recurso",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "embargos_declaracao_sentenca_id_sentenca_id_fk": {
+          "name": "embargos_declaracao_sentenca_id_sentenca_id_fk",
+          "tableFrom": "embargos_declaracao",
+          "tableTo": "sentenca",
+          "columnsFrom": [
+            "sentenca_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "embargos_declaracao_processo_id_processo_id_fk": {
+          "name": "embargos_declaracao_processo_id_processo_id_fk",
+          "tableFrom": "embargos_declaracao",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "embargos_declaracao_escritorio_id_escritorio_id_fk": {
+          "name": "embargos_declaracao_escritorio_id_escritorio_id_fk",
+          "tableFrom": "embargos_declaracao",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tutela_antecipada": {
+      "name": "tutela_antecipada",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pedido_em": {
+          "name": "pedido_em",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resultado": {
+          "name": "resultado",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_resultado": {
+          "name": "data_resultado",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prazo_cumprimento": {
+          "name": "prazo_cumprimento",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cumprida": {
+          "name": "cumprida",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "cumprida_em": {
+          "name": "cumprida_em",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tutela_antecipada_processo_id_processo_id_fk": {
+          "name": "tutela_antecipada_processo_id_processo_id_fk",
+          "tableFrom": "tutela_antecipada",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "tutela_antecipada_escritorio_id_escritorio_id_fk": {
+          "name": "tutela_antecipada_escritorio_id_escritorio_id_fk",
+          "tableFrom": "tutela_antecipada",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.processo_sucessor": {
+      "name": "processo_sucessor",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cpf": {
+          "name": "cpf",
+          "type": "varchar(14)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parentesco": {
+          "name": "parentesco",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "habilitado": {
+          "name": "habilitado",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "habilitado_em": {
+          "name": "habilitado_em",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "documentos_recebidos": {
+          "name": "documentos_recebidos",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "processo_sucessor_processo_id_processo_id_fk": {
+          "name": "processo_sucessor_processo_id_processo_id_fk",
+          "tableFrom": "processo_sucessor",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "processo_sucessor_escritorio_id_escritorio_id_fk": {
+          "name": "processo_sucessor_escritorio_id_escritorio_id_fk",
+          "tableFrom": "processo_sucessor",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.parceiro": {
+      "name": "parceiro",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cpf_cnpj": {
+          "name": "cpf_cnpj",
+          "type": "varchar(18)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "comissao_percentual": {
+          "name": "comissao_percentual",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cor_hex": {
+          "name": "cor_hex",
+          "type": "varchar(7)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "parceiro_escritorio_id_escritorio_id_fk": {
+          "name": "parceiro_escritorio_id_escritorio_id_fk",
+          "tableFrom": "parceiro",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "parceiro_escritorio_id_nome_unique": {
+          "name": "parceiro_escritorio_id_nome_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "escritorio_id",
+            "nome"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.parceiro_materia": {
+      "name": "parceiro_materia",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parceiro_id": {
+          "name": "parceiro_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "materia": {
+          "name": "materia",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "parceiro_materia_escritorio_id_escritorio_id_fk": {
+          "name": "parceiro_materia_escritorio_id_escritorio_id_fk",
+          "tableFrom": "parceiro_materia",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "parceiro_materia_parceiro_id_parceiro_id_fk": {
+          "name": "parceiro_materia_parceiro_id_parceiro_id_fk",
+          "tableFrom": "parceiro_materia",
+          "tableTo": "parceiro",
+          "columnsFrom": [
+            "parceiro_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "parceiro_materia_escritorio_id_materia_unique": {
+          "name": "parceiro_materia_escritorio_id_materia_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "escritorio_id",
+            "materia"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.processo_producao_probatoria": {
+      "name": "processo_producao_probatoria",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(40)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'AGUARDANDO'"
+        },
+        "data_designacao": {
+          "name": "data_designacao",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_conclusao": {
+          "name": "data_conclusao",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "perito_nome": {
+          "name": "perito_nome",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "processo_producao_probatoria_processo_id_processo_id_fk": {
+          "name": "processo_producao_probatoria_processo_id_processo_id_fk",
+          "tableFrom": "processo_producao_probatoria",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "processo_producao_probatoria_escritorio_id_escritorio_id_fk": {
+          "name": "processo_producao_probatoria_escritorio_id_escritorio_id_fk",
+          "tableFrom": "processo_producao_probatoria",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.fase_historico": {
+      "name": "fase_historico",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fase_anterior": {
+          "name": "fase_anterior",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fase_nova": {
+          "name": "fase_nova",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "origem": {
+          "name": "origem",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_fase_historico_processo": {
+          "name": "idx_fase_historico_processo",
+          "columns": [
+            {
+              "expression": "processo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "fase_historico_processo_id_processo_id_fk": {
+          "name": "fase_historico_processo_id_processo_id_fk",
+          "tableFrom": "fase_historico",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fase_historico_escritorio_id_escritorio_id_fk": {
+          "name": "fase_historico_escritorio_id_escritorio_id_fk",
+          "tableFrom": "fase_historico",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fase_historico_usuario_id_usuario_id_fk": {
+          "name": "fase_historico_usuario_id_usuario_id_fk",
+          "tableFrom": "fase_historico",
+          "tableTo": "usuario",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.improcedente": {
+      "name": "improcedente",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "valor_sucumbencia": {
+          "name": "valor_sucumbencia",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "destinatario_sucumbencia": {
+          "name": "destinatario_sucumbencia",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status_pagamento": {
+          "name": "status_pagamento",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'A_PAGAR'"
+        },
+        "data_prazo_pagamento": {
+          "name": "data_prazo_pagamento",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_pagamento": {
+          "name": "data_pagamento",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decisao_recurso": {
+          "name": "decisao_recurso",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "certidao_credito_solicitada": {
+          "name": "certidao_credito_solicitada",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "certidao_credito_data": {
+          "name": "certidao_credito_data",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "improcedente_processo_id_processo_id_fk": {
+          "name": "improcedente_processo_id_processo_id_fk",
+          "tableFrom": "improcedente",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "improcedente_escritorio_id_escritorio_id_fk": {
+          "name": "improcedente_escritorio_id_escritorio_id_fk",
+          "tableFrom": "improcedente",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.audit_log": {
+      "name": "audit_log",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entidade": {
+          "name": "entidade",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entidade_id": {
+          "name": "entidade_id",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "acao": {
+          "name": "acao",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "diff": {
+          "name": "diff",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ip": {
+          "name": "ip",
+          "type": "varchar(45)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "audit_log_escritorio_id_escritorio_id_fk": {
+          "name": "audit_log_escritorio_id_escritorio_id_fk",
+          "tableFrom": "audit_log",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "audit_log_usuario_id_usuario_id_fk": {
+          "name": "audit_log_usuario_id_usuario_id_fk",
+          "tableFrom": "audit_log",
+          "tableTo": "usuario",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.password_reset_token": {
+      "name": "password_reset_token",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "used_at": {
+          "name": "used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "password_reset_token_usuario_id_usuario_id_fk": {
+          "name": "password_reset_token_usuario_id_usuario_id_fk",
+          "tableFrom": "password_reset_token",
+          "tableTo": "usuario",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.platform_admin": {
+      "name": "platform_admin",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "senha_hash": {
+          "name": "senha_hash",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "platform_admin_email_unique": {
+          "name": "platform_admin_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.status_historico": {
+      "name": "status_historico",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "processo_id": {
+          "name": "processo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "escritorio_id": {
+          "name": "escritorio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status_anterior": {
+          "name": "status_anterior",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status_novo": {
+          "name": "status_novo",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "origem": {
+          "name": "origem",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'MANUAL'"
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_status_historico_processo": {
+          "name": "idx_status_historico_processo",
+          "columns": [
+            {
+              "expression": "processo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "status_historico_processo_id_processo_id_fk": {
+          "name": "status_historico_processo_id_processo_id_fk",
+          "tableFrom": "status_historico",
+          "tableTo": "processo",
+          "columnsFrom": [
+            "processo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "status_historico_escritorio_id_escritorio_id_fk": {
+          "name": "status_historico_escritorio_id_escritorio_id_fk",
+          "tableFrom": "status_historico",
+          "tableTo": "escritorio",
+          "columnsFrom": [
+            "escritorio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "status_historico_usuario_id_usuario_id_fk": {
+          "name": "status_historico_usuario_id_usuario_id_fk",
+          "tableFrom": "status_historico",
+          "tableTo": "usuario",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

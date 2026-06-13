@@ -10,9 +10,18 @@ import { useMemo } from 'react'
 import { faseLabel } from '@/lib/fase-label'
 import type { Processo } from '@/lib/types'
 
-function rowTintStyle(hex?: string | null): React.CSSProperties | undefined {
-  if (!hex?.startsWith('#') || hex.length < 7) return undefined
-  return { backgroundColor: `${hex}14` }
+function rowStyle(p: Processo): React.CSSProperties {
+  const tint = p.parceiroCorHex?.startsWith('#') && p.parceiroCorHex.length >= 7
+    ? { backgroundColor: `${p.parceiroCorHex}14` }
+    : {}
+  const color = p.litiganciaMaFe
+    ? '#ef4444'
+    : p.alertaCrVara
+      ? '#fb923c'
+      : p.clienteNome && !p.requerConferencia
+        ? '#4ade80'
+        : '#facc15'
+  return { ...tint, boxShadow: `inset 4px 0 0 ${color}` }
 }
 
 function isAutorFalecido(p: Processo): boolean {
@@ -262,15 +271,13 @@ export function ProcessosGrid({
             <tr
               key={row.id}
               onClick={() => onRowClick(row.original)}
-              style={rowTintStyle(row.original.parceiroCorHex)}
+              style={rowStyle(row.original)}
               className={`cursor-pointer hover:bg-[var(--color-bg-hover)] ${
-                row.original.litiganciaMaFe
-                  ? 'border-l-4 border-l-red-500'
-                  : row.original.alertaCrVara
-                    ? 'border-l-4 border-l-orange-400'
-                    : row.original.clienteNome && !row.original.requerConferencia
-                      ? 'border-l-4 border-l-green-400'
-                      : 'border-l-4 border-l-yellow-400 bg-[var(--urgencia-atencao-bg)]/30'
+                !row.original.litiganciaMaFe &&
+                !row.original.alertaCrVara &&
+                (!row.original.clienteNome || row.original.requerConferencia)
+                  ? 'bg-[var(--urgencia-atencao-bg)]/30'
+                  : ''
               }`}
             >
               {row.getVisibleCells().map((cell) => (

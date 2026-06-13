@@ -58,6 +58,25 @@ function extrairLogin(items: ComunicaApiItem[]): string | null {
   return null;
 }
 
+function extrairNomeAdvogado(items: ComunicaApiItem[], oab: string, ufOab: string): string | null {
+  const alvo = `${oab}/${ufOab}`.toUpperCase();
+  for (const item of items) {
+    const advs = item.destinatarioadvogados ?? [];
+    const match = advs.find(
+      (r) =>
+        r.advogado?.numero_oab?.trim() &&
+        r.advogado?.uf_oab?.trim() &&
+        `${r.advogado.numero_oab.trim()}/${r.advogado.uf_oab.trim()}`.toUpperCase() === alvo,
+    );
+    if (match?.advogado?.nome?.trim()) return match.advogado.nome.trim().slice(0, 300);
+  }
+  for (const item of items) {
+    const nome = item.destinatarioadvogados?.[0]?.advogado?.nome?.trim();
+    if (nome) return nome.slice(0, 300);
+  }
+  return null;
+}
+
 @Injectable()
 export class EnriquecimentoService {
   private readonly log = new Logger(EnriquecimentoService.name);
@@ -80,6 +99,7 @@ export class EnriquecimentoService {
       .select({
         clienteNome: processo.clienteNome,
         login: processo.login,
+        advogadoNome: processo.advogadoNome,
       })
       .from(processo)
       .where(eq(processo.id, processoId))
@@ -90,8 +110,9 @@ export class EnriquecimentoService {
     const nomeAtualOk =
       proc.clienteNome?.trim() && nomePareceLimpo(proc.clienteNome.trim());
     const loginAtualOk = !!proc.login?.trim();
+    const advogadoNomeAtualOk = !!proc.advogadoNome?.trim();
 
-    if (nomeAtualOk && loginAtualOk) return;
+    if (nomeAtualOk && loginAtualOk && advogadoNomeAtualOk) return;
 
     let items: ComunicaApiItem[] = [];
     try {
@@ -130,6 +151,11 @@ export class EnriquecimentoService {
     if (!loginAtualOk) {
       const login = extrairLogin(items);
       if (login) patch.login = login;
+    }
+
+    if (!advogadoNomeAtualOk) {
+      const nome = extrairNomeAdvogado(items, oab, ufOab);
+      if (nome) patch.advogadoNome = nome;
     }
 
     const temMudanca = Object.keys(patch).length > 1;

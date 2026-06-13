@@ -34,6 +34,7 @@ export const processo = pgTable(
       .references(() => escritorio.id, { onDelete: 'cascade' }),
     numero: varchar('numero', { length: 30 }).notNull(),
     login: varchar('login', { length: 50 }),
+    advogadoNome: varchar('advogado_nome', { length: 300 }),
     clienteNome: varchar('cliente_nome', { length: 300 }),
     clienteCpf: varchar('cliente_cpf', { length: 14 }),
     reuId: uuid('reu_id').references(() => reu.id),
